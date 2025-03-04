@@ -27,80 +27,99 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
 export const createOrder = async (req, res, next) => {
     try {
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
-        const party = await Customer.findById({ _id: req.body.partyId })
+        const party = await Customer.findById({ _id: req.body.partyId });
         const user = await User.findOne({ _id: party.created_by });
+
         if (!user) {
             return res.status(401).json({ message: "No user found", status: false });
-        } else {
-            if (date1.toDateString() === date2.toDateString()) {
-                if (party.paymentTerm.toLowerCase() !== "cash") {
-                    const existOrders = await CreateOrder.find({ partyId: req.body.partyId,
-                        status: { $nin: ['Deactive', 'Cancelled', 'Cancel in process'] },
-                        paymentStatus: false }).sort({ date: 1, sortorder: -1 })
-                    if (existOrders.length > 0) {
-                        const due = existOrders[0];
-                        const lastOrderDate = due?.date;
-                        const currentDate = new Date();
-                        const timeDifference = currentDate - lastOrderDate;
-                        const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                        if (days >= party.lockInTime) {
-                            return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
-                        }
-                    }
-                }
-                const orderNo = await generateOrderNo(user.database);
-                for (const orderItem of orderItems) {
-                    const product = await Product.findById({ _id: orderItem.productId });
-                    if (product) {
-                        product.salesDate = new Date()
-                        const warehouse = await Warehouse.findById(product.warehouse)
-                        if (warehouse) {
-                            const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
-                            pro.currentStock -= (orderItem.qty);
-                            product.qty -= orderItem.qty;
-                            product.pendingQty += orderItem.qty;
-                            await addProductInWarehouse6(product, product.warehouse, orderItem, req.body.date)
-                            // await warehouse.save();
-                            await product.save()
-                        }
-                    } else {
-                        console.error(`Product with ID ${orderItem.productId} not found`);
-                    }
-                }
-                const result = await generateInvoice(user.database);
-          
-                let challanNo = result
-                let invoiceId = result
-                req.body.challanNo = challanNo
-                req.body.invoiceId = invoiceId
+        }
 
-                req.body.userId = party.created_by
-                req.body.database = user.database
-                req.body.orderNo = orderNo
-                req.body.orderItems = orderItems
-                const savedOrder = CreateOrder.create(req.body)
-                req.body.database = user.database;
-                req.body.totalAmount = req.body.grandTotal;
-                req.body.orderId = savedOrder._id;
-                if (party.paymentTerm === "credit") {
-                    await checkLimit(req.body)
+        if (isNaN(date2.getTime())) {
+            return res.status(400).json({ message: "Invalid date format", status: false });
+        }
+
+        if (date1.toDateString() === date2.toDateString()) {
+            if (party.paymentTerm.toLowerCase() !== "cash") {
+                const existOrders = await CreateOrder.find({ 
+                    partyId: req.body.partyId,
+                    status: { $nin: ['Deactive', 'Cancelled', 'Cancel in process'] },
+                    paymentStatus: false 
+                }).sort({ date: 1, sortorder: -1 });
+
+                if (existOrders.length > 0) {
+                    const due = existOrders[0];
+                    const lastOrderDate = due?.date;
+                    const currentDate = new Date();
+                    const timeDifference = currentDate - lastOrderDate;
+                    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+                    if (days >= party.lockInTime) {
+                        return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
+                    }
                 }
-                return res.status(200).json({ orderDetail: savedOrder, status: true });
-            } else {
-                return res.status(404).json({ message: "select current date", status: false })
             }
+
+            const orderNo = await generateOrderNo(user.database);
+            for (const orderItem of orderItems) {
+                const product = await Product.findById({ _id: orderItem.productId });
+
+                if (!product) {
+                    return res.status(404).json({ message: `Product with ID ${orderItem.productId} not found`, status: false });
+                }
+
+                product.salesDate = new Date();
+                const warehouse = await Warehouse.findById(product.warehouse);
+
+                if (warehouse) {
+                    const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString());
+
+                    if (pro.currentStock < orderItem.qty) {
+                        return res.status(400).json({ message: `Not enough stock for product ${orderItem.productId}`, status: false });
+                    }
+
+                    pro.currentStock -= orderItem.qty;
+                    product.qty -= orderItem.qty;
+                    product.pendingQty += orderItem.qty;
+
+                    await addProductInWarehouse6(product, product.warehouse, orderItem, req.body.date);
+                    await warehouse.save();  // Save warehouse changes
+                    await product.save();    // Save product changes
+                }
+            }
+
+            const result = await generateInvoice(user.database);
+            let challanNo = result;
+            let invoiceId = result;
+            req.body.challanNo = challanNo;
+            req.body.invoiceId = invoiceId;
+            req.body.userId = party.created_by;
+            req.body.database = user.database;
+            req.body.orderNo = orderNo;
+            req.body.orderItems = orderItems;
+
+            const savedOrder = await CreateOrder.create(req.body);
+            req.body.database = user.database;
+            req.body.totalAmount = req.body.grandTotal;
+            req.body.orderId = savedOrder._id;
+
+            if (party.paymentTerm === "credit") {
+                await checkLimit(req.body);
+            }
+
+            return res.status(200).json({ orderDetail: savedOrder, status: true });
+        } else {
+            return res.status(404).json({ message: "select current date", status: false });
         }
     } catch (err) {
-        console.log(err);
+        console.error("Error in createOrder:", err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
         const orderItems = req.body.orderItems;
