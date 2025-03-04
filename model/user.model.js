@@ -156,8 +156,8 @@ const UserSchema = new mongoose.Schema({
   last_job_Salary: {
     type: Number
   },
-  otpVerify: {
-    type: Number
+  otp: {
+    type: String
   },
   typeStatus: {
     type: String
