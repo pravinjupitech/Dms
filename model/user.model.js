@@ -236,6 +236,12 @@ const UserSchema = new mongoose.Schema({
   },
   shift: {
     type: String,
+  },
+  qr_code:{
+    type:String
+  },
+  upi_id:{
+    type:String
   }
 }, { timestamps: true });
 
