@@ -25,39 +25,46 @@ export const viewPlan = async (req, res, next) => {
     }
 }
 
-export const updatePlan = async (req, res, next) => {
+export const updatePlan= async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updatedData=req.body; 
+        const updatedData = req.body; 
         const existingPlan = await PlanRequest.findById(id);
+
         if (!existingPlan) {
-            return res.status(404).json({ message: "Not Found", status: false })
+            return res.status(404).json({ message: "Not Found", status: false });
         }
-        if (req.body.status==="Approved"&& existingPlan.status==="Pending") {
+
+        if (req.body.status === "Approved" && existingPlan.status === "Pending") {
             const user = await User.findById(existingPlan.superAdmin);
+
             if (user) {
-                const sub = await Subscription.findById({ _id: existingPlan.plan })
+                const sub = await Subscription.findById({ _id: existingPlan.plan });
+
                 if (sub) {
-                    // const { _id, ...subWithoutId } = sub.toObject();
                     const date = new Date();
                     user.planStart = date;
                     user.planEnd = new Date(date.getTime() + (sub.days * 24 * 60 * 60 * 1000));
-                    user.billAmount = sub.subscriptionCost
-                    user.userAllotted = sub.noOfUser
-                    user.subscriptionPlan=existingPlan.plan
+                    user.billAmount = sub.subscriptionCost;
+                    user.userAllotted = sub.noOfUser;
+                    user.subscriptionPlan = existingPlan.plan;
+                    await user.save();
                 }
             }
-            await user.save();
-            await PlanRequest.findByIdAndUpdate(id,updatedData,{new:true})
-            res.status(200).json({ message: "Status Updated", status: true })
-        }else if(req.body.status==="Rejected"&&existingPlan.plan==="Pending"){
-            await PlanRequest.findByIdAndUpdate(id,updatedData,{new:true})
-            res.status(200).json({ message: "Status Updated", status: true })
-        }else{
-            return res.json({message:"Request Already Processed",status:false})
+
+            await PlanRequest.findByIdAndUpdate(id, updatedData, { new: true });
+            res.status(200).json({ message: "Status Updated", status: true });
+
+        } else if (req.body.status === "Rejected" && existingPlan.status === "Pending") {
+            await PlanRequest.findByIdAndUpdate(id, updatedData, { new: true });
+            res.status(200).json({ message: "Status Updated", status: true });
+
+        } else {
+            return res.json({ message: "Request Already Processed", status: false });
         }
+
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
+        console.error("Error updating plan:", error);
+        res.status(500).json({ message: "Internal Server Error", error: error.message, status: false });
     }
 }
