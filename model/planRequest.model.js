@@ -6,11 +6,17 @@ const planSchema=new mongoose.Schema({
     plan:{
         type:String
     },
+    PrevPlan:{
+    type:String
+    },
     amount:{
         type:Number
     },
     superAdmin:{
         type:String
+    },
+    message:{
+     type:String
     },
     status:{
         default:"Pending",
