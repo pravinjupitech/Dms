@@ -32,10 +32,10 @@ export const updatePlan = async (req, res, next) => {
         if (!existingPlan) {
             return res.status(404).json({ message: "Not Found", status: false })
         }
-        if (req.body.status === "Approved") {
+        if (existingPlan.status==="Pending") {
             const user = await User.findById(existingPlan.superAdmin);
             if (user) {
-                const sub = await Subscription.findById({ _id: req.body.plan })
+                const sub = await Subscription.findById({ _id: existingPlan.plan })
                 if (sub) {
                     // const { _id, ...subWithoutId } = sub.toObject();
                     const date = new Date();
@@ -43,11 +43,16 @@ export const updatePlan = async (req, res, next) => {
                     user.planEnd = new Date(date.getTime() + (sub.days * 24 * 60 * 60 * 1000));
                     user.billAmount = sub.subscriptionCost
                     user.userAllotted = sub.noOfUser
+                    user.subscriptionPlan=existingPlan.plan
                 }
             }
             await user.save();
+            const updatedData=req.body;
+            await PlanRequest.findByIdAndUpdate(id,updatedData,{new:true})
+            res.status(200).json({ message: "Status Updated", status: true })
+        }else{
+            return res.status(404).json({message:"Request Already Processed",status:false})
         }
-        res.status(200).json({ message: "Status Updated", status: true })
     } catch (error) {
         console.log(error)
         res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })

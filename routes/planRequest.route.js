@@ -1,5 +1,5 @@
 import express from "express"
-import { addPlan, viewPlan } from "../controller/planRequest.controller.js";
+import { addPlan, updatePlan, viewPlan } from "../controller/planRequest.controller.js";
 import multer from "multer";
 import path from "path"
 const router = express.Router();
@@ -17,4 +17,5 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 router.post("/add-request",upload.single("file"),addPlan);
 router.get("/view-request",viewPlan)
+router.put("/update-status/:id",updatePlan)
 export default router;
