@@ -65,6 +65,7 @@ import WarningRouter from "./routes/warning.route.js";
 import TerminationRouter from "./routes/termination.route.js";
 import BonusRouter from "./routes/bonus.route.js"
 import UserBranchRouter from "./routes/userBranch.route.js";
+import PlanRequestRouter from "./routes/planRequest.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -153,6 +154,7 @@ app.use("/termination", TerminationRouter)
 app.use("/bonus", BonusRouter)
 app.use("/check", customerCheckRouter)
 app.use("/branch", UserBranchRouter)
+app.use("/plan",PlanRequestRouter)
 
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
