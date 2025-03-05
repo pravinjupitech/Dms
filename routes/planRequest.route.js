@@ -1,7 +1,7 @@
 import express from "express"
 import { addPlan, viewPlan } from "../controller/planRequest.controller.js";
 import multer from "multer";
-
+import path from "path"
 const router = express.Router();
 // const upload = multer({ dest: "public/Images" })
 const storage = multer.diskStorage({
