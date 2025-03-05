@@ -17,7 +17,7 @@ export const addPlan = async (req, res, next) => {
 
 export const viewPlan = async (req, res, next) => {
     try {
-        const plan = await PlanRequest.find().populate({ path: "plan", model: "subscription" }).populate({ path: "superAdmin", model: "user" });
+        const plan = await PlanRequest.find({}).populate({ path: "plan", model: "subscription" }).populate({ path: "superAdmin", model: "user" });
         return plan.length > 0 ? res.status(200).json({ message: "Data Found", plan, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error)
