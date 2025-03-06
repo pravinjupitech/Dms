@@ -25,10 +25,10 @@ export const viewPlan = async (req, res, next) => {
     }
 }
 
-export const updatePlan= async (req, res, next) => {
+export const updatePlan = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updatedData = req.body; 
+        const updatedData = req.body;
         const existingPlan = await PlanRequest.findById(id);
 
         if (!existingPlan) {
