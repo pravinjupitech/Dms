@@ -190,6 +190,7 @@ import http from "http";
 import { v4 as uuidv4 } from "uuid";
 const server = http.createServer(app);
 const io = new Server(server);
+
 io.on("connection", (socket) => {
   console.log("A user connected");
 
@@ -205,10 +206,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chatMessage", (data) => {
-    io.to(data.roomId).emit("chatMessage", data); room
+    io.to(data.roomId).emit("chatMessage", data); 
     console.log(`Message sent to room ${data.roomId}: ${data.message}`);
   });
-
+  
   socket.on("disconnect", () => {
     console.log("A user disconnected");
   });
