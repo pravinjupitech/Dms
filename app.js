@@ -72,7 +72,8 @@ import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
 const app = express();
-app.use(cors());
+// app.use(cors());
+app.use(cors({ origin: '*' }));
 dotenv.config();
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -209,11 +210,10 @@ io.on("connection", (socket) => {
     io.to(data.roomId).emit("chatMessage", data); 
     console.log(`Message sent to room ${data.roomId}: ${data.message}`);
   });
-  
   socket.on("disconnect", () => {
     console.log("A user disconnected");
   });
 });
-app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
 });
