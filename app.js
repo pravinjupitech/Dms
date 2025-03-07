@@ -72,12 +72,7 @@ import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
 const app = express();
-// app.use(cors());
-app.use(cors({
-  origin: "https://customer.rupioo.com",
-  methods: ["GET", "POST"],
-  credentials: true 
-}));
+app.use(cors());
 dotenv.config();
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -194,8 +189,13 @@ import { Server } from "socket.io";
 import http from "http";
 import { v4 as uuidv4 } from "uuid";
 const server = http.createServer(app);
-const io = new Server(server);
-
+// const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "https://customer.rupioo.com",
+    methods: ["GET", "POST"]
+  }
+});
 io.on("connection", (socket) => {
   console.log("A user connected");
 
