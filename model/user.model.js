@@ -108,33 +108,10 @@ const UserSchema = new mongoose.Schema({
   address2: {
     type: String
   },
-  Ref_name_one: {
-    type: String
-  },
-  refer_Relation_one: {
-    type: String
-  },
-  Ref_Mob_No_one: {
-    type: String
-  },
-  Ref_name_sec: {
-    type: String
-  },
-  refer_Relation_two: {
-    type: String
-  },
-  Ref_Mob_No_two: {
-    type: String
-  },
-  Ref_name_third: {
-    type: String
-  },
-  refer_Relation_third: {
-    type: String
-  },
-  Ref_Mob_No_third: {
-    type: String
-  },
+  reference:{
+    type:Array
+  }
+ ,
   last_job_firm_name: {
     type: String
   },

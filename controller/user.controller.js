@@ -37,6 +37,9 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.setRule) {
       req.body.setRule = await JSON.parse(req.body.setRule);
     }
+    if (req.body.reference) {
+      req.body.reference = await JSON.parse(req.body.reference);
+    }
     if (req.body.subscriptionPlan) {
       const sub = await Subscription.findById(req.body.subscriptionPlan);
       if (sub) {
@@ -176,19 +179,22 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.setRule) {
         req.body.setRule = JSON.parse(req.body.setRule)
       }
-      if (req.body.subscriptionPlan) {
-        const sub = await Subscription.findById({ _id: req.body.subscriptionPlan })
-        if (sub) {
-          // const { _id, ...subWithoutId } = sub.toObject();
-          const date = new Date();
-          req.body.planStart = date;
-          req.body.planEnd = new Date(date.getTime() + (sub.days * 24 * 60 * 60 * 1000));
-          req.body.billAmount = sub.subscriptionCost
-          req.body.userAllotted = sub.noOfUser
-        }
-      }
+      // if (req.body.subscriptionPlan) {
+      //   const sub = await Subscription.findById({ _id: req.body.subscriptionPlan })
+      //   if (sub) {
+      //     // const { _id, ...subWithoutId } = sub.toObject();
+      //     const date = new Date();
+      //     req.body.planStart = date;
+      //     req.body.planEnd = new Date(date.getTime() + (sub.days * 24 * 60 * 60 * 1000));
+      //     req.body.billAmount = sub.subscriptionCost
+      //     req.body.userAllotted = sub.noOfUser
+      //   }
+      // }
       if (req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
+      }
+      if (req.body.reference) {
+        req.body.reference = await JSON.parse(req.body.reference);
       }
       const updatedUser = req.body;
       const user = await User.findByIdAndUpdate(userId, updatedUser, { new: true });
