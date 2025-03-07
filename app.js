@@ -73,7 +73,11 @@ import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
 const app = express();
 // app.use(cors());
-app.use(cors({ origin: '*' }));
+app.use(cors({
+  origin: "https://customer.rupioo.com",
+  methods: ["GET", "POST"],
+  credentials: true 
+}));
 dotenv.config();
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(bodyParser.json({ limit: '50mb' }));
