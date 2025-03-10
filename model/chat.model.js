@@ -5,10 +5,6 @@ const chatSchema=new mongoose.Schema({
       },
       messages: {
         type: Array,
-      },
-      date: {
-        type: String,
-        default: Date.now,
-      },
+      }
 },{timestamps:true})
 export const Chat=mongoose.model("chat",chatSchema)
