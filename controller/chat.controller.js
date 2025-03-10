@@ -1,14 +1,26 @@
 import { Chat } from "../model/chat.model.js";
 
-export const saveChat=async(req,res,next)=>{
+export const saveChat = async (req, res, next) => {
     try {
-        const chat =await Chat.create(req.body);
-    return chat?res.status(200).json({message:"Chat Saved",status:true}):res.status(404).json({message:"Somethings Went Wrong",status:false})
+        const { superadmin, messages } = req.body;
+        const messagesToAdd = Array.isArray(messages) ? messages : [messages];
+        const existingChat = await Chat.findOne({ superadmin });
+        if (existingChat) {
+            existingChat.messages.push(...messagesToAdd);
+            await existingChat.save();
+            return res.status(200).json({ message: "Chat Saved", status: true });
+        } else {
+            const chat = await Chat.create(req.body);
+            return chat
+                ? res.status(200).json({ message: "Chat Saved", status: true })
+                : res.status(404).json({ message: "Something Went Wrong", status: false });
+        }
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal Server Error",error:error.message,status:false });
+        console.error("Error saving chat:", error);
+        res.status(500).json({ message: "Internal Server Error", error: error.message, status: false });
     }
-}
+};
+
 
 export const viewChat=async(req,res,next)=>{
     try {
