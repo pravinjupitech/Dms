@@ -142,6 +142,9 @@ const CustomerSchema = new mongoose.Schema({
   address2: {
     type: String
   },
+  ownerAddress:{
+type:String
+  },
   bankDetails:[{
     Account_Name: {
       type: String
