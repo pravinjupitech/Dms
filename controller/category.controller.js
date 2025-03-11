@@ -177,13 +177,13 @@ export const saveSteps = async (req, res) => {
 
 export const updateSteps = async (req, res) => {
     try {
-        const { categoryId, subStepsId } = req.params;
+        const { categoryId, stepId } = req.params;
         const { step_Name, note} = req.body;
         const category = await Category.findById(categoryId);
         if (!category) {
             return res.status(404).json({ message: "Category not found", status: false });
         }
-        const substep = category.steps.id(subStepsId);
+        const substep = category.steps.id(stepId);
         if (!substep) {
             return res.status(404).json({ message: "SubStep not found", status: false });
         }
@@ -199,12 +199,12 @@ export const updateSteps = async (req, res) => {
 
 export const deleteStep = async (req, res) => {
     try {
-        const { categoryId, subStepId } = req.params;
+        const { categoryId, stepId } = req.params;
         const category = await Category.findById(categoryId);
         if (!category) {
             return res.status(404).json({ message: "Category not found", status: false });
         }
-        category.steps = category.steps.filter(sub => sub._id.toString() !== subStepId);
+        category.steps = category.steps.filter(sub => sub._id.toString() !== stepId);
         const updatedCategory = await category.save();
         return res.status(200).json({ message: "Step deleted successfully", status: true, category: updatedCategory });
     } catch (error) {
