@@ -3,7 +3,7 @@ import { Chat } from "../model/chat.model.js";
 export const saveChat = async (req, res, next) => {
     try {
         const { superadmin, messages } = req.body;
-        const messagesToAdd = Array.isArray(messages) ? messages : [messages];
+        const messagesToAdd =messages.length>0 ? messages : [messages];
         const existingChat = await Chat.findOne({ superadmin });
         if (existingChat) {
             existingChat.messages.push(...messagesToAdd);
