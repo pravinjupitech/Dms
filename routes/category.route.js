@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path"
-import { DeleteCategory, UpdateCategory, ViewCategory, ViewCategoryById, deleteSubCategory, saveCategory, saveSubCategory, updateSubCategory } from "../controller/category.controller.js";
+import { DeleteCategory, UpdateCategory, ViewCategory, ViewCategoryById, deleteStep, deleteSubCategory, saveCategory, saveSteps, saveSubCategory, updateSteps, updateSubCategory } from "../controller/category.controller.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -26,5 +26,7 @@ router.put("/update-category/:id", upload.single("file"), UpdateCategory)
 router.post("/save-subcategory", upload.single("file"), saveSubCategory);
 router.put("/update-categories/:categoryId/subcategories/:subcategoryId", upload.single("file"), updateSubCategory)
 router.delete("/delete-categories/:categoryId/subcategories/:subcategoryId", deleteSubCategory);
-
+router.post("/save-step",saveSteps)
+router.put("/update-step/:categoryId/:subStepsId",updateSteps)
+router.delete("/delete-step/:categoryId/:subStepsId",deleteStep)
 export default router;

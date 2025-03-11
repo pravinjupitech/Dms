@@ -51,6 +51,14 @@ const categorySchema = new mongoose.Schema({
             }
         }
     ],
+    steps:[{
+        step_Name:{
+            type:String
+        },
+        note:{
+            type:String
+        }
+    }]
 }, { timestamps: true });
 
 export const Category = mongoose.model("category", categorySchema);
