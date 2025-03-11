@@ -87,12 +87,6 @@ export const UpdateCategory = async (req, res, next) => {
     }
 };
 
-// if (steps.length > 0) {
-//     steps.forEach((step) => {
-//       findSteps.steps.push(step);
-//     });
-//   }
-
 export const saveSubCategory = async (req, res) => {
     try {
         if (req.file) {
@@ -162,13 +156,14 @@ export const deleteSubCategory = async (req, res) => {
 
 export const saveSteps = async (req, res) => {
     try {
-        const category = await Category.findOne({ _id: req.body.categoryName });
+        const {categoryName,steps}=req.body;
+        const category = await Category.findOne({ _id:categoryName });
         if (category) {
-            const newSteps = {
-                step_Name: req.body.step_Name,
-                note: req.body.note
-            };
-            category.steps.push(newSteps);
+           if(steps.length>0){
+            steps.forEach(step => {
+                category.steps.push(step)
+            });
+           }
             const savedCategory = await category.save();
             return res.status(200).json({ message: "Steps saved successfully", status: true, category: savedCategory });
         } else {
