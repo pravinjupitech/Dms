@@ -67,6 +67,7 @@ import BonusRouter from "./routes/bonus.route.js"
 import UserBranchRouter from "./routes/userBranch.route.js";
 import PlanRequestRouter from "./routes/planRequest.route.js"
 import ChatRouter from "./routes/chat.route.js"
+import RawProductRouter from "./routes/rawProduct.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -157,6 +158,7 @@ app.use("/check", customerCheckRouter)
 app.use("/branch", UserBranchRouter)
 app.use("/plan",PlanRequestRouter)
 app.use("/chat",ChatRouter)
+app.use("/rawProduct",RawProductRouter)
 
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
