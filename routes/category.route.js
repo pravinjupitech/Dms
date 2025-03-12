@@ -27,6 +27,6 @@ router.post("/save-subcategory", upload.single("file"), saveSubCategory);
 router.put("/update-categories/:categoryId/subcategories/:subcategoryId", upload.single("file"), updateSubCategory)
 router.delete("/delete-categories/:categoryId/subcategories/:subcategoryId", deleteSubCategory);
 router.post("/save-step",saveSteps)
-router.put("/update-step/:categoryId/:subStepsId",updateSteps)
-router.delete("/delete-step/:categoryId/:subStepsId",deleteStep)
+router.put("/update-step/:categoryId/:stepId",updateSteps)
+router.delete("/delete-step/:categoryId/:stepId",deleteStep)
 export default router;
