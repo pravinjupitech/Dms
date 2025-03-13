@@ -32,6 +32,23 @@ const UserSchema = new mongoose.Schema({
   setRule: {
     type: []
   },
+  role: [
+    {
+      process: { type: String },
+      roleName: { type: String },
+      productAndPrice: [
+        {
+          productName: { type: String },
+          price: { type: Number },
+        },
+      ],
+      processSteps: [],
+      roleProducts: [],
+    },
+  ],
+  pakerId: {
+    type: String,
+  },
   rolename: {
     type: String
   },

@@ -72,6 +72,14 @@ export const SaveUser = async (req, res, next) => {
             }
         }
     }
+    if (req.body.role.length > 0) {
+      req.body.role = JSON.parse(req.body.role);
+    }
+    const findRole = await Role.findById(req.body.rolename);
+    if (findRole.roleName === "Labour") {
+      const pakerId = await generateUniqueSixDigitNumber();
+      req.body.pakerId = pakerId;
+    }
     if (req.body.warehouse) {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
@@ -963,4 +971,14 @@ export const customId = async (req, res, next) => {
     console.log(err);
     return res.status(500).json({ message: "Internal Server Error", status: false });
   }
+};
+
+const assignedNumbers = new Set();
+const generateUniqueSixDigitNumber = () => {
+  const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
+  if (assignedNumbers.has(uniqueNumber)) {
+    return generateUniqueSixDigitNumber();
+  }
+  assignedNumbers.add(uniqueNumber);
+  return uniqueNumber;
 };
