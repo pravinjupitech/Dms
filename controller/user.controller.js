@@ -18,7 +18,6 @@ import { WorkingHours } from "../model/workingHours.model.js";
 import { UserBranch } from "../model/userBranch.model.js";
 import { LoginVerificationMail } from "../service/sendmail.js";
 import { SubscriptionAdminPlan } from "../service/checkSubscriptionPlan.js";
-import { ClosingPurchase } from "./stockUpdation.controller.js";
 dotenv.config();
 
 
@@ -168,9 +167,7 @@ export const DeleteUser = async (req, res, next) => {
 };
 export const UpdateUser = async (req, res, next) => {
   try {
-    // if (req.file) {
-    //   req.body.profileImage = req.file.filename;
-    // }
+    console.log(req.body)
     if (req.files) {
       req.files.map(file => {
         if (file.fieldname === "profileImage") {
@@ -182,14 +179,14 @@ export const UpdateUser = async (req, res, next) => {
       })
     }
     const userId = req.params.id;
-    if (req.body.role.length > 0) {
-      req.body.role = JSON.parse(req.body.role);
-    }
-    const findRole = await Role.findById(req.body.rolename);
-    if (findRole.roleName === "Labour") {
-      const pakerId = await generateUniqueSixDigitNumber();
-      req.body.pakerId = pakerId;
-    }
+     if (req.body.role.length > 0) {
+        req.body.role = JSON.parse(req.body.role);
+      }
+      const findRole = await Role.findById(req.body.rolename);
+      if (findRole.roleName === "Labour") {
+        const pakerId = await generateUniqueSixDigitNumber();
+        req.body.pakerId = pakerId;
+      }
     const existingUser = await User.findById(userId);
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
@@ -930,7 +927,6 @@ export const ViewUserHRM = async (req, res, next) => {
 };
 export const updatePlan = async (req, res, next) => {
   try {
-    console.log("req.body",req.body)
     const user = await User.findById(req.params.id).populate({ path: "subscriptionPlan", model: "subscription" })
     if (!user) {
       return res.status(404).json({ message: "user not found", status: false })
@@ -986,7 +982,7 @@ export const customId = async (req, res, next) => {
 };
 
 const assignedNumbers = new Set();
- const generateUniqueSixDigitNumber = () => {
+const generateUniqueSixDigitNumber = () => {
   const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
   if (assignedNumbers.has(uniqueNumber)) {
     return generateUniqueSixDigitNumber();
