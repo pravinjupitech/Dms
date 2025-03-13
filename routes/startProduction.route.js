@@ -1,8 +1,8 @@
 import express from "express"
 import { createProduction, deleteNestedProduct, deleteProduct, NestedUpdateProduct, productTarget, updateProduct, viewByIdProduct, viewProduct } from "../controller/startProduction.controller.js"
 const router=express.Router()
-router.post("/start-production",createProduction)
-router.get("view-productionList/:database",viewProduct)
+router.post("/save-production",createProduction)
+router.get("/view-productionList/:database",viewProduct)
 router.get("/view-startProduction-by-id/:id",viewByIdProduct)
 router.put("/update-startProduction/:id",updateProduct)
 router.delete("/delete-StartProduction/:id", deleteProduct);
