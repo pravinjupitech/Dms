@@ -201,6 +201,14 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
+      if (req.body.role.length > 0) {
+        req.body.role = JSON.parse(req.body.role);
+      }
+      const findRole = await Role.findById(req.body.rolename);
+      if (findRole.roleName === "Labour") {
+        const pakerId = await generateUniqueSixDigitNumber();
+        req.body.pakerId = pakerId;
+      }
       if (req.body.reference) {
         req.body.reference = await JSON.parse(req.body.reference);
       }
