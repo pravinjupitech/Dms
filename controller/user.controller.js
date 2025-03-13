@@ -18,6 +18,7 @@ import { WorkingHours } from "../model/workingHours.model.js";
 import { UserBranch } from "../model/userBranch.model.js";
 import { LoginVerificationMail } from "../service/sendmail.js";
 import { SubscriptionAdminPlan } from "../service/checkSubscriptionPlan.js";
+import { ClosingPurchase } from "./stockUpdation.controller.js";
 dotenv.config();
 
 
@@ -124,6 +125,7 @@ export const SuperAdminRoleUpdate = async (req, res, next) => {
     return res.status(500).json({ message: "Internal Server Error", status: false })
   }
 }
+
 export const ViewUserById = async (req, res, next) => {
   try {
     let user = await User.findById({ _id: req.params.id, status: "Active" }).populate({ path: "subscriptionPlan", model: "subscription" }).populate({ path: "created_by", model: "user" }).populate({ path: "rolename", model: "role" }).populate({ path: "branch", model: "userBranch" }).populate({ path: "shift", model: "WorkingHour" }).populate({ path: "warehouse.id", model: "warehouse" })
@@ -180,6 +182,14 @@ export const UpdateUser = async (req, res, next) => {
       })
     }
     const userId = req.params.id;
+    if (req.body.role.length > 0) {
+      req.body.role = JSON.parse(req.body.role);
+    }
+    const findRole = await Role.findById(req.body.rolename);
+    if (findRole.roleName === "Labour") {
+      const pakerId = await generateUniqueSixDigitNumber();
+      req.body.pakerId = pakerId;
+    }
     const existingUser = await User.findById(userId);
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
@@ -201,14 +211,7 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
-      if (req.body.role.length > 0) {
-        req.body.role = JSON.parse(req.body.role);
-      }
-      const findRole = await Role.findById(req.body.rolename);
-      if (findRole.roleName === "Labour") {
-        const pakerId = await generateUniqueSixDigitNumber();
-        req.body.pakerId = pakerId;
-      }
+     
       if (req.body.reference) {
         req.body.reference = await JSON.parse(req.body.reference);
       }
@@ -927,6 +930,7 @@ export const ViewUserHRM = async (req, res, next) => {
 };
 export const updatePlan = async (req, res, next) => {
   try {
+    console.log("req.body",req.body)
     const user = await User.findById(req.params.id).populate({ path: "subscriptionPlan", model: "subscription" })
     if (!user) {
       return res.status(404).json({ message: "user not found", status: false })
@@ -982,7 +986,7 @@ export const customId = async (req, res, next) => {
 };
 
 const assignedNumbers = new Set();
-const generateUniqueSixDigitNumber = () => {
+ const generateUniqueSixDigitNumber = () => {
   const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
   if (assignedNumbers.has(uniqueNumber)) {
     return generateUniqueSixDigitNumber();
