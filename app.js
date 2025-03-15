@@ -69,6 +69,7 @@ import PlanRequestRouter from "./routes/planRequest.route.js"
 import ChatRouter from "./routes/chat.route.js"
 import RawProductRouter from "./routes/rawProduct.route.js"
 import StartProductionRouter from "./routes/startProduction.route.js"
+import RawProductTargetRouter from "./routes/rawProductTarget.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -161,7 +162,7 @@ app.use("/plan",PlanRequestRouter)
 app.use("/chat",ChatRouter)
 app.use("/rawProduct",RawProductRouter)
 app.use("/startProduction",StartProductionRouter)
-
+app.use("/product-target",RawProductTargetRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
