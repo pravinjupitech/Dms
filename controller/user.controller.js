@@ -190,7 +190,7 @@ export const UpdateUser = async (req, res, next) => {
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
     } else {
-      if (req.body.setRule.length>0) {
+      if (req.body.setRule) {
         req.body.setRule = JSON.parse(req.body.setRule)
       }
       // if (req.body.subscriptionPlan) {
@@ -207,7 +207,7 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
-      if (req.body.reference?.length>0) {
+      if (req.body.reference) {
         req.body.reference = await JSON.parse(req.body.reference)
       }
       const updatedUser = req.body;
