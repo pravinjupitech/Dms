@@ -183,7 +183,9 @@ export const UpdateUser = async (req, res, next) => {
         req.body.role = JSON.parse(req.body.role);
       }
       const findRole = await Role.findById(req.body.rolename);
+      console.log("findRole",findRole)
       if (findRole.roleName === "Labour") {
+        console.log("findRole",findRole.roleName)
         const pakerId = await generateUniqueSixDigitNumber();
         req.body.pakerId = pakerId;
       }
