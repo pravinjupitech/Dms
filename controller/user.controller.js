@@ -167,7 +167,6 @@ export const DeleteUser = async (req, res, next) => {
 };
 export const UpdateUser = async (req, res, next) => {
   try {
-    console.log(req.body)
     if (req.files) {
       req.files.map(file => {
         if (file.fieldname === "profileImage") {
@@ -183,15 +182,11 @@ export const UpdateUser = async (req, res, next) => {
         req.body.role = JSON.parse(req.body.role);
       }
       const findRole = await Role.findById(req.body.rolename);
-      console.log("findRole",findRole)
       if (findRole.roleName === "Labour") {
-        console.log("findRole",findRole.roleName)
         const pakerId = await generateUniqueSixDigitNumber();
-        console.log("pakerId",pakerId)
         req.body.pakerId = pakerId;
       }
     const existingUser = await User.findById(userId);
-    console.log("existingUser ",existingUser)
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
     } else {
@@ -212,11 +207,11 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
-     
       if (req.body.reference) {
-        req.body.reference = await JSON.parse(req.body.reference);
+        req.body.reference = await JSON.parse(req.body.reference)
       }
       const updatedUser = req.body;
+      console.log("updateUSer",updatedUser)
       const user = await User.findByIdAndUpdate(userId, updatedUser, { new: true });
       if (req.body.warehouse?.length > 0) {
         await assingWarehouse(user.warehouse, userId)
