@@ -187,9 +187,11 @@ export const UpdateUser = async (req, res, next) => {
       if (findRole.roleName === "Labour") {
         console.log("findRole",findRole.roleName)
         const pakerId = await generateUniqueSixDigitNumber();
+        console.log("pakerId",pakerId)
         req.body.pakerId = pakerId;
       }
     const existingUser = await User.findById(userId);
+    console.log("existingUser ",existingUser)
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
     } else {
