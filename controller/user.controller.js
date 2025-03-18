@@ -218,7 +218,6 @@ export const UpdateUser = async (req, res, next) => {
       if (user) {
         await setSalary(user)
       }
-    
       return res.status(200).json({User: user,message: "User Updated Successfully", status: true });
     }
   } catch (err) {
