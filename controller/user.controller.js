@@ -51,32 +51,32 @@ export const SaveUser = async (req, res, next) => {
         req.body.userAllotted = sub.noOfUser;
         req.body.planStatus = "paid";
       }
-    } else{
-        const existRole = await Role.findOne({roleName:"SuperAdmin"});
-        if(!existRole){
-          console.log("Role Not Found");
+    } else {
+      const existRole = await Role.findOne({ roleName: "SuperAdmin" });
+      if (!existRole) {
+        console.log("Role Not Found");
+      }
+      const existingSuperAdmin = await User.findOne({ database: req.body.database, rolename: existRole._id.toString() })
+      if (!existingSuperAdmin) {
+        console.log("user not found");
+      } else {
+        if (existingSuperAdmin.planStatus !== "paid") {
+          return res.status(404).json({ message: "User is not subscribed to the plan", status: false })
+        } else {
+          existingSuperAdmin.userRegister += 1;
+          if (existingSuperAdmin.userRegister <= existingSuperAdmin.userAllotted) {
+            await existingSuperAdmin.save();
+          } else {
+            return res.status(400).json({ message: "You have reached your plan's user limit", status: false })
+          }
         }
-        const existingSuperAdmin = await User.findOne({database:req.body.database,rolename:existRole._id.toString()})
-        if(!existingSuperAdmin){
-          console.log("user not found");
-        } else{
-            if(existingSuperAdmin.planStatus!=="paid"){
-              return res.status(404).json({ message: "User is not subscribed to the plan", status: false })
-            } else{
-                existingSuperAdmin.userRegister += 1;
-                if(existingSuperAdmin.userRegister <=existingSuperAdmin.userAllotted){
-                    await existingSuperAdmin.save();
-                } else{
-                  return res.status(400).json({ message: "You have reached your plan's user limit", status: false })
-                }
-            }
-        }
+      }
     }
     if (req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
     const findRole = await Role.findById(req.body.rolename);
-    if (findRole.roleName === "Labour"||findRole.roleName==="Packing And Labour") {
+    if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
       const pakerId = await generateUniqueSixDigitNumber();
       req.body.pakerId = pakerId;
     }
@@ -178,20 +178,22 @@ export const UpdateUser = async (req, res, next) => {
       })
     }
     const userId = req.params.id;
-     if (req.body.role.length > 0) {
-        req.body.role = JSON.parse(req.body.role);
-      }
-      const findRole = await Role.findById(req.body.rolename);
-      if (findRole.roleName === "Labour") {
-        const pakerId = await generateUniqueSixDigitNumber();
-        req.body.pakerId = pakerId;
-      }
+    if (req.body.role.length > 0) {
+      req.body.role = JSON.parse(req.body.role);
+    }
     const existingUser = await User.findById(userId);
     if (!existingUser) {
       return res.status(404).json({ error: "user not found", status: false });
     } else {
       if (req.body.setRule) {
         req.body.setRule = JSON.parse(req.body.setRule)
+      }
+      const findRole = await Role.findById(req.body.rolename);
+      if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
+        if (!existingUser.pakerId) {
+          const pakerId = await generateUniqueSixDigitNumber();
+          req.body.pakerId = pakerId;
+        }
       }
       // if (req.body.subscriptionPlan) {
       //   const sub = await Subscription.findById({ _id: req.body.subscriptionPlan })
@@ -218,7 +220,7 @@ export const UpdateUser = async (req, res, next) => {
       if (user) {
         await setSalary(user)
       }
-      return res.status(200).json({User: user,message: "User Updated Successfully", status: true });
+      return res.status(200).json({ User: user, message: "User Updated Successfully", status: true });
     }
   } catch (err) {
     console.error(err);
@@ -255,7 +257,7 @@ export const SignIn = async (req, res, next) => {
       return res.json({ message: "Login successful", user: { ...existingAccount.toObject(), password: undefined, token }, status: true, });
     }
     if (existingCustomer) {
-      await Customer.updateOne({ email }, { $set: { latitude, longitude, currentAddress,loginDate:new Date() } });
+      await Customer.updateOne({ email }, { $set: { latitude, longitude, currentAddress, loginDate: new Date() } });
       return res.json({ message: "Login successful", user: { ...existingCustomer.toObject(), password: undefined, token }, status: true, });
     }
   } catch (err) {
@@ -451,10 +453,10 @@ export const saveUserWithExcel = async (req, res) => {
                     });
                     if (!existingRecord) {
                       const userLimit = await SubscriptionAdminPlan(document);
-                      if(userLimit){
+                      if (userLimit) {
                         const insertedDocument = await User.create(document);
                         insertedDocuments.push(insertedDocument);
-                      } else{
+                      } else {
                         planLimit.push(document.id);
                       }
                     } else {
@@ -467,10 +469,10 @@ export const saveUserWithExcel = async (req, res) => {
                       });
                       if (!existingRecord) {
                         const userLimit = await SubscriptionAdminPlan(document);
-                        if(userLimit){
+                        if (userLimit) {
                           const insertedDocument = await User.create(document);
                           insertedDocuments.push(insertedDocument);
-                        } else{
+                        } else {
                           planLimit.push(document.id);
                         }
                       } else {
@@ -508,7 +510,7 @@ export const saveUserWithExcel = async (req, res) => {
       message = `this user's shift id is required : ${shiftss.join(', ')}`;
     } else if (branchss.length > 0) {
       message = `this user's branch id is required : ${branchss.join(', ')}`;
-    } if(planLimit.length>0){
+    } if (planLimit.length > 0) {
       message = `You may have reached your plan's user limit or may not be subscribed to a plan : ${planLimit.join(', ')}`;
     }
     return res.status(200).json({ message, status: true });
