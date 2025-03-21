@@ -620,7 +620,6 @@ export const updateExcelFile = async (req, res) => {
                         document[category] = await existCustomerGroup._id.toString()
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
-                            console.log("data",data)
                             document['State'] = data.StateName;
                             document['City'] = data.District;
                         }
@@ -632,7 +631,7 @@ export const updateExcelFile = async (req, res) => {
                 }
             }
         }
-        let message = 'Data Inserted Successfully';
+        let message = 'Data updated Successfully';
         if (existingParts.length > 0) {
             message = `Some party already exist: ${existingParts.join(', ')}`;
         } else if (roles.length > 0) {
