@@ -496,6 +496,7 @@ export const saveUserWithExcel = async (req, res) => {
         dataNotExist.push(document.firstName)
       }
     }
+    console.log("role",roles)
     let message = 'Data Inserted Successfully';
     if (existingParts.length > 0) {
       message = `some user already exist: ${existingParts.join(', ')}`;
