@@ -620,6 +620,7 @@ export const updateExcelFile = async (req, res) => {
                         document[category] = await existCustomerGroup._id.toString()
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
+                            console.log("data",data)
                             document[State] = data.StateName;
                             document[City] = data.District;
                         }
