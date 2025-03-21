@@ -3,11 +3,13 @@ import { User } from "../model/user.model.js";
 
 export const SubscriptionAdminPlan = async (body)=>{
     try{
+        console.log("body",body)
        const existRole = await Role.findOne({roleName:"SuperAdmin",database:body.database});
+       console.log("existingRole",existRole)
        if(!existRole){
         console.log("Role Not Found");
        }
-       const existingSuperAdmin = await User.findOne({database:body.database,rolename:existRole._id.toString()})
+       const existingSuperAdmin = await User.findOne({database:body.database,rolename:existRole._id})
        if(!existingSuperAdmin){
         console.log("user not found");
        }
