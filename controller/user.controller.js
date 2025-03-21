@@ -427,12 +427,9 @@ export const saveUserWithExcel = async (req, res) => {
       }
       document[database] = req.params.database
       if (document.database) {
-        console.log("document.database",document.database,"document.id",document.id,"document.rolename",document.rolename)
         const role = await Role.findOne({ _id: document.rolename, database: document.database })
-        console.log("role",role)
         if (!role) {
           roles.push(document.id)
-          console.log("roles",document.id)
         } else {
           const shifts = await WorkingHours.findOne({ status: "Active", id: document.shift, database: document.database })
           if (!shifts) {
@@ -472,6 +469,7 @@ export const saveUserWithExcel = async (req, res) => {
                       });
                       if (!existingRecord) {
                         const userLimit = await SubscriptionAdminPlan(document);
+                        console.log(document)
                         if (userLimit) {
                           const insertedDocument = await User.create(document);
                           insertedDocuments.push(insertedDocument);
@@ -496,7 +494,6 @@ export const saveUserWithExcel = async (req, res) => {
         dataNotExist.push(document.firstName)
       }
     }
-    console.log("role",roles)
     let message = 'Data Inserted Successfully';
     if (existingParts.length > 0) {
       message = `some user already exist: ${existingParts.join(', ')}`;
