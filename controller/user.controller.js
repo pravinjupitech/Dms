@@ -426,7 +426,11 @@ export const saveUserWithExcel = async (req, res) => {
         // document[heading] = cellValue;
       }
       document[database] = req.params.database
+      document.map((item)=>{
+        console.log("item",item)
+      })
       if (document.database) {
+        console.log("document.database",document.database,"fkkajk",document.id)
         const role = await Role.findOne({ id: document.rolename, database: document.database })
         console.log("role",role)
         if (!role) {
