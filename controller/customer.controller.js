@@ -632,7 +632,7 @@ export const updateExcelFile = async (req, res) => {
                 }
             }
         }
-        let message = 'Data Inserted Successfully';
+        let message = 'Data updated Successfully';
         if (existingParts.length > 0) {
             message = `Some party already exist: ${existingParts.join(', ')}`;
         } else if (roles.length > 0) {
