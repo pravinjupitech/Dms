@@ -621,8 +621,8 @@ export const updateExcelFile = async (req, res) => {
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
                             console.log("data",data)
-                            document[State] = data.StateName;
-                            document[City] = data.District;
+                            document['State'] = data.StateName;
+                            document['City'] = data.District;
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };
