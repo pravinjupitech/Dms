@@ -428,8 +428,10 @@ export const saveUserWithExcel = async (req, res) => {
       document[database] = req.params.database
       if (document.database) {
         const role = await Role.findOne({ id: document.rolename, database: document.database })
+        console.log("role",role)
         if (!role) {
           roles.push(document.id)
+          console.log("roles",document.id)
         } else {
           const shifts = await WorkingHours.findOne({ status: "Active", id: document.shift, database: document.database })
           if (!shifts) {
