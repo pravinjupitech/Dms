@@ -485,7 +485,7 @@ export const saveExcelFile = async (req, res) => {
                         group.push(document.id)
                     } else {
                         document[category] = await existCustomerGroup._id.toString()
-                        const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Activee" });
+                        const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
                         if (existingId) {
                             existingIds.push(document.id)
                         } else {
