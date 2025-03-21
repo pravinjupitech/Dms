@@ -427,7 +427,7 @@ export const saveUserWithExcel = async (req, res) => {
       }
       document[database] = req.params.database
       if (document.database) {
-        const role = await Role.findOne({ _id: document.rolename, database: document.database })
+        const role = await Role.findOne({ id: document.rolename, database: document.database })
         if (!role) {
           roles.push(document.id)
         } else {
@@ -469,7 +469,6 @@ export const saveUserWithExcel = async (req, res) => {
                       });
                       if (!existingRecord) {
                         const userLimit = await SubscriptionAdminPlan(document);
-                       
                         if (userLimit) {
                           const insertedDocument = await User.create(document);
                           insertedDocuments.push(insertedDocument);
