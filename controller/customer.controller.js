@@ -637,6 +637,7 @@ export const updateExcelFile = async (req, res) => {
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };
+                        console.log("documnet ",document)
                         const insertedDocument = await Customer.findOneAndUpdate(filter, document, options);
                         insertedDocuments.push(insertedDocument);
                     }
