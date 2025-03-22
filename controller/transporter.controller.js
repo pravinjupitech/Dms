@@ -115,7 +115,7 @@ export const saveExcelFile = async (req, res) => {
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-                if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
+                if (heading === 'email' && cellValue&&typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
                     document[heading] = cellValue;
