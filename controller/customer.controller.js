@@ -581,17 +581,7 @@ export const updateExcelFile = async (req, res) => {
         const IdNotExisting = [];
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
-            console.log("dataRow",dataRow,"worksheet.actualRowCount",worksheet.actualRowCount)
             const document = {};
-            // for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
-            //     const heading = headings[columnIndex - 1];
-            //     const cellValue = dataRow.getCell(columnIndex).value;
-            //     if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
-            //         document[heading] = cellValue.text;
-            //     } else {
-            //         document[heading] = cellValue;
-            //     }
-            // }
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
