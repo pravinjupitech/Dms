@@ -582,15 +582,27 @@ export const updateExcelFile = async (req, res) => {
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
+            // for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
+            //     const heading = headings[columnIndex - 1];
+            //     const cellValue = dataRow.getCell(columnIndex).value;
+            //     if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
+            //         document[heading] = cellValue.text;
+            //     } else {
+            //         document[heading] = cellValue;
+            //     }
+            // }
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-                if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
+            
+                // Check if cellValue is neither null nor undefined and is an object
+                if (heading === 'email' && cellValue && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
                     document[heading] = cellValue;
                 }
             }
+            
             document[database] = req.params.database
             const role = await Role.findOne({ id: document.rolename, database: document.database })
             if (!role) {
