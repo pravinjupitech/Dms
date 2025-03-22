@@ -519,21 +519,120 @@ export const saveUserWithExcel = async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error', status: false });
   }
 }
+// export const updateUserWithExcel = async (req, res) => {
+//   try {
+//     let rolename = "rolename";
+//     let shift = "shift";
+//     let branch = "branch"
+//     let database = "database";
+//     const filePath = await req.file.path;
+//     const workbook = new ExcelJS.Workbook();
+//     await workbook.xlsx.readFile(filePath);
+//     const worksheet = workbook.getWorksheet(1);
+//     const headerRow = worksheet.getRow(1);
+//     const headings = [];
+//     headerRow.eachCell((cell) => {
+//       headings.push(cell.value);
+//     });
+//     const insertedDocuments = [];
+//     const existingParts = [];
+//     const roles = [];
+//     const shiftss = [];
+//     const branchss = [];
+//     const dataNotExist = [];
+//     const IdNotExisting = [];
+//     for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+//       const dataRow = worksheet.getRow(rowIndex);
+//       const document = {};
+//       for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
+//         const heading = headings[columnIndex - 1];
+//         const cellValue = dataRow.getCell(columnIndex).value;
+//         if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
+//           document[heading] = cellValue.text;
+//         } else {
+//           document[heading] = cellValue;
+//         }
+//         // document[heading] = cellValue;
+//       }
+//       document[database] = req.params.database
+//       // if (document.database) {
+//       const role = await Role.findOne({ id: document.rolename, database: document.database })
+//       console.log("role",role)
+//       console.log("document.rolename",document.rolename)
+//       console.log("document.database",document.database)
+//       if (!role) {
+//         roles.push(document.id)
+//       } else {
+//         const shifts = await WorkingHours.findOne({ id: document.shift, database: document.database, status: "Active" })
+//         if (!shifts) {
+//           shiftss.push(document.id)
+//         } else {
+//           const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
+//           if (!branchs) {
+//             branchss.push(document.id)
+//           } else {
+//             const existUser = await User.findOne({ id: document.id, database: document.database, status: "Active" })
+//             if (!existUser) {
+//               IdNotExisting.push(document.id)
+//             } else {
+//               document[rolename] = role._id.toString()
+//               document[shift] = shifts._id.toString()
+//               document[branch] = branchs._id.toString()
+//               const filter = { id: document.id, database: req.params.database };
+//               const options = { new: true, upsert: true };
+//               const insertedDocument = await User.findOneAndUpdate(filter, document, options);
+//               insertedDocuments.push(insertedDocument);
+//             }
+//           }
+//         }
+//       }
+//       // } else {
+//       //   dataNotExist.push(document.id)
+//       // }
+//       // const filter = { id: document.id, database: req.params.database };
+//       // const options = { new: true, upsert: true };
+//       // const insertedDocument = await User.findOneAndUpdate(filter, document, options);
+//       // insertedDocuments.push(insertedDocument);
+//     }
+//     let message = 'User Updated Successfully!';
+//     if (existingParts.length > 0) {
+//       message = `some user already exist: ${existingParts.join(', ')}`;
+//     } else if (roles.length > 0) {
+//       message = `this user's role id not correct : ${roles.join(', ')}`;
+//     } else if (shiftss.length > 0) {
+//       message = `this user's shift id is required : ${shiftss.join(', ')}`;
+//     } else if (branchss.length > 0) {
+//       message = `this user's branch id is required : ${branchss.join(', ')}`;
+//     } else if (dataNotExist.length > 0) {
+//       message = `this user's database not exist : ${dataNotExist.join(', ')}`;
+//     } else if (IdNotExisting.length > 0) {
+//       message = `this user's id not found : ${IdNotExisting.join(', ')}`;
+//     }
+//     return res.status(200).json({ message, status: true });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: 'Internal Server Error', status: false });
+//   }
+// }
 export const updateUserWithExcel = async (req, res) => {
   try {
-    let rolename = "rolename";
-    let shift = "shift";
-    let branch = "branch"
-    let database = "database";
+    const rolename = "rolename";
+    const shift = "shift";
+    const branch = "branch";
+    const database = "database";
     const filePath = await req.file.path;
+
+    // Read the Excel file
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.getWorksheet(1);
+
     const headerRow = worksheet.getRow(1);
     const headings = [];
     headerRow.eachCell((cell) => {
       headings.push(cell.value);
     });
+
     const insertedDocuments = [];
     const existingParts = [];
     const roles = [];
@@ -541,76 +640,78 @@ export const updateUserWithExcel = async (req, res) => {
     const branchss = [];
     const dataNotExist = [];
     const IdNotExisting = [];
+
+    // Loop through all rows of data
     for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
       const dataRow = worksheet.getRow(rowIndex);
       const document = {};
+
+      // Process each column in the row
       for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
         const heading = headings[columnIndex - 1];
         const cellValue = dataRow.getCell(columnIndex).value;
+
         if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
           document[heading] = cellValue.text;
         } else {
           document[heading] = cellValue;
         }
-        // document[heading] = cellValue;
       }
-      document[database] = req.params.database
-      // if (document.database) {
-      const role = await Role.findOne({ id: document.rolename, database: document.database })
+
+      document[database] = req.params.database;
+
+      // Perform the queries to validate role, shift, and branch
+      const [role, shifts, branchs, existUser] = await Promise.all([
+        Role.findOne({ id: document.rolename, database: document.database }),
+        WorkingHours.findOne({ id: document.shift, database: document.database, status: "Active" }),
+        UserBranch.findOne({ id: document.branch, database: document.database }),
+        User.findOne({ id: document.id, database: document.database, status: "Active" })
+      ]);
+
+      // Handle missing or invalid data
       if (!role) {
-        roles.push(document.id)
+        roles.push(document.id);
+      } else if (!shifts) {
+        shiftss.push(document.id);
+      } else if (!branchs) {
+        branchss.push(document.id);
+      } else if (!existUser) {
+        IdNotExisting.push(document.id);
       } else {
-        const shifts = await WorkingHours.findOne({ id: document.shift, database: document.database, status: "Active" })
-        if (!shifts) {
-          shiftss.push(document.id)
-        } else {
-          const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
-          if (!branchs) {
-            branchss.push(document.id)
-          } else {
-            const existUser = await User.findOne({ id: document.id, database: document.database, status: "Active" })
-            if (!existUser) {
-              IdNotExisting.push(document.id)
-            } else {
-              document[rolename] = role._id.toString()
-              document[shift] = shifts._id.toString()
-              document[branch] = branchs._id.toString()
-              const filter = { id: document.id, database: req.params.database };
-              const options = { new: true, upsert: true };
-              const insertedDocument = await User.findOneAndUpdate(filter, document, options);
-              insertedDocuments.push(insertedDocument);
-            }
-          }
-        }
+        // Assign the valid values to the document
+        document[rolename] = role._id.toString();
+        document[shift] = shifts._id.toString();
+        document[branch] = branchs._id.toString();
+
+        // Update or insert the document
+        const filter = { id: document.id, database: req.params.database };
+        const options = { new: true, upsert: true };
+        const insertedDocument = await User.findOneAndUpdate(filter, document, options);
+
+        insertedDocuments.push(insertedDocument);
       }
-      // } else {
-      //   dataNotExist.push(document.id)
-      // }
-      // const filter = { id: document.id, database: req.params.database };
-      // const options = { new: true, upsert: true };
-      // const insertedDocument = await User.findOneAndUpdate(filter, document, options);
-      // insertedDocuments.push(insertedDocument);
     }
+
+    // Prepare the response message based on validation results
     let message = 'User Updated Successfully!';
-    if (existingParts.length > 0) {
-      message = `some user already exist: ${existingParts.join(', ')}`;
-    } else if (roles.length > 0) {
-      message = `this user's role id not correct : ${roles.join(', ')}`;
+    if (roles.length > 0) {
+      message = `This user's role ID is incorrect: ${roles.join(', ')}`;
     } else if (shiftss.length > 0) {
-      message = `this user's shift id is required : ${shiftss.join(', ')}`;
+      message = `This user's shift ID is required: ${shiftss.join(', ')}`;
     } else if (branchss.length > 0) {
-      message = `this user's branch id is required : ${branchss.join(', ')}`;
-    } else if (dataNotExist.length > 0) {
-      message = `this user's database not exist : ${dataNotExist.join(', ')}`;
+      message = `This user's branch ID is required: ${branchss.join(', ')}`;
     } else if (IdNotExisting.length > 0) {
-      message = `this user's id not found : ${IdNotExisting.join(', ')}`;
+      message = `This user's ID was not found: ${IdNotExisting.join(', ')}`;
     }
+
     return res.status(200).json({ message, status: true });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Internal Server Error', status: false });
   }
-}
+};
+
 
 export const UserList = async (req, res, next) => {
   try {
