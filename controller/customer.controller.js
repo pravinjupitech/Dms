@@ -594,8 +594,6 @@ export const updateExcelFile = async (req, res) => {
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-            
-                // Check if cellValue is neither null nor undefined and is an object
                 if (heading === 'email' && cellValue && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
@@ -605,6 +603,8 @@ export const updateExcelFile = async (req, res) => {
             
             document[database] = req.params.database
             const role = await Role.findOne({ id: document.rolename, database: document.database })
+            console.log("role",role)
+            console.log("document.rolename",document.rolename,"database",document.database)
             if (!role) {
                 roles.push(document.ownerName)
             } else {
@@ -632,7 +632,6 @@ export const updateExcelFile = async (req, res) => {
                         document[category] = await existCustomerGroup._id.toString()
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
-                            console.log("data",data)
                             document['State'] = data.StateName;
                             document['City'] = data.District;
                         }
