@@ -581,6 +581,7 @@ export const updateExcelFile = async (req, res) => {
         const IdNotExisting = [];
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
+            console.log("dataRow",dataRow,"worksheet.actualRowCount",worksheet.actualRowCount)
             const document = {};
             // for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
             //     const heading = headings[columnIndex - 1];
@@ -603,7 +604,6 @@ export const updateExcelFile = async (req, res) => {
             
             document[database] = req.params.database
             const role = await Role.findOne({ id: document.rolename, database: document.database })
-            console.log("role",role)
             console.log("document.rolename",document.rolename,"database",document.database)
             if (!role) {
                 roles.push(document.ownerName)
@@ -637,7 +637,6 @@ export const updateExcelFile = async (req, res) => {
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };
-                        console.log("documnet ",document)
                         const insertedDocument = await Customer.findOneAndUpdate(filter, document, options);
                         insertedDocuments.push(insertedDocument);
                     }
