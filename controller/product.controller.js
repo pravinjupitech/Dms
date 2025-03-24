@@ -624,7 +624,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
       return console.log("warehouse not found")
     }
     console.log("Before user",user)
-    const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
+    const sourceProductItem = user.productItems.find((pItem) => pItem.productId === warehouse._id.toString());
     console.log("sourceProduct",sourceProductItem)
     if (sourceProductItem) {
       sourceProductItem.gstPercentage = warehouse.GSTRate
