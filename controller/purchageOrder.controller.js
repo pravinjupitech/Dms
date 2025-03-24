@@ -401,7 +401,9 @@ export const deletedPurchase = async (req, res, next) => {
             return res.status(404).json({ message: "PurchaseOrder Not Found", status: false })
         }
         for (const orderItem of purchase.orderItems) {
+            console.log("orderItem.productId",orderItem.productId)
             const product = await Product.findOne({ _id: orderItem.productId });
+            console.log("product",product)
             if (product) {
                 // const current = new Date(new Date())
                 // product.purchaseDate = current
@@ -435,8 +437,11 @@ export const deleteAddProductInWarehouse = async (warehouse, warehouseId) => {
         if (!user) {
             // return console.log("warehouse not found");
         }
-        // const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
-        const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId);
+        const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
+        console.log("sourceProductItem",sourceProductItem)
+
+        const sourceProductItems = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId);
+        console.log("sourceProductItems",sourceProductItems)
         if (sourceProductItem) {
             sourceProductItem.currentStock -= warehouse.transferQty;
             sourceProductItem.totalPrice -= warehouse.totalPrice;
