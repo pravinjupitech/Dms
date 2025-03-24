@@ -623,7 +623,9 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     if (!user) {
       return console.log("warehouse not found")
     }
+    console.log("Before user",user)
     const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
+    console.log("sourceProduct",sourceProductItem)
     if (sourceProductItem) {
       sourceProductItem.gstPercentage = warehouse.GSTRate
       sourceProductItem.currentStock += orderItem.qty
@@ -632,6 +634,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
       sourceProductItem.transferQty += orderItem.qty;
       user.markModified('productItems');
       await user.save();
+      console.log("after user",user)
     }
     const stock = await Stock.findOne({
       warehouseId: warehouseId.toString(),
@@ -741,6 +744,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     console.error(err);
   }
 };
+
 export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, date) => {
   try {
     const dates = new Date(date);
