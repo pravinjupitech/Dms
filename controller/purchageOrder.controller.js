@@ -435,7 +435,8 @@ export const deleteAddProductInWarehouse = async (warehouse, warehouseId) => {
         if (!user) {
             // return console.log("warehouse not found");
         }
-        const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
+        // const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
+        const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId);
         if (sourceProductItem) {
             sourceProductItem.currentStock -= warehouse.transferQty;
             sourceProductItem.totalPrice -= warehouse.totalPrice;
