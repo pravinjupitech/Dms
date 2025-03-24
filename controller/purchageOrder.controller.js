@@ -401,9 +401,7 @@ export const deletedPurchase = async (req, res, next) => {
             return res.status(404).json({ message: "PurchaseOrder Not Found", status: false })
         }
         for (const orderItem of purchase.orderItems) {
-            console.log("orderItem.productId",orderItem.productId)
             const product = await Product.findOne({ _id: orderItem.productId });
-            console.log("product",product)
             if (product) {
                 // const current = new Date(new Date())
                 // product.purchaseDate = current
@@ -415,7 +413,7 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
-                // await DeleteClosingPurchase(orderItem, product.warehouse)
+                await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
                 console.log("Product Id Not Found")
                 // return res.status(404).json(`Product with ID ${orderItem.productId} not found`);
@@ -423,6 +421,10 @@ export const deletedPurchase = async (req, res, next) => {
         }
         purchase.status = "Deactive"
         await purchase.save()
+        // const stock = await Stock.findOne({
+        //       warehouseId: warehouseId.toString(),
+        //       date: { $gte: startOfDay, $lte: endOfDay }
+        //     });
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         return res.status(200).json({ message: "delete successfull!", status: true })
     }
@@ -440,8 +442,6 @@ export const deleteAddProductInWarehouse = async (warehouse, warehouseId) => {
         const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
         console.log("sourceProductItem",sourceProductItem)
 
-        const sourceProductItems = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId);
-        console.log("sourceProductItems",sourceProductItems)
         if (sourceProductItem) {
             sourceProductItem.currentStock -= warehouse.transferQty;
             sourceProductItem.totalPrice -= warehouse.totalPrice;
