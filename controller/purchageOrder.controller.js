@@ -413,6 +413,7 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
+                // console.log("mainFunction",orderItem,purchase.date)
                 await DeleteStockPurchase(orderItem,purchase.date)
                 // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
@@ -437,7 +438,6 @@ export const deleteAddProductInWarehouse = async (warehouse, warehouseId) => {
             // return console.log("warehouse not found");
         }
         const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse.productId.toString());
-        console.log("sourceProductItem",sourceProductItem)
 
         if (sourceProductItem) {
             sourceProductItem.currentStock -= warehouse.transferQty;
@@ -633,14 +633,13 @@ export const Purch = async (req, res, next) => {
 export const DeleteStockPurchase = async (orderItem, date) => {
     try {
       const stock = await Stock.findOne({ date: date });
-      console.log("stock", stock, "date", date);
+      console.log("orderItem",orderItem);
       for (let productItem of stock.productItems) {
-        console.log("productItem", productItem);
-        if (productItem.productId.toString() === orderItem.productId) {
+          if (productItem.productId.toString() === orderItem.productId) {
+            console.log("productItem", productItem);
           productItem.currentStock -= orderItem.qty;
           productItem.totalPrice -= orderItem.totalPrice;
           productItem.pTotal -= orderItem.totalPrice;
-  
           await stock.save();
         }
       }
