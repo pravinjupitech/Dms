@@ -444,6 +444,7 @@ export const saveUserWithExcel = async (req, res) => {
               document[branch] = branchs._id.toString()
               if (document.id) {
                 const existingId = await User.findOne({ id: document.id, database: document.database, status: "Active" });
+                console.log("existingId",existingId)
                 if (existingId) {
                   existingIds.push(document.id)
                 } else {
