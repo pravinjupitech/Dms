@@ -413,7 +413,8 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
-                await DeleteClosingPurchase(orderItem, product.warehouse)
+                await DeleteStockPurchase(orderItem,purchase.date)
+                // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
                 console.log("Product Id Not Found")
                 // return res.status(404).json(`Product with ID ${orderItem.productId} not found`);
@@ -421,10 +422,6 @@ export const deletedPurchase = async (req, res, next) => {
         }
         purchase.status = "Deactive"
         await purchase.save()
-        // const stock = await Stock.findOne({
-        //       warehouseId: warehouseId.toString(),
-        //       date: { $gte: startOfDay, $lte: endOfDay }
-        //     });
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         return res.status(200).json({ message: "delete successfull!", status: true })
     }
@@ -610,3 +607,55 @@ export const Purch = async (req, res, next) => {
     }
 };
 
+// export const DeleteStockPurchase=async(orderItem,date)=>{
+// try {
+//     const stock=await Stock.findOne({date:date})
+//     console.log("stock",stock,"date",date)
+//     for(let productItem of stock.productItems){
+//         console.log("productItem",productItem)
+//         if(productItem.productId.toString()===orderItem.productId){
+//             productItem.currentStock-=orderItem.qty
+//             productItem.totalPrice-=orderItem.totalPrice
+//             productItem.pTotal-=orderItem.totalPrice
+//             await stock.save()
+//         }
+//     }
+//     console.log("after stock check",stock.productItems.currentStock)
+//     if(stock.productItems.currentStock===0){
+// stock.productItems=stock.productItems.filter((item)=>item.productId.toString()!==orderItem.productId)
+// await stock.save()
+//     }
+// } catch (error) {
+//     console.log(error)
+// }
+// }
+
+export const DeleteStockPurchase = async (orderItem, date) => {
+    try {
+      const stock = await Stock.findOne({ date: date });
+      console.log("stock", stock, "date", date);
+      for (let productItem of stock.productItems) {
+        console.log("productItem", productItem);
+        if (productItem.productId.toString() === orderItem.productId) {
+          productItem.currentStock -= orderItem.qty;
+          productItem.totalPrice -= orderItem.totalPrice;
+          productItem.pTotal -= orderItem.totalPrice;
+  
+          await stock.save();
+        }
+      }
+      for (let productItem of stock.productItems) {
+        if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
+          stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
+          await stock.save();
+          break;
+        }
+      }
+  
+      console.log("After stock update", stock.productItems);
+      
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  
