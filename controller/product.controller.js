@@ -637,6 +637,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
       warehouseId: warehouseId.toString(),
       date: { $gte: startOfDay, $lte: endOfDay }
     });
+    console.log("stock",stock)
     // const stock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
     if (!stock) {
       let productItems = {
