@@ -874,7 +874,7 @@ export const revertOutWordStock = async (orderItem, date) => {
 
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
-        //   productItem.currentStock -= orderItem.qty;
+          productItem.currentStock += orderItem.qty;
         //   productItem.pendingStock-=orderItem.qty;
           productItem.sQty-=orderItem.qty;
         //   productItem.totalPrice -= orderItem.totalPrice;
