@@ -394,6 +394,7 @@ export const viewStockClosingWarehouse = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
 export const viewOpeningStockWarehouse = async (req, res, next) => {
     try {
         let opening = [];

@@ -133,6 +133,9 @@ const CustomerSchema = new mongoose.Schema({
   City: {
     type: String
   },
+  District:{
+type:String
+  },
   shopSize: {
     type: String
   },
