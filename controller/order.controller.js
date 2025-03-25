@@ -267,7 +267,6 @@ export const deleteSalesOrder = async (req, res, next) => {
                         product.qty += orderItem.qty;
                         product.pendingQty -= orderItem.qty;
                         await deleteProductInStock(product, product.warehouse, orderItem, order.date)
-                        await revertOutWordStock(orderItem,order.date)
                         await warehouse.save();
                         await product.save()
                     }
@@ -726,6 +725,10 @@ export const deletedSalesOrder = async (req, res, next) => {
                     await warehouse.save();
                     await product.save()
                 }
+                console.log("orderItem",orderItem)
+                console.log("date",order.date)
+                await revertOutWordStock(orderItem,order.date)
+
             } else {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
@@ -866,11 +869,9 @@ export const CheckPartyPayment = async (req, res, next) => {
 }
 export const revertOutWordStock = async (orderItem, date) => {
     try {
-        console.log("orderItem",orderItem);
-        console.log("date",date)
       const stock = await Stock.findOne({ date: date });
       console.log("stock",stock);
-      
+
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
         //   productItem.currentStock -= orderItem.qty;
