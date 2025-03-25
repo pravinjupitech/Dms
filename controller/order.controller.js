@@ -870,8 +870,6 @@ export const CheckPartyPayment = async (req, res, next) => {
 export const revertOutWordStock = async (orderItem, date) => {
     try {
       const stock = await Stock.findOne({ date: date });
-      console.log("stock",stock);
-
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
           productItem.currentStock += orderItem.qty;
