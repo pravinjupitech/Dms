@@ -440,6 +440,7 @@ export const saveExcelFile = async (req, res) => {
         let remainingLimit = "remainingLimit";
         let City = "City";
         let State = "State";
+        let District="District";
         const filePath = await req.file.path;
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
@@ -491,8 +492,10 @@ export const saveExcelFile = async (req, res) => {
                         } else {
                             if (document.pincode) {
                                 const data = await GetCityByPincode(document.pincode)
-                                document[State] = data.StateName;
-                                document[City] = data.District;
+                                console.log("data",data)
+                                document[State] = data.state;
+                                document[City] = data.city;
+                                document[District]=data.district
                             }
                             if (document.gstNumber) {
                                 if (document.gstNumber.length !== 15) {
@@ -594,7 +597,6 @@ export const updateExcelFile = async (req, res) => {
             
             document[database] = req.params.database
             const role = await Role.findOne({ id: document.rolename, database: document.database })
-            console.log("document.rolename",document.rolename,"database",document.database)
             if (!role) {
                 roles.push(document.ownerName)
             } else {
@@ -622,8 +624,9 @@ export const updateExcelFile = async (req, res) => {
                         document[category] = await existCustomerGroup._id.toString()
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
-                            document['State'] = data.StateName;
-                            document['City'] = data.District;
+                            document['State'] = data.state;
+                            document['City'] = data.city;
+                            document['District'] = data.district;
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };
@@ -653,10 +656,11 @@ export const updateExcelFile = async (req, res) => {
 }
 export const GetCityByPincode = async (pincode) => {
     try {
-        const res = await axios.get("https://vikram-pratap-singh10.github.io/pincodeAPI/output.json")
+        const res = await axios.get("https://raw.githubusercontent.com/pravinjupitech/Pincode/main/pincodeData.json")
+        // const res = await axios.get("https://vikram-pratap-singh10.github.io/pincodeAPI/output.json")
         if (res.data) {
             for (let item of res.data) {
-                if (pincode == item.Pincode) {
+                if (pincode == item.pincode) {
                     return item
                 }
             }
