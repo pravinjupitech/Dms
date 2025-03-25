@@ -635,7 +635,7 @@ export const DeleteStockPurchase = async (orderItem, date) => {
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
           productItem.currentStock -= orderItem.qty;
-        //   productItem.pendingStock-=orderItem.qty;
+          productItem.pRate-=orderItem.price;
           productItem.pQty-=orderItem.qty;
           productItem.totalPrice -= orderItem.totalPrice;
           productItem.pTotal -= orderItem.totalPrice;
