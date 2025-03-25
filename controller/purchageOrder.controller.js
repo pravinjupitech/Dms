@@ -636,9 +636,9 @@ export const DeleteStockPurchase = async (orderItem, date) => {
           if (productItem.productId === orderItem.productId.toString()) {
           productItem.currentStock -= orderItem.qty;
           productItem.pRate-=orderItem.price;
-          productItem.price-=orderItem.price;
+        //   productItem.price-=orderItem.price;
           productItem.pQty-=orderItem.qty;
-          productItem.totalPrice -= orderItem.totalPrice;
+        //   productItem.totalPrice -= orderItem.totalPrice;
           productItem.pTotal -= orderItem.totalPrice;
           await stock.save();
         }
