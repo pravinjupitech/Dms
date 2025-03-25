@@ -267,6 +267,7 @@ export const deleteSalesOrder = async (req, res, next) => {
                         product.qty += orderItem.qty;
                         product.pendingQty -= orderItem.qty;
                         await deleteProductInStock(product, product.warehouse, orderItem, order.date)
+                        await revertOutWordStock(orderItem,order.date)
                         await warehouse.save();
                         await product.save()
                     }
@@ -863,3 +864,27 @@ export const CheckPartyPayment = async (req, res, next) => {
         console.log(err)
     }
 }
+export const revertOutWordStock = async (orderItem, date) => {
+    try {
+      const stock = await Stock.findOne({ date: date });
+      for (let productItem of stock.productItems) {
+          if (productItem.productId === orderItem.productId.toString()) {
+        //   productItem.currentStock -= orderItem.qty;
+        //   productItem.pendingStock-=orderItem.qty;
+          productItem.sQty-=orderItem.qty;
+        //   productItem.totalPrice -= orderItem.totalPrice;
+          productItem.sTotal -= orderItem.totalPrice;
+          await stock.save();
+        }
+      }
+    //   for (let productItem of stock.productItems) {
+    //     if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
+    //       stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
+    //       await stock.save();
+    //       break;
+    //     }
+    //   }      
+    } catch (error) {
+      console.log(error);
+    }
+  };
