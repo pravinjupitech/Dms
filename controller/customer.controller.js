@@ -492,7 +492,6 @@ export const saveExcelFile = async (req, res) => {
                         } else {
                             if (document.pincode) {
                                 const data = await GetCityByPincode(document.pincode)
-                                console.log("data",data)
                                 document[State] = data.state;
                                 document[City] = data.city;
                                 document[District]=data.district
