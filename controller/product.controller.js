@@ -558,6 +558,7 @@ export const addProductInWarehouse2 = async (warehouse, warehouseId, orderItem) 
     }
     const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
     if (sourceProductItem) {
+      console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal/orderItem.pQty))
       sourceProductItem.pQty += (orderItem.qty);
       sourceProductItem.pRate = (orderItem.pTotal/orderItem.pQty)||0;
       sourceProductItem.pBAmount += (orderItem.totalPrice)
@@ -689,6 +690,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
           const existingStock = item.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (existingStock) {
             if (item.date.toDateString() === dates.toDateString()) {
+              console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal/orderItem.pQty))
               existingStock.pQty += (orderItem.qty);
               existingStock.pRate =(orderItem.pTotal/orderItem.pQty)||0;
               existingStock.pBAmount += (orderItem.totalPrice)
@@ -714,6 +716,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         if (existProductInStock) {
           const existingProduct = existProductInStock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (!existingProduct) {
+            console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal/orderItem.pQty))
             let productItems = {
               productId: warehouse._id.toString(),
               gstPercentage: warehouse.GSTRate,
