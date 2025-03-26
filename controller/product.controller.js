@@ -693,7 +693,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
             console.log("existingStock",existingStock)
             console.log("orderItem",orderItem)
             if (item.date.toDateString() === dates.toDateString()) {
-              existingStock.pQty += (orderItem.qty);
+              existingStock.pQty += ((orderItem.qty * orderItem.price));
               existingStock.pBAmount += (orderItem.totalPrice)
               existingStock.pTaxRate = warehouse.GSTRate;
               existingStock.pTotal += (orderItem.totalPrice)
@@ -701,7 +701,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.currentStock += orderItem.qty
               existingStock.price = orderItem.price;
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
-              existingStock.pRate =(orderItem.totalPrice / orderItem.qty) || 0;
+              existingStock.pRate =((orderItem.qty * orderItem.price) /(existingStock.pQty+orderItem.qty)) || 0;
               item.markModified('productItems');
               await item.save();
               console.log("calling a",existingStock.pRate)
