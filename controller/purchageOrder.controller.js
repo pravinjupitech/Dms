@@ -416,11 +416,23 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
+                console.log("orderitem",orderItem)
+                const prev=await PurchaseOrder.findOne({
+                    "orderItems.productId": orderItem.productId,
+                     status: "completed"
+                })
+                console.log("prev",prev)
                 const previousPurchaseOrder = await PurchaseOrder.findOne({
                     "orderItems.productId": orderItem.productId,
-                    status: "Active"
+                    status: "completed"
                 }).sort({ createdAt: -1 }); 
                 console.log("previosPurchase",previousPurchaseOrder)
+                const previousPurchaseOrderss = await PurchaseOrder.findOne({
+                    "orderItems.productId": orderItem.productId,
+                    status: "completed",
+                    createdAt: { $lt: purchase.createdAt }  // Only consider orders created before the current order's created_at
+                }).sort({ createdAt: -1 });
+                console.log("previousPurchaseOrderss",previousPurchaseOrderss)
                 await DeleteStockPurchase(orderItem,purchase.date)
                 // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
