@@ -416,24 +416,12 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
-                console.log("orderitem",orderItem)
-                const prev=await PurchaseOrder.findOne({
-                    "orderItems.productId": orderItem.productId,
-                     status: "completed"
-                })
-                console.log("prev",prev)
-                const previousPurchaseOrder = await PurchaseOrder.findOne({
-                    "orderItems.productId": orderItem.productId,
-                    status: "completed"
-                }).sort({ createdAt: -1 }); 
-                console.log("previosPurchase",previousPurchaseOrder)
                 const previousPurchaseOrderss = await PurchaseOrder.findOne({
                     "orderItems.productId": orderItem.productId,
                     status: "completed",
-                    createdAt: { $lt: purchase.createdAt }  // Only consider orders created before the current order's created_at
+                    createdAt: { $lt: purchase.createdAt }  
                 }).sort({ createdAt: -1 });
-                console.log("previousPurchaseOrderss",previousPurchaseOrderss)
-                await DeleteStockPurchase(orderItem,purchase.date)
+                await DeleteStockPurchase(orderItem,purchase.date,previousPurchaseOrderss.orderItems)
                 // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
                 console.log("Product Id Not Found")
@@ -649,17 +637,18 @@ export const Purch = async (req, res, next) => {
 // }
 // }
 
-export const DeleteStockPurchase = async (orderItem, date) => {
+export const DeleteStockPurchase = async (orderItem, date,orderData) => {
     try {     
+        console.log("orderdata",orderData)
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
             //   console.log("productItem", productItem)
           productItem.currentStock -= orderItem.qty;
-          productItem.pRate-=orderItem.price;
-        //   productItem.price-=orderItem.price;
+          productItem.pRate-=orderData.pRate;
+          productItem.price-=orderData.price;
           productItem.pQty-=orderItem.qty;
-        //   productItem.totalPrice -= orderItem.totalPrice;
+          productItem.totalPrice -= orderItem.totalPrice;
           productItem.pTotal -= orderItem.totalPrice;
           await stock.save();
         }
