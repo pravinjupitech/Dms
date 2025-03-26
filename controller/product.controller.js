@@ -18,12 +18,10 @@ export const SaveProduct = async (req, res) => {
       return res.status(400).json({ message: "product id required", status: false })
     }
     const group = await CustomerGroup.find({ database: req.body.database, status: "Active" })
-    console.log("group",group)
     if (group.length > 0) {
       const maxDiscount = group.reduce((max, group) => {
         return group.discount > max.discount ? group : max;
       });
-      console.log("maxDiscount",maxDiscount)
       groupDiscount = maxDiscount.discount;
     }
     if (req.files) {
