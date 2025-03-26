@@ -631,8 +631,10 @@ export const Purch = async (req, res, next) => {
 
 export const DeleteStockPurchase = async (orderItem, date) => {
     try {
+        console.log("orderItem",orderItem)
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
+          console.log("productItem", productItem)
           if (productItem.productId === orderItem.productId.toString()) {
           productItem.currentStock -= orderItem.qty;
           productItem.pRate-=orderItem.price;
