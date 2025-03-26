@@ -635,7 +635,7 @@ export const Purch = async (req, res, next) => {
 export const DeleteStockPurchase = async (orderItem, date) => {
     try {
         console.log("orderItem",orderItem)
-        const prevPurchase = await PurchaseOrder.findOne({ date: { $lt: purchase.date }}).sort({ date: -1 });
+        const prevPurchase = await PurchaseOrder.findOne({ date: { $lt:date }}).sort({ date: -1 });
         console.log("prevPurchase",prevPurchase)
 
         const prevPurchases = await PurchaseOrder.findOne({ date:date })
@@ -643,7 +643,7 @@ console.log("prevPuchase",prevPurchases)
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
-              console.log("productItem", productItem)
+            //   console.log("productItem", productItem)
           productItem.currentStock -= orderItem.qty;
           productItem.pRate-=orderItem.price;
         //   productItem.price-=orderItem.price;
