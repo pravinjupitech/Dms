@@ -416,6 +416,12 @@ export const deletedPurchase = async (req, res, next) => {
                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
+                const previousPurchaseOrder = await PurchaseOrder.findOne({
+                    "orderItems.productId": orderItem.productId,
+                    status: "Active",
+                    createdAt: { $lt: purchase.createdAt } 
+                }).sort({ createdAt: -1 }); 
+                console.log("previosPurchase",previousPurchaseOrder)
                 await DeleteStockPurchase(orderItem,purchase.date)
                 // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
@@ -633,9 +639,7 @@ export const Purch = async (req, res, next) => {
 // }
 
 export const DeleteStockPurchase = async (orderItem, date) => {
-    try {
-        const prevPurchases = await PurchaseOrder.find({ date:date })
-console.log("prevPuchase",prevPurchases)
+    try {     
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
