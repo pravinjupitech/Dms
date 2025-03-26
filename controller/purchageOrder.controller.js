@@ -66,8 +66,9 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                             });
                             groupDiscount = maxDiscount.discount;
                         }
+                        console.log("orderItem",orderItem)
                         if (product.Purchase_Rate > orderItem.landedCost) {
-                            product.Purchase_Rate = product.Purchase_Rate;
+                            product.Purchase_Rate = product.Purchase_Rate; 
                         } else {
                             product.Purchase_Rate = orderItem.landedCost;
                         }
