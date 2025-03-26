@@ -733,6 +733,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               pRate:(orderItem.pTotal / orderItem.pQty) || 0,
               date: date
             }
+            console.log("orderItem",orderItem)
             console.log("(orderItem.pTotal/orderItem.pQty)+3",(orderItem.pTotal/orderItem.pQty),orderItem.pTotal,orderItem.pRate)
             existProductInStock.productItems.push(productItems);
             await existProductInStock.save();
