@@ -697,13 +697,14 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.pBAmount += (orderItem.totalPrice)
               existingStock.pTaxRate = warehouse.GSTRate;
               existingStock.pTotal += (orderItem.totalPrice)
-              existingStock.pRate =(orderItem.totalPrice / orderItem.qty) || 0;
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
               existingStock.price = orderItem.price;
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
+              existingStock.pRate =(orderItem.totalPrice / orderItem.qty) || 0;
               item.markModified('productItems');
               await item.save();
+              console.log("calling a",existingStock.pRate)
               console.log("calling a",item)
             } else {
               existingStock.gstPercentage = warehouse.GSTRate
