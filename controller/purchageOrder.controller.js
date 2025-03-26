@@ -66,7 +66,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                             });
                             groupDiscount = maxDiscount.discount;
                         }
-                        console.log("date1.toDateString() === date2.toDateString() orderItem",orderItem)
+                      
                         if (product.Purchase_Rate > orderItem.landedCost) {
                             product.Purchase_Rate = product.Purchase_Rate; 
                         } else {
@@ -77,6 +77,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                         if (!product.ProfitPercentage || product.ProfitPercentage === 0) {
                             product.SalesRate = product.Purchase_Rate * 1.03;
                             product.Product_MRP = (product.SalesRate) * (1 + product.GSTRate / 100) * (1 + groupDiscount / 100);
+                            console.log("")
                         } else {
                             product.SalesRate = (product.Purchase_Rate * (100 + product.ProfitPercentage) / 100);
                             product.Product_MRP = (product.SalesRate) * (1 + product.GSTRate / 100) * (1 + groupDiscount / 100);
@@ -89,6 +90,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                         product.partyId.push(obj);
                         product.purchaseStatus = true
                         product.qty += orderItem.qty;
+
                         await addProductInWarehouse3(product, product.warehouse, orderItem, req.body.date)
                         await product.save();
                     } else {
@@ -105,7 +107,6 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 return order ? res.status(200).json({ orderDetail: order, status: true }) : res.status(400).json({ message: "Something Went Wrong", status: false })
             } else if (date1 > date2) {
                 for (const orderItem of orderItems) {
-                    console.log("date1 > date2 orderItem",orderItem)
                     const product = await Product.findOne({ _id: orderItem.productId });
                     if (product) {
                         const group = await CustomerGroup.find({ database: product.database, status: "Active" })
@@ -634,6 +635,11 @@ export const Purch = async (req, res, next) => {
 export const DeleteStockPurchase = async (orderItem, date) => {
     try {
         console.log("orderItem",orderItem)
+        const prevPurchase = await PurchaseOrder.findOne({ date: { $lt: purchase.date }}).sort({ date: -1 });
+        console.log("prevPurchase",prevPurchase)
+
+        const prevPurchases = await PurchaseOrder.findOne({ date:date })
+console.log("prevPuchase",prevPurchases)
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
