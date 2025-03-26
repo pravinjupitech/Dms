@@ -559,7 +559,7 @@ export const addProductInWarehouse2 = async (warehouse, warehouseId, orderItem) 
     const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
     if (sourceProductItem) {
       sourceProductItem.pQty += (orderItem.qty);
-      sourceProductItem.pRate = (orderItem.price);
+      sourceProductItem.pRate = (orderItem.pTotal*orderItem.pQty);
       sourceProductItem.pBAmount += (orderItem.totalPrice)
       sourceProductItem.pTaxRate = warehouse.GSTRate;
       sourceProductItem.pTotal += (orderItem.totalPrice)
@@ -602,7 +602,7 @@ export const addProductInWarehouse4 = async (warehouse, warehouseId, orderItem, 
     const existingStock = stock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
     if (existingStock) {
       existingStock.pQty += (orderItem.qty);
-      existingStock.pRate = (orderItem.price);
+      existingStock.pRate = (orderItem.pTotal*orderItem.pQty);
       existingStock.pTaxRate = warehouse.GSTRate;
       existingStock.pTotal += (orderItem.totalPrice)
       stock.markModified('productItems');
@@ -690,7 +690,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
           if (existingStock) {
             if (item.date.toDateString() === dates.toDateString()) {
               existingStock.pQty += (orderItem.qty);
-              existingStock.pRate = (orderItem.price);
+              existingStock.pRate =  (orderItem.pTotal*orderItem.pQty);
               existingStock.pBAmount += (orderItem.totalPrice)
               existingStock.pTaxRate = warehouse.GSTRate;
               existingStock.pTotal += (orderItem.totalPrice)
@@ -725,7 +725,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               oTaxRate: warehouse.GSTRate,
               oTotal: (warehouse.qty * warehouse.Purchase_Rate),
               pQty: orderItem.qty,
-              pRate: orderItem.price,
+              pRate:(orderItem.pTotal*orderItem.pQty),
               pBAmount: orderItem.totalPrice,
               pTaxRate: warehouse.GSTRate,
               pTotal: orderItem.totalPrice,
