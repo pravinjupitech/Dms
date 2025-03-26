@@ -66,7 +66,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                             });
                             groupDiscount = maxDiscount.discount;
                         }
-                        console.log("orderItem",orderItem)
+                        console.log("date1.toDateString() === date2.toDateString() orderItem",orderItem)
                         if (product.Purchase_Rate > orderItem.landedCost) {
                             product.Purchase_Rate = product.Purchase_Rate; 
                         } else {
@@ -105,6 +105,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 return order ? res.status(200).json({ orderDetail: order, status: true }) : res.status(400).json({ message: "Something Went Wrong", status: false })
             } else if (date1 > date2) {
                 for (const orderItem of orderItems) {
+                    console.log("date1 > date2 orderItem",orderItem)
                     const product = await Product.findOne({ _id: orderItem.productId });
                     if (product) {
                         const group = await CustomerGroup.find({ database: product.database, status: "Active" })
