@@ -639,14 +639,14 @@ export const Purch = async (req, res, next) => {
 
 export const DeleteStockPurchase = async (orderItem, date,orderData) => {
     try {     
-        console.log("orderdata",orderData,orderData.price)
+        console.log("orderdata",orderData,orderData[0].price)
       const stock = await Stock.findOne({ date: date });
       for (let productItem of stock.productItems) {
           if (productItem.productId === orderItem.productId.toString()) {
               console.log("productItem", productItem)
           productItem.currentStock -= orderItem.qty;
-          productItem.pRate-=orderData.price;
-          productItem.price-=orderData.price;
+          productItem.pRate-=orderData[0].price;
+          productItem.price-=orderData[0].price;
           productItem.pQty-=orderItem.qty;
           productItem.totalPrice -= orderItem.totalPrice;
           productItem.pTotal -= orderItem.totalPrice;
