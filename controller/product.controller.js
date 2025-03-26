@@ -571,7 +571,7 @@ export const addProductInWarehouse2 = async (warehouse, warehouseId, orderItem) 
       user.markModified('productItems');
       await user.save();
     }
-    console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal / orderItem.pQty),orderItem.pTotal,orderItem.pRate)
+    console.log("(orderItem.pTotal/orderItem.pQty)+1",(orderItem.pTotal / orderItem.pQty),orderItem.pTotal,orderItem.pRate)
   } catch (error) {
     console.error(error);
   }
@@ -701,7 +701,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
               item.markModified('productItems');
               await item.save();
-              console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal/orderItem.pQty))
+              console.log("(orderItem.pTotal/orderItem.pQty)+2",(orderItem.pTotal/orderItem.pQty),orderItem.pTotal,orderItem.pRate)
             } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
@@ -733,7 +733,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               pRate:(orderItem.pTotal / orderItem.pQty) || 0,
               date: date
             }
-            console.log("(orderItem.pTotal/orderItem.pQty)",(orderItem.pTotal/orderItem.pQty))
+            console.log("(orderItem.pTotal/orderItem.pQty)+3",(orderItem.pTotal/orderItem.pQty),orderItem.pTotal,orderItem.pRate)
             existProductInStock.productItems.push(productItems);
             await existProductInStock.save();
           }
