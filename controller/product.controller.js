@@ -689,6 +689,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         for (let item of stock) {
           const existingStock = item.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (existingStock) {
+            console.log("item",item)
             console.log("existingStock",existingStock)
             console.log("orderItem",orderItem)
             if (item.date.toDateString() === dates.toDateString()) {
