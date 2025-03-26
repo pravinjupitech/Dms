@@ -689,6 +689,8 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         for (let item of stock) {
           const existingStock = item.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (existingStock) {
+            console.log("existingStock",existingStock)
+            console.log("orderItem",orderItem)
             if (item.date.toDateString() === dates.toDateString()) {
               existingStock.pQty += (orderItem.qty);
               existingStock.pBAmount += (orderItem.totalPrice)
@@ -701,6 +703,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
               item.markModified('productItems');
               await item.save();
+              console.log("calling a",pRate)
             } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
@@ -715,6 +718,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         if (existProductInStock) {
           const existingProduct = existProductInStock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (!existingProduct) {
+            console.log("existingProduct2",orderItem)
             let productItems = {
               productId: warehouse._id.toString(),
               gstPercentage: warehouse.GSTRate,
