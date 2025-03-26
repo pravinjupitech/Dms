@@ -418,8 +418,7 @@ export const deletedPurchase = async (req, res, next) => {
                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
                 const previousPurchaseOrder = await PurchaseOrder.findOne({
                     "orderItems.productId": orderItem.productId,
-                    status: "Active",
-                    createdAt: { $lt: purchase.createdAt } 
+                    status: "Active"
                 }).sort({ createdAt: -1 }); 
                 console.log("previosPurchase",previousPurchaseOrder)
                 await DeleteStockPurchase(orderItem,purchase.date)
