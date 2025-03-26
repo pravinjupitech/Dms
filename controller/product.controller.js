@@ -730,7 +730,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               pBAmount: orderItem.totalPrice,
               pTaxRate: warehouse.GSTRate,
               pTotal: orderItem.totalPrice,
-              pRate:(orderItem.pTotal / orderItem.pQty) || 0,
+              pRate:(orderItem.totalPrice / orderItem.qty) || 0,
               date: date
             }
             console.log("orderItem",orderItem)
