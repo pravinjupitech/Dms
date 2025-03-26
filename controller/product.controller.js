@@ -703,7 +703,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
               item.markModified('productItems');
               await item.save();
-              console.log("calling a",pRate)
+              console.log("calling a",existingStock.pRate)
             } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
