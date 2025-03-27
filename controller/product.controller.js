@@ -615,6 +615,7 @@ export const addProductInWarehouse4 = async (warehouse, warehouseId, orderItem, 
 };
 export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, date) => {
   try {
+
     const dates = new Date(date);
     const startOfDay = new Date(dates);
     const endOfDay = new Date(dates);
@@ -657,6 +658,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         pRate:(orderItem.pTotal / orderItem.pQty) || 0,
         date: date
       }
+      console.log("pRate i wanting",orderItem.pTotal,orderItem.pQty,(orderItem.pTotal / orderItem.pQty))
       let warehouses = {
         database: warehouse.database,
         warehouseId: warehouseId,
@@ -701,6 +703,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.pRate =(existingStock.totalPrice/(existingStock.pQty)) || 0;
               item.markModified('productItems');
               await item.save();        
+              
              } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
@@ -715,7 +718,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         if (existProductInStock) {
           const existingProduct = existProductInStock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (!existingProduct) {
-            // console.log("existingProduct2",orderItem)
+            console.log("existingProduct2",orderItem)
             let productItems = {
               productId: warehouse._id.toString(),
               gstPercentage: warehouse.GSTRate,
@@ -733,6 +736,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               pRate:(orderItem.totalPrice / orderItem.qty) || 0,
               date: date
             }
+            console.log("pRate i wanting",orderItem.pTotal,orderItem.pQty,(orderItem.pTotal / orderItem.pQty))
             existProductInStock.productItems.push(productItems);
             await existProductInStock.save();
           }
