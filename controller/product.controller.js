@@ -733,10 +733,10 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               pBAmount: orderItem.totalPrice,
               pTaxRate: warehouse.GSTRate,
               pTotal: orderItem.totalPrice,
-              pRate:((orderItem.price*orderItem.qty) / orderItem.qty) || 0,
+              pRate:(orderItem.totalPrice / orderItem.qty) || 0,
+              // pRate:((orderItem.price*orderItem.qty) / orderItem.qty) || 0,
               date: date
             }
-            console.log("pRate i wanting 2",(orderItem.price*orderItem.qty),orderItem.qty,((orderItem.price*orderItem.qty) / orderItem.qty))
             existProductInStock.productItems.push(productItems);
             await existProductInStock.save();
           }
