@@ -640,7 +640,6 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     });
     // const stock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
     if (!stock) {
-      console.log("runing first",orderItem)
       let productItems = {
         productId: warehouse._id.toString(),
         gstPercentage: warehouse.GSTRate,
@@ -658,7 +657,6 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         pRate:(orderItem.pTotal / orderItem.pQty) || 0,
         date: date
       }
-      console.log("productItems",productItems)
       let warehouses = {
         database: warehouse.database,
         warehouseId: warehouseId,
@@ -707,7 +705,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               item.markModified('productItems');
               await item.save();
               console.log("calling a",item)
-              console.log("existingStock.pQty",existingStock.pQty,(orderItem.qty),"=",(orderItem.qty)+existingStock.pQty)           
+              console.log("existingStock.pQty",existingStock.pQty,(orderItem.qty),orderItem.qty,orderItem.price,"=",(orderItem.qty * orderItem.price), "=",((orderItem.qty * orderItem.price)/((orderItem.qty)+existingStock.pQty)))           
              } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
