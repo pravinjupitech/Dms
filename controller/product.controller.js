@@ -640,6 +640,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     });
     // const stock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
     if (!stock) {
+      console.log("runing first",orderItem)
       let productItems = {
         productId: warehouse._id.toString(),
         gstPercentage: warehouse.GSTRate,
@@ -657,6 +658,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
         pRate:(orderItem.pTotal / orderItem.pQty) || 0,
         date: date
       }
+      console.log("productItems",productItems)
       let warehouses = {
         database: warehouse.database,
         warehouseId: warehouseId,
