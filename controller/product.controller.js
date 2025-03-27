@@ -701,11 +701,11 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
               existingStock.currentStock += orderItem.qty
               existingStock.price = orderItem.price;
               existingStock.totalPrice += (orderItem.qty * orderItem.price);
-              existingStock.pRate =(orderItem.totalPrice / orderItem.qty) || 0;
+              existingStock.pRate =(existingStock.totalPrice/(existingStock.pQty)) || 0;
               item.markModified('productItems');
               await item.save();
-              console.log("calling a",existingStock.totalPrice,((orderItem.qty)+existingStock.pQty),(existingStock.totalPrice/((orderItem.qty)+existingStock.pQty)))
-              console.log("existingStock.pQty",existingStock.totalPrice ,"=",(orderItem.qty * orderItem.price), "=",(((orderItem.qty * orderItem.price)+existingStock.totalPrice )/((orderItem.qty)+existingStock.pQty)))           
+              console.log("calling a",existingStock.totalPrice,existingStock.pQty),(existingStock.totalPrice/(existingStock.pQty))
+              console.log("existingStock.pQty",existingStock.pQty,(orderItem.qty),existingStock.totalPrice ,"=",(orderItem.qty * orderItem.price), "=",(((orderItem.qty * orderItem.price)+existingStock.totalPrice )/((orderItem.qty)+existingStock.pQty)))           
              } else {
               existingStock.gstPercentage = warehouse.GSTRate
               existingStock.currentStock += orderItem.qty
