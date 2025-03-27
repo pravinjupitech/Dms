@@ -1068,6 +1068,7 @@ export const addProductInWarehouse8 = async (warehouse, warehouseId, orderItem, 
       const existingStock = stock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
       if (existingStock) {
         existingStock.pendingStock -= (orderItem.qty);
+        existingStock.pendingStockTotal-=(orderItem.qty*warehouse.Purchase_Rate)
         stock.markModified('productItems');
         await stock.save();
       }
@@ -1135,6 +1136,7 @@ export const addProductInWarehouse9 = async (warehouse, warehouseId, orderItem, 
             const existingStock1 = stock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
             if(existingStock1){
               existingStock.pendingStock -= orderItem.qty;
+              existingStock.pendingStockTotal-=(orderItem.qty*warehouse.Purchase_Rate)
               item.markModified('productItems');
               await item.save();
             }
@@ -1173,6 +1175,7 @@ export const addProductInWarehouse9 = async (warehouse, warehouseId, orderItem, 
             const existingStock1 = stock1.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
             if(existingStock1){
               existingStock.pendingStock -= orderItem.qty;
+              existingStock.pendingStockTotal-=(orderItem.qty*warehouse.Purchase_Rate)
               item.markModified('productItems');
               await item.save();
             }
