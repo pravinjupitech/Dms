@@ -481,7 +481,6 @@ export const saveExcelFile = async (req, res) => {
                     roles.push(document.ownerName)
                 } else {
                     document[rolename] = role._id.toString()
-                    console.log("document.category",document.category,document.database)
                     const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
                     if (!existCustomerGroup) {
                         group.push(document.id)
@@ -548,9 +547,11 @@ export const saveExcelFile = async (req, res) => {
             message = `this customer id's already exist: ${existingIds.join(', ')}`;
         } else if (dataNotExist.length > 0) {
             message = `this customer database not exist: ${dataNotExist.join(', ')}`;
-        } else if (group.length > 0) {
-            message = `this customer category id not exist: ${group.join(', ')}`;
-        } else if (roles.length > 0) {
+        } 
+        // else if (group.length > 0) {
+        //     message = `this customer category id not exist: ${group.join(', ')}`;
+        // } 
+        else if (roles.length > 0) {
             message = `this customer role id not exist: ${roles.join(', ')}`;
         } else if (IdNotExisting.length > 0) {
             message = `this customer id is required : ${IdNotExisting.join(', ')}`;
