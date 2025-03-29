@@ -489,6 +489,7 @@ export const saveExcelFile = async (req, res) => {
                         document.id = document.gstNumber.slice(2, -3);
                         console.log("id",document.id)
                         const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
+                        
                         console.log("existingId",existingId,document.id)
                         if (existingId) {
                             existingIds.push(document.id)
