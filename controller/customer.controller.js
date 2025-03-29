@@ -477,7 +477,12 @@ export const saveExcelFile = async (req, res) => {
                     document[remainingLimit] = document.limit
                 }
                 const role = await Role.findOne({ id: document.rolename, database: document.database })
-                document[id] = document.gstNumber.slice(2, -3);
+                if(document.gstNumber){
+ document[id] = document.gstNumber.slice(2, -3);
+                }else{
+                    document[id]=document.aadharNo 
+                }
+
                 if (!role) {
                     roles.push(document.ownerName)
                 } else {
