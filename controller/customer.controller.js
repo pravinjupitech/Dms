@@ -477,6 +477,8 @@ export const saveExcelFile = async (req, res) => {
                     document[remainingLimit] = document.limit
                 }
                 const role = await Role.findOne({ id: document.rolename, database: document.database })
+                document[id] = document.gstNumber.slice(2, -3);
+                console.log("id",document.id)
                 if (!role) {
                     roles.push(document.ownerName)
                 } else {
@@ -486,10 +488,8 @@ export const saveExcelFile = async (req, res) => {
                     //     group.push(document.id)
                     // } else {
                         // document[category] = await existCustomerGroup._id.toString()
-                        document.id = document.gstNumber.slice(2, -3);
-                        console.log("id",document.id)
                         const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
-                        
+
                         console.log("existingId",existingId,document.id)
                         if (existingId) {
                             existingIds.push(document.id)
