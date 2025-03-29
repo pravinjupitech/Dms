@@ -481,6 +481,7 @@ export const saveExcelFile = async (req, res) => {
                     roles.push(document.ownerName)
                 } else {
                     document[rolename] = role._id.toString()
+                    console.log("document.category",document.category,document.database)
                     const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
                     if (!existCustomerGroup) {
                         group.push(document.id)
