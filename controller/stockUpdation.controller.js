@@ -48,16 +48,31 @@ export const stockTransferToWarehouse = async (req, res) => {
                 _id: warehouseFromId,
                 'productItems.productId': item.productId,
             });
-            if (sourceProduct) {
+            const sourceRawProduct=await Warehouse.findOne({
+                _id: warehouseFromId,
+                'productItems.rawProductId':item.productId
+            })
+            if (sourceProduct||sourceRawProduct) {
                 const sourceProductItem = sourceProduct.productItems.find(
                     (pItem) => pItem.productId.toString() === item.productId.toString());
+                const sourceRawProductItem = sourceProduct.productItems.find(
+                    (pItem) => pItem.rawProductId.toString() === item.productId.toString());
                 if (sourceProductItem) {
+                    console.log("runing sourceProductItem")
                     sourceProductItem.currentStock -= (item.transferQty);
                     sourceProductItem.pendingStock += (item.transferQty);
                     sourceProductItem.totalPrice -= item.totalPrice;
                     sourceProduct.markModified('productItems');
                     await sourceProduct.save();
-                } else {
+                }
+                else if(sourceRawProductItem) {
+                    console.log("runing sourceRawProductItem")
+                    sourceRawProductItem.price = item.price;
+                    sourceRawProductItem.pendingStock += item.transferQty;
+                    sourceRawProductItem.markModified("productItems");
+                    await sourceRawProduct.save();
+
+                }else {
                     return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
                 }
             } else {
