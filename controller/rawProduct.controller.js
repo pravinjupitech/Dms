@@ -194,7 +194,7 @@ export const UpdateRawProduct = async (req, res, next) => {
       if (existingProduct.Opening_Stock !== parseInt(req.body.Opening_Stock)) {
         const qty = req.body.Opening_Stock - existingProduct.Opening_Stock;
         req.body.qty = existingProduct.qty + qty;
-        console.log(" req.body", req.body.warehouse._id)
+        // console.log(" req.body", req.body.warehouse._id)
         await addProductInWarehouse(
           req.body,
           req.body.warehouse._id,
@@ -284,11 +284,11 @@ export const addProductInWarehouse = async (
     if (!user) {
       return console.log("warehouse not found");
     }
-    console.log("productId._id", productId._id);
+    // console.log("productId._id", productId._id);
     const sourceProductItem = user.productItems.find(
       (pItem) => pItem.rawProductId === productId._id.toString()
     );
-    console.log("update-sourceProductItem", sourceProductItem);
+    // console.log("update-sourceProductItem", sourceProductItem);
     if (sourceProductItem) {
       //   sourceProductItem.gstPercentage = parseInt(warehouse.GSTRate);
       sourceProductItem.currentStock = parseInt(warehouse.qty);
