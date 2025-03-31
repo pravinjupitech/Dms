@@ -194,12 +194,12 @@ export const UpdateRawProduct = async (req, res, next) => {
       if (existingProduct.Opening_Stock !== parseInt(req.body.Opening_Stock)) {
         const qty = req.body.Opening_Stock - existingProduct.Opening_Stock;
         req.body.qty = existingProduct.qty + qty;
-        console.log(" req.body", req.body.warehouse)
-        await addProductInWarehouse(
-          req.body,
-          req.body.warehouse,
-          existingProduct
-        );
+        console.log(" req.body", req.body)
+        // await addProductInWarehouse(
+        //   req.body,
+        //   req.body.warehouse,
+        //   existingProduct
+        // );
       }
 
       const updatedProduct = req.body;
