@@ -51,7 +51,8 @@ const WarehouseSchema = new mongoose.Schema({
       type: Number
     },
     currentStock: {
-      type: Number
+      type: Number,
+      default:0
     },
     transferQty: {
       type: Number
