@@ -225,14 +225,14 @@ export const addProductInWarehouse1 = async (warehouse, warehouseId, id) => {
     if (!user) {
       return console.log("warehouse not found");
     }
-    console.log("  add  time id._id", id._id);
+    // console.log("  add  time id._id", id._id);
     const sourceProductItem = user.productItems.find(
       (pItem) => pItem.rawProductId === id._id.toString()
     );
-    console.log("sourceProductItem", sourceProductItem);
-    console.log("warehouse.qty", warehouse.qty);
+    // console.log("sourceProductItem", sourceProductItem);
+    // console.log("warehouse.qty", warehouse.qty);
     if (sourceProductItem) {
-      console.log("if condition");
+      // console.log("if condition");
       // sourceProductItem.Size += warehouse.Size;
       sourceProductItem.currentStock = warehouse.qty;
       //   sourceProductItem.price = warehouse.Purchase_Rate;
