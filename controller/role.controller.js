@@ -102,6 +102,9 @@ export const updatedRole = async (req, res, next) => {
 export const saveRole = async (req, res, next) => {
     try {
       console.log("req.body", req.body);
+      if(req.body.Roles&&req.body.Roles.length>0){
+        req.body.Roles=JSON.parse(req.body.Roles)
+      }
       
       // Check if Roles is defined in the request body
       if (!req.body.Roles || !Array.isArray(req.body.Roles)) {
