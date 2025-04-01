@@ -177,6 +177,7 @@ export const UpdateUser = async (req, res, next) => {
         }
       })
     }
+    console.log("req.body",req.body)
     const userId = req.params.id;
     if (req.body.role&&req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
