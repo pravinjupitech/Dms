@@ -177,9 +177,8 @@ export const UpdateUser = async (req, res, next) => {
         }
       })
     }
-    console.log("req.body",req.body)
     const userId = req.params.id;
-    if (req.body.role.length > 0) {
+    if (req.body.role&&req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
     const existingUser = await User.findById(userId);
@@ -207,9 +206,8 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
-      console.log("req.body.warehouse?.length",req.body.warehouse?.length,req.body.warehouse)
-      if (req.body.warehouse?.length > 0) {
-        console.log("req.body.warehouse?.length")
+      
+      if (req.body.warehouse&&req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
       if (req.body.reference) {
