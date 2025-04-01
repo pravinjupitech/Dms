@@ -215,6 +215,7 @@ export const UpdateUser = async (req, res, next) => {
         req.body.reference = await JSON.parse(req.body.reference)
       }
       const updatedUser = req.body;
+      console.log("updateuse",updatedUser)
       const user = await User.findByIdAndUpdate(userId, updatedUser, { new: true });
       if (req.body.warehouse?.length > 0) {
         await assingWarehouse(user.warehouse, userId)
