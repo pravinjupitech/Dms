@@ -36,6 +36,7 @@ export const viewOutWardStockToWarehouse = async (req, res, next) => {
 };
 export const stockTransferToWarehouse = async (req, res) => {
     try {
+        console.log("req.body",req.body)
         const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
         if (!warehousefrom) {
             return res.status(400).json({ message: "Warehouse From Not Found", status: false })

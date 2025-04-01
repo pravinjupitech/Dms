@@ -101,39 +101,30 @@ export const updatedRole = async (req, res, next) => {
 
 export const saveRole = async (req, res, next) => {
     try {
-      console.log("req.body", req.body);
       if(req.body.Roles&&req.body.Roles.length>0){
         req.body.Roles=JSON.parse(req.body.Roles)
       }
       
-      // Check if Roles is defined in the request body
       if (!req.body.Roles || !Array.isArray(req.body.Roles)) {
         return res.status(400).json({ error: "Roles array is missing or invalid.", status: false });
       }
   
-      // Loop through each role in the Roles array
       for (let roleData of req.body.Roles) {
         if (!roleData.role || !roleData.role.roleName || !roleData.role.database) {
           return res.status(400).json({ error: "Role data is missing required fields.", status: false });
         }
   
-        // Check if the role already exists in the database
         const existingRole = await Role.findOne({
           roleName: roleData.role.roleName,
           database: roleData.role.database,
         });
   
         if (existingRole) {
-          // Optionally log that the role already exists, but don't stop processing other roles
-          console.log(`Role with name ${roleData.role.roleName} already exists.`);
+        //   console.log(`Role with name ${roleData.role.roleName} already exists.`);
         } else {
-          // Create a new role if it doesn't already exist
           const newRole = await Role.create(roleData.role);
-          console.log(`Role ${newRole.roleName} created successfully.`);
         }
       }
-  
-      // Return success message once all roles are processed
       return res.status(200).json({ message: "Role assignment successful!", status: true });
     } catch (err) {
       console.error(err);
