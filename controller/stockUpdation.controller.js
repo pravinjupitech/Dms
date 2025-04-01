@@ -34,80 +34,162 @@ export const viewOutWardStockToWarehouse = async (req, res, next) => {
         return res.status(500).json({ error: err, status: false });
     }
 };
+// export const stockTransferToWarehouse = async (req, res) => {
+//     try {
+//         console.log("req.body",req.body)
+//         const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
+//         if (!warehousefrom) {
+//             return res.status(400).json({ message: "Warehouse From Not Found", status: false })
+//         }
+//         const warehouseno = await warehouseNo(warehousefrom.database)
+//         warehousefrom.warehouseNo = warehousefrom.id + warehouseno
+//         const { warehouseToId, warehouseFromId, stockTransferDate, productItems, grandTotal, transferStatus, created_by, InwardStatus, OutwardStatus } = req.body;
+//         for (const item of productItems) {
+//             const sourceProduct = await Warehouse.findOne({
+//                 _id: warehouseFromId,
+//                 'productItems.productId': item.productId,
+//             });
+//             console.log("sourceProduct",sourceProduct)
+//             const sourceRawProduct=await Warehouse.findOne({
+//                 _id: warehouseFromId,
+//                 'productItems.rawProductId':item.productId
+//             })
+//             console.log("sourceRawProduct",sourceRawProduct)
+
+//             if (sourceProduct||sourceRawProduct) {
+//                 const sourceProductItem = sourceProduct.productItems.find(
+//                     (pItem) => pItem.productId.toString() === item.productId.toString());
+//                     console.log("sourceProductItem",sourceProductItem)
+
+//                 const sourceRawProductItem = sourceProduct.productItems.find(
+//                     (pItem) => pItem.rawProductId.toString() === item.productId.toString());
+//                     console.log("sourceRawProductItem",sourceRawProductItem)
+
+//                 if (sourceProductItem) {
+//                     console.log("runing sourceProductItem")
+//                     sourceProductItem.currentStock -= (item.transferQty);
+//                     sourceProductItem.pendingStock += (item.transferQty);
+//                     sourceProductItem.totalPrice -= item.totalPrice;
+//                     sourceProduct.markModified('productItems');
+//                     await sourceProduct.save();
+//                 }
+//                 else if(sourceRawProductItem) {
+//                     console.log("runing sourceRawProductItem")
+//                     sourceRawProductItem.price = item.price;
+//                     sourceRawProductItem.pendingStock += item.transferQty;
+//                     sourceRawProductItem.markModified("productItems");
+//                     await sourceRawProduct.save();
+
+//                 }else {
+//                     return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
+//                 }
+//             } else {
+//                 return res.status(400).json({ error: 'Product not found in the source warehouse' });
+//             }
+//         }
+//         const stockTransfer = new StockUpdation({
+//             created_by,
+//             warehouseToId,
+//             warehouseFromId,
+//             stockTransferDate,
+//             productItems,
+//             grandTotal,
+//             transferStatus,
+//             InwardStatus,
+//             OutwardStatus,
+//             database: warehousefrom.database,
+//             warehouseNo: warehousefrom.warehouseNo,
+//         });
+//         await stockTransfer.save();
+//         await warehousefrom.save();
+//         return res.status(201).json({ message: 'Stock transfer successfull', status: true });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Internal Server Error', status: false });
+//     }
+// };
+
 export const stockTransferToWarehouse = async (req, res) => {
     try {
-        console.log("req.body",req.body)
-        const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
-        if (!warehousefrom) {
-            return res.status(400).json({ message: "Warehouse From Not Found", status: false })
-        }
-        const warehouseno = await warehouseNo(warehousefrom.database)
-        warehousefrom.warehouseNo = warehousefrom.id + warehouseno
-        const { warehouseToId, warehouseFromId, stockTransferDate, productItems, grandTotal, transferStatus, created_by, InwardStatus, OutwardStatus } = req.body;
-        for (const item of productItems) {
-            const sourceProduct = await Warehouse.findOne({
-                _id: warehouseFromId,
-                'productItems.productId': item.productId,
-            });
-            console.log("sourceProduct",sourceProduct)
-            const sourceRawProduct=await Warehouse.findOne({
-                _id: warehouseFromId,
-                'productItems.rawProductId':item.productId
-            })
-            console.log("sourceRawProduct",sourceRawProduct)
-
-            if (sourceProduct||sourceRawProduct) {
-                const sourceProductItem = sourceProduct.productItems.find(
-                    (pItem) => pItem.productId.toString() === item.productId.toString());
-                    console.log("sourceProductItem",sourceProductItem)
-
-                const sourceRawProductItem = sourceProduct.productItems.find(
-                    (pItem) => pItem.rawProductId.toString() === item.productId.toString());
-                    console.log("sourceRawProductItem",sourceRawProductItem)
-
-                if (sourceProductItem) {
-                    console.log("runing sourceProductItem")
-                    sourceProductItem.currentStock -= (item.transferQty);
-                    sourceProductItem.pendingStock += (item.transferQty);
-                    sourceProductItem.totalPrice -= item.totalPrice;
-                    sourceProduct.markModified('productItems');
-                    await sourceProduct.save();
-                }
-                else if(sourceRawProductItem) {
-                    console.log("runing sourceRawProductItem")
-                    sourceRawProductItem.price = item.price;
-                    sourceRawProductItem.pendingStock += item.transferQty;
-                    sourceRawProductItem.markModified("productItems");
-                    await sourceRawProduct.save();
-
-                }else {
-                    return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
-                }
-            } else {
-                return res.status(400).json({ error: 'Product not found in the source warehouse' });
-            }
-        }
-        const stockTransfer = new StockUpdation({
-            created_by,
-            warehouseToId,
-            warehouseFromId,
-            stockTransferDate,
-            productItems,
-            grandTotal,
-            transferStatus,
-            InwardStatus,
-            OutwardStatus,
-            database: warehousefrom.database,
-            warehouseNo: warehousefrom.warehouseNo,
+      console.log("req.body", req.body);
+  
+      const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
+      if (!warehousefrom) {
+        return res.status(400).json({ message: "Warehouse From Not Found", status: false });
+      }
+      
+      const warehouseno = await warehouseNo(warehousefrom.database);
+      warehousefrom.warehouseNo = warehousefrom.id + warehouseno;
+  
+      const { warehouseToId, warehouseFromId, stockTransferDate, productItems, grandTotal, transferStatus, created_by, InwardStatus, OutwardStatus } = req.body;
+  
+      for (const item of productItems) {
+        const sourceProduct = await Warehouse.findOne({
+          _id: warehouseFromId,
+          'productItems.productId': item.productId,
         });
-        await stockTransfer.save();
-        await warehousefrom.save();
-        return res.status(201).json({ message: 'Stock transfer successfull', status: true });
+        console.log("sourceProduct", sourceProduct);
+  
+        const sourceRawProduct = await Warehouse.findOne({
+          _id: warehouseFromId,
+          'productItems.rawProductId': item.productId
+        });
+        console.log("sourceRawProduct", sourceRawProduct);
+  
+        if (sourceProduct || sourceRawProduct) {
+          const sourceProductItem = sourceProduct?.productItems?.find(
+            (pItem) => pItem.productId && pItem.productId.toString() === item.productId.toString());
+          console.log("sourceProductItem", sourceProductItem);
+  
+          const sourceRawProductItem = sourceRawProduct?.productItems?.find(
+            (pItem) => pItem.rawProductId && pItem.rawProductId.toString() === item.productId.toString());
+          console.log("sourceRawProductItem", sourceRawProductItem);
+  
+          if (sourceProductItem) {
+            console.log("running sourceProductItem");
+            sourceProductItem.currentStock -= item.transferQty;
+            sourceProductItem.pendingStock += item.transferQty;
+            sourceProductItem.totalPrice -= item.totalPrice;
+            sourceProduct.markModified('productItems');
+            await sourceProduct.save();
+          } else if (sourceRawProductItem) {
+            console.log("running sourceRawProductItem");
+            sourceRawProductItem.price = item.price;
+            sourceRawProductItem.pendingStock += item.transferQty;
+            sourceRawProductItem.markModified("productItems");
+            await sourceRawProduct.save();
+          } else {
+            return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
+          }
+        } else {
+          return res.status(400).json({ error: 'Product not found in the source warehouse' });
+        }
+      }
+  
+      const stockTransfer = new StockUpdation({
+        created_by,
+        warehouseToId,
+        warehouseFromId,
+        stockTransferDate,
+        productItems,
+        grandTotal,
+        transferStatus,
+        InwardStatus,
+        OutwardStatus,
+        database: warehousefrom.database,
+        warehouseNo: warehousefrom.warehouseNo,
+      });
+  
+      await stockTransfer.save();
+      await warehousefrom.save();
+  
+      return res.status(201).json({ message: 'Stock transfer successful', status: true });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error', status: false });
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error', status: false });
     }
-};
+  };
+  
 export const viewWarehouseStock = async (req, res) => {
     try {
         const database = req.params.database;
