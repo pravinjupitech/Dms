@@ -206,7 +206,9 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
+      console.log("req.body.warehouse?.length",req.body.warehouse?.length,req.body.warehouse)
       if (req.body.warehouse?.length > 0) {
+        console.log("req.body.warehouse?.length")
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
       if (req.body.reference) {
