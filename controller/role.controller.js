@@ -82,6 +82,7 @@ export const updatedRole = async (req, res, next) => {
 export const saveRole = async (req, res, next) => {
     try {
         for (let roleData of req.body.Roles) {
+            console.log("roleData",roleData)
             const existingRole = await Role.findOne({ roleName: roleData.role.roleName, database: roleData.role.database });
             if (existingRole) {
                 // console.log(`Role with name ${roleData.role.roleName} already exists.`);
