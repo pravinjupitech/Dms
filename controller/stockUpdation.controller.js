@@ -49,15 +49,22 @@ export const stockTransferToWarehouse = async (req, res) => {
                 _id: warehouseFromId,
                 'productItems.productId': item.productId,
             });
+            console.log("sourceProduct",sourceProduct)
             const sourceRawProduct=await Warehouse.findOne({
                 _id: warehouseFromId,
                 'productItems.rawProductId':item.productId
             })
+            console.log("sourceRawProduct",sourceRawProduct)
+
             if (sourceProduct||sourceRawProduct) {
                 const sourceProductItem = sourceProduct.productItems.find(
                     (pItem) => pItem.productId.toString() === item.productId.toString());
+                    console.log("sourceProductItem",sourceProductItem)
+
                 const sourceRawProductItem = sourceProduct.productItems.find(
                     (pItem) => pItem.rawProductId.toString() === item.productId.toString());
+                    console.log("sourceRawProductItem",sourceRawProductItem)
+
                 if (sourceProductItem) {
                     console.log("runing sourceProductItem")
                     sourceProductItem.currentStock -= (item.transferQty);
