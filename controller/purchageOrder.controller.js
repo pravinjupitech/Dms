@@ -474,13 +474,9 @@ export const deletedPurchase = async (req, res, next) => {
                     status: "completed",
                     createdAt: { $lt: purchase.createdAt }  
                 }).sort({ createdAt: -1 });
-
-                // Check if previousPurchaseOrders is an array and contains elements
                 if (!previousPurchaseOrders || previousPurchaseOrders.length === 0) {
-                    // If no previous purchase orders are found, set price to 0
                     orderItem.price = 0;
                 } else {
-                    // Otherwise, set the price from the first previous purchase order
                     orderItem.price = previousPurchaseOrders[0].orderItems.find(item => item.productId.toString() === orderItem.productId.toString()).price;
                 }
 
@@ -739,40 +735,37 @@ export const Purch = async (req, res, next) => {
 //   };
 export const DeleteStockPurchase = async (orderItem, date, orderData) => {
     try {
-        // Check if orderData is undefined or null, and set price to 0 if not found
         if (!orderData || !orderData[0]) {
             console.log("Previous purchase order not found, setting price to 0.");
             orderItem.price = 0;
-            orderData = [{ price: 0 }];  // Ensuring that we use the default price in future logic
-            console.log("orderItem.price", orderItem.price); // Logging to confirm the price is set to 0
+            orderData = [{ price: 0 }];  
+            console.log("orderItem.price", orderItem.price);
         }
 
         const stock = await Stock.findOne({ date: date });
         if (!stock) {
             console.log("Stock not found for date:", date);
-            return; // Exit if stock is not found
+            return; 
         }
 
-        // Loop through stock product items and update the stock based on the order item
+       
         for (let productItem of stock.productItems) {
             if (productItem.productId === orderItem.productId.toString()) {
                 productItem.currentStock -= orderItem.qty;
-                productItem.pRate = orderData[0].price || 0; // Set price from orderData or default to 0
-                productItem.price = orderData[0].price || 0; // Set price from orderData or default to 0
+                productItem.pRate = orderData[0].price || 0; 
+                productItem.price = orderData[0].price || 0; 
                 productItem.pQty -= orderItem.qty;
                 productItem.totalPrice -= orderItem.totalPrice;
                 productItem.pTotal -= orderItem.totalPrice;
                 await stock.save();
-                break; // Exit loop once the correct product item is updated
+                break; 
             }
         }
-
-        // If product's current stock reaches 0, remove it from the stock
         for (let productItem of stock.productItems) {
             if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
                 stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
                 await stock.save();
-                break; // Exit loop once the product is removed from stock
+                break; 
             }
         }
 

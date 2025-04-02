@@ -761,6 +761,8 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       return console.log("warehouse not found")
     }
     const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
+    console.log("sourceProductItem",sourceProductItem)
+    console.log("orderItem",orderItem)
     if (sourceProductItem) {
       sourceProductItem.gstPercentage = warehouse.GSTRate
       sourceProductItem.currentStock -= orderItem.qty
@@ -771,7 +773,9 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       await user.save();
     }
     const stock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
+
     if (!stock) {
+
       let productItems = {
         productId: warehouse._id.toString(),
         gstPercentage: warehouse.GSTRate,
@@ -892,7 +896,7 @@ export const addProductInWarehouse6 = async (warehouse, warehouseId, orderItem, 
         gstPercentage: warehouse.GSTRate,
         currentStock: warehouse.qty,
         pendingStock: orderItem.qty,
-        pendingStockTotal:(orderItem.qty*warehouse.Purchase_Rate),
+        pendingStockTotal:(orderItem.qty*orderItem.price),
         price: warehouse.Purchase_Rate,
         totalPrice: (warehouse.qty * warehouse.Purchase_Rate),
         oQty: warehouse.Opening_Stock,
@@ -961,7 +965,7 @@ export const addProductInWarehouse6 = async (warehouse, warehouseId, orderItem, 
               gstPercentage: warehouse.GSTRate,
               currentStock: warehouse.qty,
               pendingStock: orderItem.qty,
-              pendingStockTotal:(orderItem.qty*warehouse.Purchase_Rate),
+              pendingStockTotal:(orderItem.qty*orderItem.price),
               price: warehouse.Purchase_Rate,
               totalPrice: (warehouse.qty * warehouse.Purchase_Rate),
               oQty: warehouse.Opening_Stock,
