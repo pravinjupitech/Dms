@@ -621,6 +621,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     const endOfDay = new Date(dates);
     startOfDay.setUTCHours(0, 0, 0, 0);
     endOfDay.setUTCHours(23, 59, 59, 999);
+    console.log("warehouse",warehouseId)
     const user = await Warehouse.findById({ _id: warehouseId })
     if (!user) {
       return console.log("warehouse not found")
