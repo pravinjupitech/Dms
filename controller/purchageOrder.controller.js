@@ -421,6 +421,9 @@ export const deletedPurchase = async (req, res, next) => {
                     status: "completed",
                     createdAt: { $lt: purchase.createdAt }  
                 }).sort({ createdAt: -1 });
+                if(!previousPurchaseOrderss){
+                    previousPurchaseOrderss[0].price=0;
+                }
                 await DeleteStockPurchase(orderItem,purchase.date,previousPurchaseOrderss.orderItems)
                 // await DeleteClosingPurchase(orderItem, product.warehouse)
             } else {
