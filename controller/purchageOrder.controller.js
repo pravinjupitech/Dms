@@ -397,47 +397,115 @@ export const deletePurchaseOrder = async (req, res, next) => {
 }
 
 // delete purchaseOrder after status completed
+// export const deletedPurchase = async (req, res, next) => {
+//     try {
+//         const purchase = await PurchaseOrder.findById(req.params.id)
+//         if (!purchase) {
+//             return res.status(404).json({ message: "PurchaseOrder Not Found", status: false })
+//         }
+//         for (const orderItem of purchase.orderItems) {
+//             const product = await Product.findOne({ _id: orderItem.productId });
+//             if (product) {
+//                 // const current = new Date(new Date())
+//                 // product.purchaseDate = current
+//                 // product.partyId = req.body.partyId;
+//                 // product.purchaseStatus = true
+//                 // product.landedCost = orderItem.landedCost;
+//                 product.qty -= orderItem.qty;
+//                 // product.pendingQty += orderItem.qty;
+//                 const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
+//                 await product.save();
+//                 await deleteAddProductInWarehouse(warehouse, product.warehouse)
+//                 const previousPurchaseOrderss = await PurchaseOrder.findOne({
+//                     "orderItems.productId": orderItem.productId,
+//                     status: "completed",
+//                     createdAt: { $lt: purchase.createdAt }  
+//                 }).sort({ createdAt: -1 });
+//                 await DeleteStockPurchase(orderItem,purchase.date,previousPurchaseOrderss.orderItems)
+//                 // await DeleteClosingPurchase(orderItem, product.warehouse)
+//             } else {
+//                 console.log("Product Id Not Found")
+//                 // return res.status(404).json(`Product with ID ${orderItem.productId} not found`);
+//             }
+//         }
+//         purchase.status = "Deactive"
+//         await purchase.save()
+//         await Ledger.findOneAndDelete({ orderId: req.params.id })
+//         return res.status(200).json({ message: "delete successfull!", status: true })
+//     }
+//     catch (err) {
+//         console.log(err)
+//         return res.status(500).json({ error: "Internal Server Error", status: false })
+//     }
+// }
 export const deletedPurchase = async (req, res, next) => {
     try {
-        const purchase = await PurchaseOrder.findById(req.params.id)
+        // Find the purchase order by its ID
+        const purchase = await PurchaseOrder.findById(req.params.id);
+
+        // Check if the purchase order was found
         if (!purchase) {
-            return res.status(404).json({ message: "PurchaseOrder Not Found", status: false })
+            return res.status(404).json({ message: "PurchaseOrder Not Found", status: false });
         }
+
+        // Check if orderItems exists in the purchase order
+        if (!purchase.orderItems || purchase.orderItems.length === 0) {
+            return res.status(400).json({ message: "No order items found in this purchase order", status: false });
+        }
+
+        // Iterate through each order item in the purchase order
         for (const orderItem of purchase.orderItems) {
             const product = await Product.findOne({ _id: orderItem.productId });
             if (product) {
-                // const current = new Date(new Date())
-                // product.purchaseDate = current
-                // product.partyId = req.body.partyId;
-                // product.purchaseStatus = true
-                // product.landedCost = orderItem.landedCost;
+                // Update product quantities and other properties as necessary
                 product.qty -= orderItem.qty;
-                // product.pendingQty += orderItem.qty;
-                const warehouse = { productId: orderItem.productId, currentStock: (orderItem.qty), transferQty: (orderItem.qty), price: orderItem.price, totalPrice: orderItem.totalPrice, gstPercentage: orderItem.gstPercentage, igstTaxType: orderItem.igstTaxType, primaryUnit: orderItem.primaryUnit, secondaryUnit: orderItem.secondaryUnit, secondarySize: orderItem.secondarySize, landedCost: orderItem.landedCost }
+                const warehouse = { 
+                    productId: orderItem.productId, 
+                    currentStock: (orderItem.qty), 
+                    transferQty: (orderItem.qty), 
+                    price: orderItem.price, 
+                    totalPrice: orderItem.totalPrice, 
+                    gstPercentage: orderItem.gstPercentage, 
+                    igstTaxType: orderItem.igstTaxType, 
+                    primaryUnit: orderItem.primaryUnit, 
+                    secondaryUnit: orderItem.secondaryUnit, 
+                    secondarySize: orderItem.secondarySize, 
+                    landedCost: orderItem.landedCost 
+                };
                 await product.save();
-                await deleteAddProductInWarehouse(warehouse, product.warehouse)
-                const previousPurchaseOrderss = await PurchaseOrder.findOne({
+                await deleteAddProductInWarehouse(warehouse, product.warehouse);
+
+                const previousPurchaseOrders = await PurchaseOrder.findOne({
                     "orderItems.productId": orderItem.productId,
                     status: "completed",
                     createdAt: { $lt: purchase.createdAt }  
                 }).sort({ createdAt: -1 });
-                await DeleteStockPurchase(orderItem,purchase.date,previousPurchaseOrderss.orderItems)
-                // await DeleteClosingPurchase(orderItem, product.warehouse)
+
+                if (!previousPurchaseOrders) {
+                    previousPurchaseOrders[0].price = 0;
+                }
+
+                await DeleteStockPurchase(orderItem, purchase.date, previousPurchaseOrders.orderItems);
             } else {
-                console.log("Product Id Not Found")
-                // return res.status(404).json(`Product with ID ${orderItem.productId} not found`);
+                console.log("Product Id Not Found");
+                // Handle case where product is not found, if needed
             }
         }
-        purchase.status = "Deactive"
-        await purchase.save()
-        await Ledger.findOneAndDelete({ orderId: req.params.id })
-        return res.status(200).json({ message: "delete successfull!", status: true })
+
+        // Set the purchase order status to "Deactive"
+        purchase.status = "Deactive";
+        await purchase.save();
+
+        // Delete corresponding ledger entry
+        await Ledger.findOneAndDelete({ orderId: req.params.id });
+
+        return res.status(200).json({ message: "Deletion successful!", status: true });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
     }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ error: "Internal Server Error", status: false })
-    }
-}
+};
+
 export const deleteAddProductInWarehouse = async (warehouse, warehouseId) => {
     try {
         const user = await Warehouse.findById(warehouseId);
