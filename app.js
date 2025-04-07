@@ -78,7 +78,6 @@ import { StockClose } from "./controller/warehouse.controller.js";
 const app = express();
 app.use(cors());
 dotenv.config();
-
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(bodyParser.json({ limit: '50mb' }));
 const publicPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "public");
