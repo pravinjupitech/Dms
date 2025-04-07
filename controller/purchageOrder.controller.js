@@ -56,8 +56,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
         } else {
             const date1 = new Date();
             const date2 = new Date(req.body.date);
-            const party=await Customer.findById(user.partyId)
-            console.log("party",party)
+            const party=await Customer.findById(req.body.partyId)
             if (date1.toDateString() === date2.toDateString()) {
                 for (const orderItem of orderItems) {
                     const product = await Product.findOne({ _id: orderItem.productId });
