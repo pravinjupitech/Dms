@@ -10,6 +10,7 @@ import { Receipt } from "../model/receipt.model.js";
 import { CustomerGroup } from "../model/customerGroup.model.js";
 import { ledgerPartyForCredit } from "../service/ledger.js";
 import { Stock } from "../model/stock.js";
+import { Customer } from "../model/customer.model.js";
 
 export const purchaseOrder = async (req, res, next) => {
     try {
@@ -55,6 +56,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
         } else {
             const date1 = new Date();
             const date2 = new Date(req.body.date);
+            const party=await Customer.findById(user.partyId)
             if (date1.toDateString() === date2.toDateString()) {
                 for (const orderItem of orderItems) {
                     const product = await Product.findOne({ _id: orderItem.productId });
@@ -99,6 +101,8 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 }
                 req.body.userId = user._id;
                 req.body.database = user.database;
+                party.remainingLimit+=req.body.grandTotal;
+                await party.save();
                 const order = await PurchaseOrder.create(req.body)
                 if (order) {
                     let particular = "PurchaseInvoice";
@@ -147,6 +151,8 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 }
                 req.body.userId = user._id;
                 req.body.database = user.database;
+                party.remainingLimit+=req.body.grandTotal;
+                await party.save();
                 const order = await PurchaseOrder.create(req.body)
                 if (order) {
                     let particular = "PurchaseInvoice";
@@ -486,8 +492,10 @@ export const deletedPurchase = async (req, res, next) => {
                 console.log("Product Id Not Found");
             }
         }
-
+        const party=await Customer.findById(purchase.partyId);
+        party.remainingLimit-= purchase.grandTotal;
         purchase.status = "Deactive";
+        await party.save();
         await purchase.save();
 
         await Ledger.findOneAndDelete({ orderId: req.params.id });
