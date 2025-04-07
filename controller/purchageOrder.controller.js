@@ -101,6 +101,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 }
                 req.body.userId = user._id;
                 req.body.database = user.database;
+                console.log("party.remain1",party.remainingLimit,req.body.grandTotal)
                 party.remainingLimit+=req.body.grandTotal;
                 await party.save();
                 const order = await PurchaseOrder.create(req.body)
@@ -151,7 +152,9 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                 }
                 req.body.userId = user._id;
                 req.body.database = user.database;
+                console.log("party.remain2",party.remainingLimit,req.body.grandTotal)
                 party.remainingLimit+=req.body.grandTotal;
+
                 await party.save();
                 const order = await PurchaseOrder.create(req.body)
                 if (order) {
