@@ -737,10 +737,10 @@ export const deletedSalesOrder = async (req, res, next) => {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
+        party.remainingLimit+=order.grandTotal;
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         const party=await Customer.findById(order.partyId)
-        party.remainingLimit+=order.grandTotal;
         await order.save();
         await party.save()
         await Ledger.findOneAndDelete({ orderId: req.params.id })
