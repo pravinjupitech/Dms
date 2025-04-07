@@ -122,6 +122,7 @@ export const createOrder = async (req, res, next) => {
 
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
+        console.log("req.body",req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -150,6 +151,8 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.status = "completed"
                 req.body.userId = party.created_by
                 req.body.database = user.database
+                party.remainingLimit-=req.body.grandTotal;
+                await party.save()
                 const savedOrder = await CreateOrder.create(req.body)
                 if (savedOrder) {
                     const particular = "SalesInvoice";
@@ -176,6 +179,8 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.userId = party.created_by
                 req.body.database = user.database
                 req.body.paymentStatus = true;
+                party.remainingLimit-=req.body.grandTotal;
+                await party.save()
                 const savedOrder = await CreateOrder.create(req.body)
                 if (savedOrder) {
                     const particular = "SalesInvoice";
