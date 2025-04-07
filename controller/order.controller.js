@@ -740,7 +740,10 @@ export const deletedSalesOrder = async (req, res, next) => {
         }
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
+        const party=await Customer.findById(order.partyId)
+        party.remainingLimit+=order.grandTotal;
         await order.save();
+        await party.save()
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         const companyDetails = await CompanyDetails.findOne({database:order.database})
         if(companyDetails){
