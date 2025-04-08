@@ -48,7 +48,7 @@ export const saveCompanyDetails = async (req, res, next) => {
         // req.body.dummy = req.body.Suffix
         const companyDetails = req.body;
         const updateDetails = await CompanyDetails.findByIdAndUpdate(companyId, companyDetails, { new: true });
-        return updateDetails ? res.status(200).json({ message: "Data Updated Successfully", status: true }) : res.status(400).json({ message: "Something Went Wrong" });
+        return updateDetails ? res.status(200).json({ message: "Data Updated Successfully",updateDetails, status: true }) : res.status(400).json({ message: "Something Went Wrong" });
       }
     }
   } catch (err) {
