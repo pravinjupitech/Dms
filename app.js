@@ -208,18 +208,18 @@ io.on("connection", (socket) => {
 
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId); 
-    console.log(`User joined room: ${roomId}`);
+    // console.log(`User joined room: ${roomId}`);
   });
 
   socket.on("createRoom", () => {
     const roomId = uuidv4(); 
     socket.emit("roomCreated", roomId); 
-    console.log(`Room created with ID: ${roomId}`);
+    // console.log(`Room created with ID: ${roomId}`);
   });
 
   socket.on("chatMessage", (data) => {
     io.to(data.roomId).emit("chatMessage", data); 
-    console.log(`Message sent to room ${data.roomId}: ${data.message}`);
+    // console.log(`Message sent to room ${data.roomId}: ${data.message}`);
   });
   socket.on("disconnect", () => {
     console.log("A user disconnected");
