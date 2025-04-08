@@ -44,6 +44,9 @@ const CompanySchema = new mongoose.Schema({
     logo: {
         type: String
     },
+    qr_code:{
+        type:String
+      },
     signature: {
         type: String
     },
