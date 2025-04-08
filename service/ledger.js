@@ -56,14 +56,15 @@ export const ledgerSalesForDebit = async function ledger(body, particular) {
         throw error;
     }
 };
-export const ledgerPartyForCredit = async function ledger(body, particular) {
+export const ledgerPartyForCredit = async function 
+ ledger(body, particular) {
     try {
         const part = particular
         const credit = body.grandTotal || body.amount;
         const party = await Customer.findById(body.partyId)
         if (party && party.paymentTerm.toLowerCase() !== "cash") {
             // await PartyPayment(body)
-            // party.remainingLimit += credit
+            party.remainingLimit += credit
             if (party.remainingLimit > party.limit) {
                 let advance = (party.remainingLimit+credit) - party.limit;
                 // party.limit += advance
