@@ -13,12 +13,14 @@ export const saveCompanyDetails = async (req, res, next) => {
     if (companyDetail.length === 0) {
       if (req.files) {
         req.files.map((file) => {
+          console.log("file.fieldname",file.fieldname)
           if (file.fieldname === "signature") {
             req.body.signature = file.filename;
           }
           else if(file.fieldname==="qr_code"){
             req.body.qr_code = file.filename;
           } else {
+
             req.body.logo = file.filename;
           }
         });
