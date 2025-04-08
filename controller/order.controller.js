@@ -737,15 +737,15 @@ export const deletedSalesOrder = async (req, res, next) => {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
-        console.log("order",order)
+        // console.log("order",order)
         const party=await Customer.findById(order.partyId)
-        console.log("total",party.remainingLimit)
+        // console.log("total",party.remainingLimit)
         party.remainingLimit+=order.grandTotal;
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
         await party.save()
-        console.log("totalssss",party.remainingLimit)
+        // console.log("totalssss",party.remainingLimit)
 
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         const companyDetails = await CompanyDetails.findOne({database:order.database})
