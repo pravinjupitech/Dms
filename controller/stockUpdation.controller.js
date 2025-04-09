@@ -9,6 +9,7 @@ import { Customer } from "../model/customer.model.js";
 import { ClosingStock } from "../model/closingStock.model.js";
 import { warehouseNo } from "../service/invoice.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
+import { RawProduct } from "../model/rawProduct.model.js";
 
 export const viewInWardStockToWarehouse = async (req, res, next) => {
     try {
@@ -130,27 +131,64 @@ export const updateWarehousetoWarehouse = async (req, res, next) => {
         }
         await StockUpdation.findByIdAndUpdate(factoryId, req.body, { new: true })
         for (const item of existingFactory.productItems) {
-            const sourceProduct = await Warehouse.findOne({
+            const sourceRawProduct = await Warehouse.findOne({
                 _id: existingFactory.warehouseFromId,
-                'productItems.productId': item.productId,
-            });
+                "productItems.rawProductId": item.productId,
+              });
+              const sourceMainProduct = await Warehouse.findOne({
+                _id: existingFactory.warehouseFromId,
+                "productItems.productId": item.productId,
+              });
+              const sourceProduct = sourceMainProduct || sourceRawProduct;
             if (sourceProduct) {
-                const sourceProductItem = sourceProduct.productItems.find(
-                    (pItem) => pItem.productId.toString() === item.productId.toString());
+                const sourceRawProductItem = sourceProduct.productItems.find(
+                    (pItem) => pItem.rawProductId === item.productId
+                  );
+                  const sourceMainProductItem = sourceProduct.productItems.find(
+                    (pItem) => pItem.productId === item.productId
+                  );
+                  const sourceProductItem = sourceMainProductItem || sourceRawProductItem;
                 if (sourceProductItem) {
                     sourceProductItem.pendingStock -= (item.transferQty);
                     sourceProduct.markModified('productItems');
                     await sourceProduct.save();
-                    const destinationProduct = await Warehouse.findOne({
+                    const destinationMainProduct = await Warehouse.findOne({
                         _id: existingFactory.warehouseToId,
-                        'productItems.productId': item.productId,
-                    });
+                        "productItems.productId": item.destinationProductId,
+                      });
+                      const destinationRawProduct = await Warehouse.findOne({
+                        _id: existingFactory.warehouseToId,
+                        "productItems.rawProductId": item.destinationProductId,
+                      });
+                      const destinationProduct =
+                        destinationMainProduct || destinationRawProduct;
                     if (destinationProduct) {
-                        const destinationProductItem = destinationProduct.productItems.find((pItem) => pItem.productId.toString() === item.productId.toString());
+                        const destinationMainProductItem =
+              destinationProduct.productItems.find(
+                (pItem) => pItem.productId === item.destinationProductId
+              );
+            const destinationRawProductItem =
+              destinationProduct.productItems.find(
+                (pItem) => pItem.rawProductId === item.destinationProductId
+              );
+            const destinationProductItem =
+              destinationMainProductItem || destinationRawProductItem;
+              if (destinationProductItem) {
+              const modelName = destinationProductItem.rawProductId
+              ? RawProduct
+              : Product;
+            const product = await modelName.findOne({
+              _id: item.destinationProductId,
+            });
+
+            if (product) {
+              product.qty += item.transferQty;
+              await product.save();
+            }
                         destinationProductItem.price = item.price;
                         destinationProductItem.currentStock += (item.transferQty);
                         destinationProductItem.totalPrice += item.totalPrice;
-                        await destinationProduct.save();
+                        await destinationProduct.save();}
                     } else {
                         item.currentStock = item.transferQty
                         await Warehouse.updateOne({ _id: existingFactory.warehouseToId },
