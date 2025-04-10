@@ -119,7 +119,7 @@ export const viewWarehouseStock = async (req, res) => {
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error',status:false });
     }
 }
 export const updateWarehousetoWarehouse = async (req, res, next) => {
