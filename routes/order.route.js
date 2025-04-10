@@ -1,7 +1,20 @@
 import express from "express";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, updateCreateOrder, updateCreateOrderStatus} from "../controller/order.controller.js";
+import path from "path"
+import multer from "multer";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, invoicePartySend, updateCreateOrder, updateCreateOrderStatus} from "../controller/order.controller.js";
 
 const router = express.Router();
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/Images/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileExtension = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
+    }
+});
+const upload = multer({ storage: storage });
 
 router.post("/save-create-order", createOrder);
 router.post("/save-sales-invoice-order", createOrderWithInvoice);
@@ -28,5 +41,6 @@ router.get("/party-qty/:partyId/:productId", PartyPurchaseqty)
 router.get("/sales-calculated/:database", SalesOrderCalculate)
 router.get("/debitor-calculate/:database", DebitorCalculate)
 router.get("/testing/:database", CheckPartyPayment)
+router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
 
 export default router;

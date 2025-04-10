@@ -22,6 +22,7 @@ import { ledgerPartyForDebit } from "../service/ledger.js";
 import { addProductInWarehouse5, addProductInWarehouse6 } from "./product.controller.js";
 import { Stock } from "../model/stock.js";
 import { CompanyDetails } from "../model/companyDetails.model.js";
+import transporterss from "../service/email.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -902,3 +903,54 @@ export const revertOutWordStock = async (orderItem, date) => {
       console.log(error);
     }
   };
+  
+  export const invoicePartySend = async (req, res, next) => {
+    try {
+        if(req.file){
+            req.body.pdfPath=req.file?.path
+        }
+        const fileName = req.file?.originalname || "invoice.pdf"; 
+      const { customer } = req.body;
+  
+      const mailOptions = {
+        from: {
+          name: "Distribution Management System",
+          address: process.env.EMAIL,
+        },
+        to: customer,
+        subject: "Sales Invoice",
+        html: `
+          <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+            <div style="margin:50px auto;width:70%;padding:20px 0">
+              <div style="border-bottom:1px solid #eee">
+                <a href="#" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">Distribution Management System</a>
+              </div>
+              <p style="font-size:1.1em">Hi,</p>
+              <p>Thank you for choosing Distribution Management System. Please find your invoice attached as a PDF document.</p>
+              <p style="font-size:0.9em;">Regards,<br />Distribution Management System</p>
+              <hr style="border:none;border-top:1px solid #eee" />
+              <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
+                <p>Your Brand Inc</p>
+                <p>1600 Amphitheatre Parkway</p>
+                <p>California</p>
+              </div>
+            </div>
+          </div>`,
+        attachments: [
+          {
+            filename: fileName, 
+            path: pdfPath,
+            contentType: "application/pdf",
+          },
+        ],
+      };
+  
+      await transporter.sendMail(mailOptions);
+      return res.status(200).json({ message: "Invoice sent successfully", status: true });
+  
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false });
+    }
+  };
+  
