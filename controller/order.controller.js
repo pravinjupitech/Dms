@@ -151,11 +151,11 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.status = "completed"
                 req.body.userId = party.created_by
                 req.body.database = user.database
-                console.log("party after",party.remainingLimit)
-                console.log("req.body.grandTotal",req.body.grandTotal)
+                // console.log("party after",party.remainingLimit)
+                // console.log("req.body.grandTotal",req.body.grandTotal)
                 party.remainingLimit-=req.body.grandTotal;
                 await party.save()
-                console.log("party before",party.remainingLimit)
+                // console.log("party before",party.remainingLimit)
 
                 const savedOrder = await CreateOrder.create(req.body)
                 if (savedOrder) {
