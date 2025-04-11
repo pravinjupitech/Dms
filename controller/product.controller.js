@@ -826,6 +826,7 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       } else {
         for (let item of stock) {
           const existingStock = item.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
+          console.log("existingStock",existingStock)
           if (existingStock) {
             if (item.date.toDateString() === dates.toDateString()) {
               existingStock.sQty += (orderItem.qty);
