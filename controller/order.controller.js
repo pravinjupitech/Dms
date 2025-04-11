@@ -536,7 +536,8 @@ export const checkPartyOrderLimit = async (req, res, next) => {
         const party = await Customer.findById(req.params.id)
         if (party) {
             // console.log("party",party)
-            const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit+party.AdvanceAmount : party.limit;
+            const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit: party.limit;
+            // const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit+party.AdvanceAmount : party.limit;
             // console.log("CustomerLimit",CustomerLimit)
             return res.status(200).json({ CustomerLimit, message: `The limit on your order amount is ${CustomerLimit}`, status: true })
         } else {

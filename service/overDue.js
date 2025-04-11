@@ -63,6 +63,7 @@ export const DeleteOverDue = async (body) => {
         if (!over) {
             console.log("Over Due Not Found")
         } else {
+            console.log("over",over)
             const party = await Customer.findById(body.partyId)
             over.totalPaidAmount = over.totalPaidAmount - body.amount
             over.remainingAmount = over.remainingAmount + body.amount;
@@ -71,12 +72,14 @@ export const DeleteOverDue = async (body) => {
                 party.autoBillingStatus = "open"
                 await over.save()
                 if (party.remainingLimit) {
+                    console.log("calling",party.remainingLimit)
                     over.activeStatus = "Deactive"
                     party.remainingLimit = 0
                     await over.save()
                     await party.save()
                 }
                 await over.save()
+                console.log("calling11",party.remainingLimit)
             } else {
                 await over.save()
             }
