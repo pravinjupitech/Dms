@@ -911,10 +911,15 @@ export const revertOutWordStock = async (orderItem, date) => {
   
   export const invoicePartySend = async (req, res, next) => {
     try {
-        if(req.file){
-            req.body.pdfPath=req.file?.path
-        }
-        const fileName = req.file?.originalname || "invoice.pdf"; 
+      let pdfPath = ""; // Declare pdfPath
+  
+      if (req.file) {
+        console.log("req.file?.path", req.file?.path);
+        pdfPath = req.file?.path; // Assign it properly
+        req.body.pdfPath = pdfPath;
+      }
+  
+      const fileName = req.file?.originalname || "invoice.pdf";
       const { customer } = req.body;
   
       const mailOptions = {
@@ -943,7 +948,7 @@ export const revertOutWordStock = async (orderItem, date) => {
           </div>`,
         attachments: [
           {
-            filename: fileName, 
+            filename: fileName,
             path: pdfPath,
             contentType: "application/pdf",
           },
@@ -958,4 +963,5 @@ export const revertOutWordStock = async (orderItem, date) => {
       return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false });
     }
   };
+  
   
