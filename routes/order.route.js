@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, invoicePartySend, updateCreateOrder, updateCreateOrderStatus} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, invoicePartySend, updateCreateOrder, updateCreateOrderStatus} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -35,6 +35,7 @@ router.get("/check-party-limit/:id", checkPartyOrderLimit)
 router.post("/product-sales-report/:database", ProductWiseSalesReport)
 
 router.delete("/delete-sales/:id", deletedSalesOrder)
+router.delete("/delete-multiple",deletedSalesOrderMultiple)
 router.get("/party-qty/:partyId/:productId", PartyPurchaseqty)
 
 // --------------------------------------------------------------
