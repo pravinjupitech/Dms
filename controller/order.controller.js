@@ -735,8 +735,8 @@ export const deletedSalesOrder = async (req, res, next) => {
                     await warehouse.save();
                     await product.save()
                 }
-                console.log("orderItem",orderItem)
-                console.log("date",order.date)
+                // console.log("orderItem",orderItem)
+                // console.log("date",order.date)
                 await revertOutWordStock(orderItem,order.date)
 
             } else {
@@ -758,6 +758,57 @@ export const deletedSalesOrder = async (req, res, next) => {
         if(companyDetails){
             companyDetails.cancelInvoice.push({invoice:order.invoiceId})
             await companyDetails.save();
+        }
+        return res.status(200).json({ message: "delete successfull!", status: true })
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+export const deletedSalesOrderMultiple = async (req, res, next) => {
+    try {
+        const{sales}=req.body;
+        for(let item of sales){
+            const order = await CreateOrder.findById(item)
+        if (!order) {
+            return res.status(404).json({ error: "Not Found", status: false });
+        }
+        for (const orderItem of order.orderItems) {
+            const product = await Product.findById({ _id: orderItem.productId });
+            if (product) {
+                const warehouse = await Warehouse.findById(orderItem.warehouse)
+                if (warehouse) {
+                    const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
+                    pro.currentStock += (orderItem.qty);
+                    product.qty += orderItem.qty;
+                    product.pendingQty -= orderItem.qty;
+                    await warehouse.save();
+                    await product.save()
+                }
+                // console.log("orderItem",orderItem)
+                // console.log("date",order.date)
+                await revertOutWordStock(orderItem,order.date)
+
+            } else {
+                console.error(`Product With ID ${orderItem.productId} Not Found`);
+            }
+        }
+        // console.log("order",order)
+        const party=await Customer.findById(order.partyId)
+        // console.log("total",party.remainingLimit)
+        party.remainingLimit+=order.grandTotal;
+        await UpdateCheckLimitSales(order)
+        order.status = "Deactive";
+        await order.save();
+        await party.save()
+        // console.log("totalssss",party.remainingLimit)
+
+        await Ledger.findOneAndDelete({ orderId: req.params.id })
+        const companyDetails = await CompanyDetails.findOne({database:order.database})
+        if(companyDetails){
+            companyDetails.cancelInvoice.push({invoice:order.invoiceId})
+            await companyDetails.save();
+        }
         }
         return res.status(200).json({ message: "delete successfull!", status: true })
     } catch (err) {
