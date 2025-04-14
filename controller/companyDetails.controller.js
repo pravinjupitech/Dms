@@ -4,7 +4,6 @@ import { getCompanyDetailHierarchyBottomToTop } from "../rolePermission/RolePerm
 
 export const saveCompanyDetails = async (req, res, next) => {
   try {
-    console.log("req.body",req.body)
     const user = await User.findById({ _id: req.body.created_by })
     if (!user) {
       return res.status(400).json({ message: "User Not Found", status: false })
