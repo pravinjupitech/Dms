@@ -65,9 +65,16 @@ const ReceiptSchema = new mongoose.Schema({
     runningAmount: {
         type: Number
     },
+    bankSelect:{
+        type:String
+    },
     cashRunningAmount: {
         type: Number
-    }
+    },
+    bankDetails:{
+        type:Object
+    },
+
 }, { timestamps: true })
 
 export const Receipt = mongoose.model("receipt", ReceiptSchema);
