@@ -10,6 +10,9 @@ export const saveCompanyDetails = async (req, res, next) => {
     }
     req.body.database = user.database;
     const companyDetail = await CompanyDetails.find({ database: user.database }).sort({ sortorder: -1 });
+    if(req.body.bankDetails&&req.body.bankDetails.length>0){
+      req.body.bankDetails = JSON.parse(req.body.bankDetails)
+    }
     if (companyDetail.length === 0) {
       if (req.files) {
         req.files.map((file) => {
@@ -44,6 +47,9 @@ export const saveCompanyDetails = async (req, res, next) => {
               req.body.logo = file.filename;
             }
           });
+        }
+        if(req.body.bankDetails&&req.body.bankDetails.length>0){
+          req.body.bankDetails = JSON.parse(req.body.bankDetails)
         }
         // req.body.dummy = req.body.Suffix
         const companyDetails = req.body;

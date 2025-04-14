@@ -62,29 +62,34 @@ const CompanySchema = new mongoose.Schema({
     dummy: {
         type: String
     },
-    bankName: {
-        type: String
-    },
-    bankIFSC: {
-        type: String
-    },
-    accountNumber: {
-        type: Number
-    },
-    branchName: {
-        type: String
-    },
-    bankAddress: {
-        type: String
-    },
-    bankMicr: {
-        type: String
-    },
-    upiId: {
-        type: String
-    },
-    gpay_PhonepayNumber: {
-        type: String
+    bankDetails:[{
+        bankName: {
+            type: String
+        },
+        bankIFSC: {
+            type: String
+        },
+        accountNumber: {
+            type: Number
+        },
+        branchName: {
+            type: String
+        },
+        bankAddress: {
+            type: String
+        },
+        bankMicr: {
+            type: String
+        },
+        upiId: {
+            type: String
+        },
+        gpay_PhonepayNumber: {
+            type: String
+        },
+    }],
+    selectedBank:{
+        type:String
     },
     imagePosition: {
         type: String
