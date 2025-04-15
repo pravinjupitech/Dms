@@ -751,6 +751,8 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
 
 export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, date) => {
   try {
+    console.log("warehousee",warehouse)
+    console.log("orderItemssssssss",orderItem)
     const dates = new Date(date);
     const startOfDay = new Date(dates);
     const endOfDay = new Date(dates);
@@ -773,9 +775,8 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       await user.save();
     }
     const stock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
-
+console.log("stocks",stock)
     if (!stock) {
-
       let productItems = {
         productId: warehouse._id.toString(),
         gstPercentage: warehouse.GSTRate,
@@ -793,6 +794,10 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
         sTotal: orderItem.totalPrice,
         date: date
       }
+      console.log("productItemssss",productItems)
+      console.log("warehouse.qty",warehouse.qty)
+      console.log("orderItem.price",orderItem.price)
+      console.log("(warehouse.qty * orderItem.price)",(warehouse.qty * orderItem.price))
       let warehouses = {
         database: warehouse.database,
         warehouseId: warehouseId,
