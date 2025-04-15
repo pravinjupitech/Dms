@@ -724,6 +724,11 @@ export const deletedSalesOrder = async (req, res, next) => {
         if (!order) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
+        const party=await Customer.findOne({_id:order.partyId,status:"Active"})
+        if(!party){
+            return res.status(404).json({error:"Party Not Found",status:false})
+        }
+        party.remainingLimit+=order.grandTotal;
         for (const orderItem of order.orderItems) {
             const product = await Product.findById({ _id: orderItem.productId });
             if (product) {
@@ -736,23 +741,16 @@ export const deletedSalesOrder = async (req, res, next) => {
                     await warehouse.save();
                     await product.save()
                 }
-                // console.log("orderItem",orderItem)
-                // console.log("date",order.date)
                 await revertOutWordStock(orderItem,order.date)
 
             } else {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
-        // console.log("order",order)
-        const party=await Customer.findById(order.partyId)
-        // console.log("total",party.remainingLimit)
-        party.remainingLimit+=order.grandTotal;
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
         await party.save()
-        // console.log("totalssss",party.remainingLimit)
 
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         const companyDetails = await CompanyDetails.findOne({database:order.database})
