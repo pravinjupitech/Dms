@@ -769,7 +769,6 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       sourceProductItem.price = orderItem.price;
       sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price);
       sourceProductItem.transferQty -= orderItem.qty;
-      console.log("sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price)",sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price))
       user.markModified('productItems');
       await user.save();
     }
