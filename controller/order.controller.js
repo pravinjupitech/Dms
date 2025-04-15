@@ -729,7 +729,7 @@ export const deletedSalesOrder = async (req, res, next) => {
             const product = await Product.findById({ _id: orderItem.productId });
             console.log("product",product)
             if (product) {
-                const warehouse = await Warehouse.findById(orderItem.warehouse)
+                const warehouse = await Warehouse.findById(product.warehouse)
                 console.log("warehouse",warehouse)
                 if (warehouse) {
                     const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
