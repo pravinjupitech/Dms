@@ -19,7 +19,7 @@ export const saveReceipt = async (req, res, next) => {
     try {
         const partyReceipt = [];
         for (const item of req.body.Receipt) {
-            const isBankPayment = item.paymentMode !== "Cash";
+            const isBankPayment = item.paymentMode !== "Cash"; 
             const paymentMode = isBankPayment ? 'Bank' : 'Cash';
             const rece = await Receipt.find({ status: "Active", paymentMode, }).sort({ sortorder: -1 });
             if (rece.length > 0) {

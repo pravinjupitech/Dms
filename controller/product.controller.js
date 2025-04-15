@@ -761,8 +761,8 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       return console.log("warehouse not found")
     }
     const sourceProductItem = user.productItems.find((pItem) => pItem.productId.toString() === warehouse._id.toString());
-    // console.log("sourceProductItem",sourceProductItem)
-    // console.log("orderItem",orderItem)
+    console.log("sourceProductItem",sourceProductItem)
+    console.log("orderItem",orderItem)
     if (sourceProductItem) {
       sourceProductItem.gstPercentage = warehouse.GSTRate
       sourceProductItem.currentStock -= orderItem.qty
@@ -819,7 +819,7 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       await Stock.create(warehouses)
     } else {
       const stock = await Stock.find({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay } });
-      // console.log("elsestock",stock)
+      console.log("elsestock",stock)
       if (stock.length === 0) {
         return console.log("warehouse not found")
       } else {
@@ -851,7 +851,7 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
         }
         const existProductInStock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
         if (existProductInStock) {
-          // console.log("existProductInStock") 
+          console.log("existProductInStock") 
           const existingProduct = existProductInStock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
           if (!existingProduct) {
             let productItems = {

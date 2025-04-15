@@ -729,6 +729,7 @@ export const deletedSalesOrder = async (req, res, next) => {
                 const warehouse = await Warehouse.findById(orderItem.warehouse)
                 if (warehouse) {
                     const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
+                    console.log("pro",pro)
                     pro.currentStock += (orderItem.qty);
                     product.qty += orderItem.qty;
                     product.pendingQty -= orderItem.qty;
