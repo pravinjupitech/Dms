@@ -861,7 +861,7 @@ console.log("stocks",stock)
               gstPercentage: warehouse.GSTRate,
               currentStock: warehouse.qty,
               price: warehouse.Purchase_Rate,
-              totalPrice: (warehouse.qty *orderItem.Price),
+ totalPrice: (Number(warehouse.qty) || 0) * (Number(orderItem.price) || 0),
               oQty: warehouse.Opening_Stock,
               oRate: warehouse.Purchase_Rate,
               oTaxRate: warehouse.GSTRate,
