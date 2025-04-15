@@ -851,8 +851,9 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
         }
         const existProductInStock = await Stock.findOne({ warehouseId: warehouseId.toString(), date: { $gte: startOfDay, $lte: endOfDay } });
         if (existProductInStock) {
-          console.log("existProductInStock") 
+          console.log("existProductInStock",existProductInStock) 
           const existingProduct = existProductInStock.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
+          console.log("exisyingProduct",existingProduct)
           if (!existingProduct) {
             let productItems = {
               productId: warehouse._id.toString(),
