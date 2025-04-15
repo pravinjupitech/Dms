@@ -725,15 +725,11 @@ export const deletedSalesOrder = async (req, res, next) => {
             return res.status(404).json({ error: "Not Found", status: false });
         }
         for (const orderItem of order.orderItems) {
-            console.log("orderitem",orderItem)
             const product = await Product.findById({ _id: orderItem.productId });
-            console.log("product",product)
             if (product) {
                 const warehouse = await Warehouse.findById(product.warehouse)
-                console.log("warehouse",warehouse)
                 if (warehouse) {
                     const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
-                    console.log("pro",pro)
                     pro.currentStock += (orderItem.qty);
                     product.qty += orderItem.qty;
                     product.pendingQty -= orderItem.qty;
