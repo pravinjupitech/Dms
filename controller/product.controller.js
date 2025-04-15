@@ -769,6 +769,7 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       sourceProductItem.price = orderItem.price;
       sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price);
       sourceProductItem.transferQty -= orderItem.qty;
+      console.log("sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price)",sourceProductItem.totalPrice -= (orderItem.qty * orderItem.price))
       user.markModified('productItems');
       await user.save();
     }
@@ -825,7 +826,7 @@ export const addProductInWarehouse5 = async (warehouse, warehouseId, orderItem, 
       } else {
         for (let item of stock) {
           const existingStock = item.productItems.find((item) => item.productId.toString() === warehouse._id.toString())
-          // console.log("existingStock",existingStock)
+          console.log("existingStockss",existingStock)
           if (existingStock) {
             if (item.date.toDateString() === dates.toDateString()) {
               existingStock.sQty += (orderItem.qty);
