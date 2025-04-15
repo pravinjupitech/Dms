@@ -794,10 +794,6 @@ console.log("stocks",stock)
         sTotal: orderItem.totalPrice,
         date: date
       }
-      console.log("productItemssss",productItems)
-      console.log("warehouse.qty",warehouse.qty)
-      console.log("orderItem.price",orderItem.price)
-      console.log("(warehouse.qty * orderItem.price)",(warehouse.qty * orderItem.price))
       let warehouses = {
         database: warehouse.database,
         warehouseId: warehouseId,
@@ -877,6 +873,11 @@ console.log("stocks",stock)
               sTotal: orderItem.totalPrice,
               date: date
             }
+            
+      console.log("productItemssss",productItems)
+      console.log("warehouse.qty",warehouse.qty)
+      console.log("orderItem.price",orderItem.price)
+      console.log("(warehouse.qty * orderItem.price)",(warehouse.qty * orderItem.price))
             existProductInStock.productItems.push(productItems);
             await existProductInStock.save();
           }
