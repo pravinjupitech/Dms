@@ -89,6 +89,21 @@ export const DeleteCustomer = async (req, res, next) => {
         if (!customer) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
+        const purchageOrder = await PurchaseOrder.find({ "orderItems.productId": req.params.id, status: { $in: ["pending", "completed"] } })
+        const salesOrder = await CreateOrder.find({
+            "orderItems.productId": req.params.id,
+            status: { $in: ["pending", "completed"] }
+        });
+        const reciept = await Receipt.find({ partyId: req.params.id, status: "Active" })
+        if (reciept && reciept.length > 0) {
+            return res.status(400).json({ message: "Customer has used Receipt or Payment", status: false })
+        }
+        if (purchageOrder && purchageOrder.length > 0) {
+            return res.json({ message: "Customer is used in Purchase Order", status: false })
+        }
+        if (salesOrder && salesOrder.length > 0) {
+            return res.json({ message: "Customer is used in Sales order", status: false })
+        }
         customer.created_by = undefined;
         customer.status = "Deactive";
         await customer.save();
@@ -440,7 +455,7 @@ export const saveExcelFile = async (req, res) => {
         let remainingLimit = "remainingLimit";
         let City = "City";
         let State = "State";
-        let District="District";
+        let District = "District";
         const filePath = await req.file.path;
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
@@ -464,7 +479,7 @@ export const saveExcelFile = async (req, res) => {
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-                if (heading === 'email' &&cellValue&& typeof cellValue === 'object' && 'text' in cellValue) {
+                if (heading === 'email' && cellValue && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
                     document[heading] = cellValue;
@@ -477,10 +492,10 @@ export const saveExcelFile = async (req, res) => {
                     document[remainingLimit] = document.limit
                 }
                 const role = await Role.findOne({ id: document.rolename, database: document.database })
-                if(document.gstNumber){
- document[id] = document.gstNumber.slice(2, -3);
-                }else{
-                    document[id]=document.aadharNo 
+                if (document.gstNumber) {
+                    document[id] = document.gstNumber.slice(2, -3);
+                } else {
+                    document[id] = document.aadharNo
                 }
 
                 if (!role) {
@@ -491,51 +506,51 @@ export const saveExcelFile = async (req, res) => {
                     // if (!existCustomerGroup) {
                     //     group.push(document.id)
                     // } else {
-                        // document[category] = await existCustomerGroup._id.toString()
-                        const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
-                        if (existingId) {
-                            existingIds.push(document.id)
-                        } else {
-                            if (document.pincode) {
-                                const data = await GetCityByPincode(document.pincode)
-                                document[State] = data.state;
-                                document[City] = data.city;
-                                document[District]=data.district
+                    // document[category] = await existCustomerGroup._id.toString()
+                    const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
+                    if (existingId) {
+                        existingIds.push(document.id)
+                    } else {
+                        if (document.pincode) {
+                            const data = await GetCityByPincode(document.pincode)
+                            document[State] = data.state;
+                            document[City] = data.city;
+                            document[District] = data.district
+                        }
+                        if (document.gstNumber) {
+                            if (document.gstNumber.length !== 15) {
+                                GSTPercentage.push(document.gstNumber)
+                                continue
                             }
-                            if (document.gstNumber) {
-                                if (document.gstNumber.length !== 15) {
-                                    GSTPercentage.push(document.gstNumber)
-                                    continue
-                                }
-                                document[comPanNo] = document.gstNumber.slice(2, -3);
-                                document[id] = document.comPanNo
+                            document[comPanNo] = document.gstNumber.slice(2, -3);
+                            document[id] = document.comPanNo
+                            const existingRecord = await Customer.findOne({
+                                comPanNo: document.comPanNo, database: document.database, status: "Active"
+                            });
+                            const existingGst = await Customer.findOne({
+                                gstNumber: document.gstNumber, database: document.database, status: "Active"
+                            });
+                            if (!existingRecord && !existingGst) {
+                                const insertedDocument = await Customer.create(document);
+                            } else {
+                                existingParts.push(document.gstNumber);
+                            }
+                        } else {
+                            if (document.aadharNo) {
+                                document[id] = document.aadharNo
                                 const existingRecord = await Customer.findOne({
-                                    comPanNo: document.comPanNo, database: document.database, status: "Active"
+                                    aadharNo: document.aadharNo, database: document.database, status: "Active"
                                 });
-                                const existingGst = await Customer.findOne({
-                                    gstNumber: document.gstNumber, database: document.database, status: "Active"
-                                });
-                                if (!existingRecord && !existingGst) {
+                                if (!existingRecord) {
                                     const insertedDocument = await Customer.create(document);
                                 } else {
-                                    existingParts.push(document.gstNumber);
+                                    existingParts.push(document.aadharNo);
                                 }
                             } else {
-                                if (document.aadharNo) {
-                                    document[id] = document.aadharNo
-                                    const existingRecord = await Customer.findOne({
-                                        aadharNo: document.aadharNo, database: document.database, status: "Active"
-                                    });
-                                    if (!existingRecord) {
-                                        const insertedDocument = await Customer.create(document);
-                                    } else {
-                                        existingParts.push(document.aadharNo);
-                                    }
-                                } else {
-                                    panMobile.push(document.aadharNo);
-                                }
+                                panMobile.push(document.aadharNo);
                             }
                         }
+                    }
                     // }
                 }
             } else {
@@ -553,7 +568,7 @@ export const saveExcelFile = async (req, res) => {
             message = `this customer id's already exist: ${existingIds.join(', ')}`;
         } else if (dataNotExist.length > 0) {
             message = `this customer database not exist: ${dataNotExist.join(', ')}`;
-        } 
+        }
         // else if (group.length > 0) {
         //     message = `this customer category id not exist: ${group.join(', ')}`;
         // } 
@@ -601,7 +616,7 @@ export const updateExcelFile = async (req, res) => {
                     document[heading] = cellValue;
                 }
             }
-            
+
             document[database] = req.params.database
             const role = await Role.findOne({ id: document.rolename, database: document.database })
             if (!role) {
@@ -1145,12 +1160,12 @@ export const testWhatsapp = async (req, res) => {
         };
 
         // const response = await axios.post("https://hisocial.in/api/send", payload, {
-            // headers: { "Content-Type": "application/json" }
+        // headers: { "Content-Type": "application/json" }
         // });
         const response = await axios.post("https://hisocial.in/api/send", payload, {
             headers: { "Content-Type": "application/json" }
         });
-        res.status(200).json({message:response.data,status:true});
+        res.status(200).json({ message: response.data, status: true });
     } catch (error) {
         console.log(error)
         res.status(500).json({ error: error.response ? error.response.data : error.message });
@@ -1191,7 +1206,7 @@ const encryptPayload = (payload, publicKey) => {
     const key = new NodeRSA(publicKey, "public", {
         encryptionScheme: "pkcs1",
     });
-    
+
     const encrypted = key.encrypt(base64Payload, "base64");
     return encrypted;
 };
@@ -1258,7 +1273,7 @@ export const testGST = async (req, res) => {
 //     const key = new NodeRSA(publicKey, "public", {
 //         encryptionScheme: "pkcs1",
 //     });
-    
+
 //     const encrypted = key.encrypt(base64Payload, "base64");
 //     return encrypted;
 // };
@@ -1355,23 +1370,23 @@ export const testGST1 = async (req, res) => {
 };
 
 
-export const generateInvoice = async (req,res,next) => {
-    const companyDetail = await CompanyDetails.findOne({database:req.body.database})
-    if(!companyDetail){
+export const generateInvoice = async (req, res, next) => {
+    const companyDetail = await CompanyDetails.findOne({ database: req.body.database })
+    if (!companyDetail) {
         return false
     }
-    if(!companyDetail.dummy){
+    if (!companyDetail.dummy) {
         const no = 1
         const invoice1 = `${companyDetail.Prefix}${no.toString().padStart(5, '0')}${companyDetail.Suffix}`;
         console.log(invoice1)
         companyDetail.dummy = invoice1;
         await companyDetail.save();
-    } else{
+    } else {
         const length = companyDetail.Prefix.length
         const lengths = companyDetail.Suffix.length
         const first = companyDetail.dummy;
         const middlePart = first.slice(length, -lengths);
-        const newMiddleNumber = (parseInt(middlePart, 10) + 1).toString().padStart(middlePart.length, "0"); 
+        const newMiddleNumber = (parseInt(middlePart, 10) + 1).toString().padStart(middlePart.length, "0");
         const updatedString = first.slice(0, length) + newMiddleNumber + first.slice(-lengths);
         console.log(updatedString)
         companyDetail.dummy = updatedString;
