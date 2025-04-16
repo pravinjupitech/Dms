@@ -97,6 +97,9 @@ const ProductSchema = new mongoose.Schema({
     Opening_Stock: {
         type: Number
     },
+    openingRate:{
+type:Number
+    },
     Purchase_Rate: {
         type: Number
     },
