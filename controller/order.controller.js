@@ -123,7 +123,7 @@ export const createOrder = async (req, res, next) => {
 
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
-        // console.log("req.body",req.body)
+        console.log("req.body",req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -152,11 +152,11 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.status = "completed"
                 req.body.userId = party.created_by
                 req.body.database = user.database
-                console.log("party after",party.remainingLimit)
-                console.log("req.body.grandTotal",req.body.grandTotal)
+                // console.log("party after",party.remainingLimit)
+                // console.log("req.body.grandTotal",req.body.grandTotal)
                 party.remainingLimit-=req.body.grandTotal;
                 await party.save()
-                console.log("party before",party.remainingLimit)
+                // console.log("party before",party.remainingLimit)
 
                 const savedOrder = await CreateOrder.create(req.body)
                 if (savedOrder) {
@@ -724,11 +724,6 @@ export const deletedSalesOrder = async (req, res, next) => {
         if (!order) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
-        const party=await Customer.findOne({_id:order.partyId,status:"Active"})
-        if(!party){
-            return res.status(404).json({error:"Party Not Found",status:false})
-        }
-        party.remainingLimit+=order.grandTotal;
         for (const orderItem of order.orderItems) {
             const product = await Product.findById({ _id: orderItem.productId });
             if (product) {
@@ -747,6 +742,8 @@ export const deletedSalesOrder = async (req, res, next) => {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
+        const party=await Customer.findById(order.partyId)
+        party.remainingLimit+=order.grandTotal;
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
