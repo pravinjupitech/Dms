@@ -72,7 +72,7 @@ export const SaveUser = async (req, res, next) => {
         }
       }
     }
-    if (req.body.role.length > 0) {
+    if (req.body.role&&req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
     const findRole = await Role.findById(req.body.rolename);
