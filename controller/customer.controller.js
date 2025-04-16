@@ -89,9 +89,9 @@ export const DeleteCustomer = async (req, res, next) => {
         if (!customer) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
-        const purchageOrder = await PurchaseOrder.find({ "orderItems.productId": req.params.id, status: { $in: ["pending", "completed"] } })
+        const purchageOrder = await PurchaseOrder.find({partyId: req.params.id, status: { $in: ["pending", "completed"] } })
         const salesOrder = await CreateOrder.find({
-            "orderItems.productId": req.params.id,
+            partyId: req.params.id,
             status: { $in: ["pending", "completed"] }
         });
         const reciept = await Receipt.find({ partyId: req.params.id, status: "Active" })
