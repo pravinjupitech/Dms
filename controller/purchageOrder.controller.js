@@ -245,7 +245,7 @@ export const purchaseOrderHistory = async (req, res, next) => {
         //     return res.status(404).json({ error: "Product Not Found", status: false })
         // }
         const purchaseOrder = await PurchaseOrder.find({ database: database, status: { $ne: "Deactive" } }).populate({ path: 'orderItems.productId', model: 'product' }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).exec();
-        return purchaseOrder ? res.status(200).json({ orderHistory: purchaseOrder, status: true }) : res.status(404).json({ message: "Purchase Order Not Found", status: false })
+        return purchaseOrder ? res.status(200).json({ orderHistory: purchaseOrder, status: true }) : res.json({ message: "Purchase Order Not Found", status: false })
     } catch (err) {
         console.log(err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
