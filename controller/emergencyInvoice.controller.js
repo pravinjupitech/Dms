@@ -2,6 +2,10 @@ import { EmergencyInvoice } from "../model/emergencyInvoice.model.js";
 
 export const saveEmergencyInvoice = async (req, res, next) => {
     try {
+        const invoiceData = await EmergencyInvoice.find({ partyId: req.body.partyId, status: "Pending" })
+        if (invoiceData && invoiceData.length > 0) {
+            return res.json({ message: "Already Processed Your Emergency Invoice Request ", status: false })
+        }
         const savedInvoice = await EmergencyInvoice.create(req.body);
         return savedInvoice ? res.status(200).json({ message: "Data Saved", status: true }) : res.status(404).json({ message: "Something Went Wrong", status: false })
     } catch (error) {
