@@ -96,7 +96,7 @@ export const DeleteCustomer = async (req, res, next) => {
         });
         const reciept = await Receipt.find({ partyId: req.params.id, status: "Active" })
         if (reciept && reciept.length > 0) {
-            return res.status(400).json({ message: "Customer has used Receipt or Payment", status: false })
+            return res.json({ message: "Customer has used Receipt or Payment", status: false })
         }
         if (purchageOrder && purchageOrder.length > 0) {
             return res.json({ message: "Customer is used in Purchase Order", status: false })
