@@ -56,7 +56,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
         } else {
             const date1 = new Date();
             const date2 = new Date(req.body.date);
-            const party=await Customer.findById(req.body.partyId)
+            const party = await Customer.findById(req.body.partyId)
             if (date1.toDateString() === date2.toDateString()) {
                 for (const orderItem of orderItems) {
                     const product = await Product.findOne({ _id: orderItem.productId });
@@ -68,7 +68,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                             });
                             groupDiscount = maxDiscount.discount;
                         }
-                      
+
                         // if (product.Purchase_Rate > orderItem.landedCost) {
                         //     product.Purchase_Rate = product.Purchase_Rate; 
                         // } else {
@@ -86,7 +86,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                         }
                         product.purchaseDate = new Date()
                         let obj = {
-                            partyId:req.body.partyId,
+                            partyId: req.body.partyId,
                             purchaseDate: new Date()
                         }
                         product.partyId.push(obj);
@@ -135,7 +135,7 @@ export const purchaseInvoiceOrder = async (req, res, next) => {
                         product.purchaseDate = new Date()
                         // product.partyId = req.body.partyId;
                         let obj = {
-                            partyId:req.body.partyId,
+                            partyId: req.body.partyId,
                             purchaseDate: new Date()
                         }
                         product.partyId.push(obj);
@@ -456,18 +456,18 @@ export const deletedPurchase = async (req, res, next) => {
             const product = await Product.findOne({ _id: orderItem.productId });
             if (product) {
                 product.qty -= orderItem.qty;
-                const warehouse = { 
-                    productId: orderItem.productId, 
-                    currentStock: (orderItem.qty), 
-                    transferQty: (orderItem.qty), 
-                    price: orderItem.price, 
-                    totalPrice: orderItem.totalPrice, 
-                    gstPercentage: orderItem.gstPercentage, 
-                    igstTaxType: orderItem.igstTaxType, 
-                    primaryUnit: orderItem.primaryUnit, 
-                    secondaryUnit: orderItem.secondaryUnit, 
-                    secondarySize: orderItem.secondarySize, 
-                    landedCost: orderItem.landedCost 
+                const warehouse = {
+                    productId: orderItem.productId,
+                    currentStock: (orderItem.qty),
+                    transferQty: (orderItem.qty),
+                    price: orderItem.price,
+                    totalPrice: orderItem.totalPrice,
+                    gstPercentage: orderItem.gstPercentage,
+                    igstTaxType: orderItem.igstTaxType,
+                    primaryUnit: orderItem.primaryUnit,
+                    secondaryUnit: orderItem.secondaryUnit,
+                    secondarySize: orderItem.secondarySize,
+                    landedCost: orderItem.landedCost
                 };
                 await product.save();
                 await deleteAddProductInWarehouse(warehouse, product.warehouse);
@@ -475,7 +475,7 @@ export const deletedPurchase = async (req, res, next) => {
                 const previousPurchaseOrders = await PurchaseOrder.find({
                     "orderItems.productId": orderItem.productId,
                     status: "completed",
-                    createdAt: { $lt: purchase.createdAt }  
+                    createdAt: { $lt: purchase.createdAt }
                 }).sort({ createdAt: -1 });
                 if (!previousPurchaseOrders || previousPurchaseOrders.length === 0) {
                     orderItem.price = 0;
@@ -489,12 +489,13 @@ export const deletedPurchase = async (req, res, next) => {
                 console.log("Product Id Not Found");
             }
         }
-        const party=await Customer.findById(purchase.partyId);
-        party.remainingLimit-= purchase.grandTotal;
+        if (purchase.status === "completed") {
+            const party = await Customer.findById(purchase.partyId);
+            party.remainingLimit -= purchase.grandTotal;
+            await party.save();
+        }
         purchase.status = "Deactive";
-        await party.save();
         await purchase.save();
-
         await Ledger.findOneAndDelete({ orderId: req.params.id });
 
         return res.status(200).json({ message: "Deletion successful!", status: true });
@@ -743,34 +744,34 @@ export const DeleteStockPurchase = async (orderItem, date, orderData) => {
         if (!orderData || !orderData[0]) {
             console.log("Previous purchase order not found, setting price to 0.");
             orderItem.price = 0;
-            orderData = [{ price: 0 }];  
+            orderData = [{ price: 0 }];
             console.log("orderItem.price", orderItem.price);
         }
 
         const stock = await Stock.findOne({ date: date });
         if (!stock) {
             console.log("Stock not found for date:", date);
-            return; 
+            return;
         }
 
-       
+
         for (let productItem of stock.productItems) {
             if (productItem.productId === orderItem.productId.toString()) {
                 productItem.currentStock -= orderItem.qty;
-                productItem.pRate = orderData[0].price || 0; 
-                productItem.price = orderData[0].price || 0; 
+                productItem.pRate = orderData[0].price || 0;
+                productItem.price = orderData[0].price || 0;
                 productItem.pQty -= orderItem.qty;
                 productItem.totalPrice -= orderItem.totalPrice;
                 productItem.pTotal -= orderItem.totalPrice;
                 await stock.save();
-                break; 
+                break;
             }
         }
         for (let productItem of stock.productItems) {
             if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
                 stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
                 await stock.save();
-                break; 
+                break;
             }
         }
 

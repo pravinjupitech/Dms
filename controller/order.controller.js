@@ -742,12 +742,14 @@ export const deletedSalesOrder = async (req, res, next) => {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
-        const party=await Customer.findById(order.partyId)
-        party.remainingLimit+=order.grandTotal;
+        if(order.status==="completed"){
+            const party=await Customer.findById(order.partyId)
+            party.remainingLimit+=order.grandTotal;
+            await party.save()
+        }
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
-        await party.save()
 
         await Ledger.findOneAndDelete({ orderId: req.params.id })
         const companyDetails = await CompanyDetails.findOne({database:order.database})
@@ -790,13 +792,14 @@ export const deletedSalesOrderMultiple = async (req, res, next) => {
             }
         }
         // console.log("order",order)
-        const party=await Customer.findById(order.partyId)
-        // console.log("total",party.remainingLimit)
-        party.remainingLimit+=order.grandTotal;
+        if(order.status==="completed"){
+            const party=await Customer.findById(order.partyId)
+            party.remainingLimit+=order.grandTotal;
+            await party.save()
+        }
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
-        await party.save()
         // console.log("totalssss",party.remainingLimit)
 
         await Ledger.findOneAndDelete({ orderId: req.params.id })
