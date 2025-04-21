@@ -451,6 +451,7 @@ export const saveExcelFile = async (req, res) => {
         let comPanNo = "comPanNo";
         let category = "category";
         let database = "database";
+        let status="status";
         let rolename = "rolename";
         let remainingLimit = "remainingLimit";
         let City = "City";
@@ -487,6 +488,7 @@ export const saveExcelFile = async (req, res) => {
                 // document[heading] = cellValue;
             }
             document[database] = req.params.database
+            document[status]="Active"
             if (document.database) {
                 if (document.limit) {
                     document[remainingLimit] = document.limit
