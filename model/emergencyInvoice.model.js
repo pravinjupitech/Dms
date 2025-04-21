@@ -10,6 +10,9 @@ const EmergencyInvoiceSchema = new mongoose.Schema({
     database: {
         type: String,
     },
+    remark: {
+        type: String
+    },
     status: {
         type: String,
         default: "Pending"
