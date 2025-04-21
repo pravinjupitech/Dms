@@ -457,6 +457,7 @@ export const saveExcelFile = async (req, res) => {
         let City = "City";
         let State = "State";
         let District = "District";
+        let created_by="created_by";
         const filePath = await req.file.path;
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
@@ -489,6 +490,7 @@ export const saveExcelFile = async (req, res) => {
             }
             document[database] = req.params.database
             document[status]="Active"
+            document[created_by]=document.assignSalesPerson
             if (document.database) {
                 if (document.limit) {
                     document[remainingLimit] = document.limit
