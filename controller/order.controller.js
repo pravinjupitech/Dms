@@ -961,16 +961,25 @@ export const revertOutWordStock = async (orderItem, date) => {
   
   export const invoicePartySend = async (req, res, next) => {
     try {
-      let pdfPath = ""; // Declare pdfPath
+      let pdfPath = "";
   
       if (req.file) {
         console.log("req.file?.path", req.file?.path);
-        pdfPath = req.file?.path; // Assign it properly
+        pdfPath = req.file?.path;
         req.body.pdfPath = pdfPath;
       }
   
       const fileName = req.file?.originalname || "invoice.pdf";
-      const { customer } = req.body;
+  
+      const {
+        title,
+        date,
+        total,
+        invoiceId,
+        partyName,
+        address,
+        customer,
+      } = req.body;
   
       const mailOptions = {
         from: {
@@ -985,8 +994,34 @@ export const revertOutWordStock = async (orderItem, date) => {
               <div style="border-bottom:1px solid #eee">
                 <a href="#" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">Distribution Management System</a>
               </div>
-              <p style="font-size:1.1em">Hi,</p>
-              <p>Thank you for choosing Distribution Management System. Please find your invoice attached as a PDF document.</p>
+              <p style="font-size:1.1em">Hi ${partyName || "Customer"},</p>
+              <p>${title || "Thank you for your purchase. Please find your invoice details below."}</p>
+  
+              <table style="width:100%;margin-top:20px;border-collapse:collapse">
+                <tr>
+                  <td style="padding:8px;border:1px solid #eee;"><strong>Invoice ID:</strong></td>
+                  <td style="padding:8px;border:1px solid #eee;">${invoiceId}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px;border:1px solid #eee;"><strong>Date:</strong></td>
+                  <td style="padding:8px;border:1px solid #eee;">${date}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px;border:1px solid #eee;"><strong>Party Name:</strong></td>
+                  <td style="padding:8px;border:1px solid #eee;">${partyName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px;border:1px solid #eee;"><strong>Address:</strong></td>
+                  <td style="padding:8px;border:1px solid #eee;">${address}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px;border:1px solid #eee;"><strong>Total Amount:</strong></td>
+                  <td style="padding:8px;border:1px solid #eee;">₹ ${total}</td>
+                </tr>
+              </table>
+  
+              <p style="margin-top:20px;">Please find your invoice also attached as a PDF document.</p>
+  
               <p style="font-size:0.9em;">Regards,<br />Distribution Management System</p>
               <hr style="border:none;border-top:1px solid #eee" />
               <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
@@ -996,22 +1031,31 @@ export const revertOutWordStock = async (orderItem, date) => {
               </div>
             </div>
           </div>`,
-        attachments: [
-          {
-            filename: fileName,
-            path: pdfPath,
-            contentType: "application/pdf",
-          },
-        ],
+        attachments: pdfPath
+          ? [
+              {
+                filename: fileName,
+                path: pdfPath,
+                contentType: "application/pdf",
+              },
+            ]
+          : [],
       };
   
       await transporter.sendMail(mailOptions);
-      return res.status(200).json({ message: "Invoice sent successfully", status: true });
+      return res
+        .status(200)
+        .json({ message: "Invoice sent successfully", status: true });
   
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false });
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+        status: false,
+      });
     }
   };
+  
   
   
