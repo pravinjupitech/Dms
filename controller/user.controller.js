@@ -436,13 +436,13 @@ export const saveUserWithExcel = async (req, res) => {
           // if (!shifts) {
           //   shiftss.push(document.id)
           // } else {
-            const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
-            if (!branchs) {
-              branchss.push(document.id)
-            } else {
+            // const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
+            // if (!branchs) {
+            //   branchss.push(document.id)
+            // } else {
               document[rolename] = role._id.toString()
-              document[shift] = shifts._id.toString()
-              document[branch] = branchs._id.toString()
+              // document[shift] = shifts._id.toString()
+              // document[branch] = branchs._id.toString()
               if (document.id) {
                 const existingId = await User.findOne({ id: document.id, database: document.database, status: "Active" });
                 console.log("existingId",existingId)
@@ -470,13 +470,13 @@ export const saveUserWithExcel = async (req, res) => {
                         Aadhar_No: document.Aadhar_No, database: document.database, status: "Active"
                       });
                       if (!existingRecord) {
-                        const userLimit = await SubscriptionAdminPlan(document);
-                        if (userLimit) {
-                          const insertedDocument = await User.create(document);
-                          insertedDocuments.push(insertedDocument);
-                        } else {
-                          planLimit.push(document.id);
-                        }
+                        // const userLimit = await SubscriptionAdminPlan(document);
+                        // if (userLimit) {
+                        //   const insertedDocument = await User.create(document);
+                        //   insertedDocuments.push(insertedDocument);
+                        // } else {
+                        //   planLimit.push(document.id);
+                        // }
                       } else {
                         existingParts.push(document.Aadhar_No);
                       }
@@ -488,7 +488,7 @@ export const saveUserWithExcel = async (req, res) => {
               } else {
                 IdNotExisting.push(document.firstName)
               }
-            }
+            // }
           // }
         }
       } else {
