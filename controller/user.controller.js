@@ -432,10 +432,10 @@ export const saveUserWithExcel = async (req, res) => {
         if (!role) {
           roles.push(document.id)
         } else {
-          const shifts = await WorkingHours.findOne({ status: "Active", id: document.shift, database: document.database })
-          if (!shifts) {
-            shiftss.push(document.id)
-          } else {
+          // const shifts = await WorkingHours.findOne({ status: "Active", id: document.shift, database: document.database })
+          // if (!shifts) {
+          //   shiftss.push(document.id)
+          // } else {
             const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
             if (!branchs) {
               branchss.push(document.id)
@@ -489,7 +489,7 @@ export const saveUserWithExcel = async (req, res) => {
                 IdNotExisting.push(document.firstName)
               }
             }
-          }
+          // }
         }
       } else {
         dataNotExist.push(document.firstName)
