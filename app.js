@@ -71,6 +71,7 @@ import RawProductRouter from "./routes/rawProduct.route.js"
 import StartProductionRouter from "./routes/startProduction.route.js"
 import RawProductTargetRouter from "./routes/rawProductTarget.route.js"
 import EmergencyInvoiceRouter from "./routes/emergencyInvoice.route.js"
+import DynamicUnitRouter from "./routes/dynamicUnit.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -165,6 +166,7 @@ app.use("/rawProduct",RawProductRouter)
 app.use("/startProduction",StartProductionRouter)
 app.use("/product-target",RawProductTargetRouter)
 app.use("/emergency-invoice",EmergencyInvoiceRouter)
+app.use("/units",DynamicUnitRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
