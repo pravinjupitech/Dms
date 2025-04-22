@@ -4,7 +4,7 @@ export const saveDynamicUnit = async (req, res, next) => {
     try {
         const { database, created_by, Units } = req.body;
         const findUnits = await DynamicUnit.findOne({ database: database, created_by: created_by })
-        
+
         if (findUnits) {
             Units.forEach(item => {
                 findUnits.Units.push(item)
@@ -24,8 +24,8 @@ export const saveDynamicUnit = async (req, res, next) => {
 
 export const viewDynamicUnit = async (req, res, next) => {
     try {
-        const dynamicUnit = await DynamicUnit.find({ database: req.body.database })
-        return dynamicUnit.length > 0 ? res.status(200).json({ message: "Data Found", dynamicUnit, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+        const dynamicUnit = await DynamicUnit.findOne({ database: req.params.database })
+        return dynamicUnit? res.status(200).json({ message: "Data Found", dynamicUnit, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
