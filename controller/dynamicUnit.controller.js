@@ -32,18 +32,34 @@ export const viewDynamicUnit = async (req, res, next) => {
     }
 }
 
+
 export const deleteDynamicUnit = async (req, res, next) => {
     try {
         const { id, innerId } = req.params;
-        const dynamicUnit = await DynamicUnit.findById(id)
+
+        const dynamicUnit = await DynamicUnit.findById(id);
         if (!dynamicUnit) {
-            return res.status(404).json({ message: "Not Found SuperAdmin Units", status: false })
+            return res.status(404).json({ message: "Not Found SuperAdmin Units", status: false });
         }
-        dynamicUnit.Units = dynamicUnit.Units.filter((item) => item._id !== innerId)
+
+        const originalLength = dynamicUnit.Units.length;
+        dynamicUnit.Units = dynamicUnit.Units.filter(
+            (item) => item._id.toString() !== innerId
+        );
+
+        if (dynamicUnit.Units.length === originalLength) {
+            return res.status(404).json({ message: "Unit not found", status: false });
+        }
+
         await dynamicUnit.save();
-        res.status(200).json({ message: "Unit Deleted", status: false })
+
+        res.status(200).json({ message: "Unit Deleted", status: true });
     } catch (error) {
-        console.log(error)
-        return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
     }
-}
+};
