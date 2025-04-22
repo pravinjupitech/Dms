@@ -4,10 +4,12 @@ export const saveDynamicUnit = async (req, res, next) => {
     try {
         const { database, created_by, Units } = req.body;
         const findUnits = await DynamicUnit.findOne({ database: database, created_by: created_by })
+        
         if (findUnits) {
             Units.forEach(item => {
                 findUnits.Units.push(item)
             });
+
             await findUnits.save();
             return res.status(200).json({ message: "Unit saved", status: true })
         } else {
