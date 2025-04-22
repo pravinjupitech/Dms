@@ -2,8 +2,18 @@ import { DynamicUnit } from "../model/dynamicUnit.model.js";
 
 export const saveDynamicUnit = async (req, res, next) => {
     try {
-        const savedUnits = await DynamicUnit.create(req.body);
-        return savedUnits ? res.status(200).json({ message: "Data Saved", status: true }) : res.status(404).json({ message: "Somethings Went Wrong", status: false })
+        const { database, created_by, Units } = req.body;
+        const findUnits = await DynamicUnit.findOne({ database: database, created_by: created_by })
+        if (findUnits) {
+            Units.forEach(item => {
+                findUnits.Units.push(item)
+            });
+            await findUnits.save();
+            return res.status(200).json({ message: "Unit saved", status: true })
+        } else {
+            const savedUnits = await DynamicUnit.create(req.body);
+            return savedUnits ? res.status(200).json({ message: "Data Saved", status: true }) : res.status(404).json({ message: "Somethings Went Wrong", status: false })
+        }
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
