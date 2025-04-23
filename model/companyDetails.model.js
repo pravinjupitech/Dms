@@ -44,9 +44,9 @@ const CompanySchema = new mongoose.Schema({
     logo: {
         type: String
     },
-    qr_code:{
-        type:String
-      },
+    qr_code: {
+        type: String
+    },
     signature: {
         type: String
     },
@@ -62,7 +62,7 @@ const CompanySchema = new mongoose.Schema({
     dummy: {
         type: String
     },
-    bankDetails:[{
+    bankDetails: [{
         bankName: {
             type: String
         },
@@ -87,9 +87,15 @@ const CompanySchema = new mongoose.Schema({
         gpay_PhonepayNumber: {
             type: String
         },
+        openingBalance: {
+            type: String
+        },
+        openingType: {
+            type: String
+        }
     }],
-    selectedBank:{
-        type:String
+    selectedBank: {
+        type: String
     },
     imagePosition: {
         type: String
@@ -114,9 +120,9 @@ const CompanySchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    cancelInvoice:[{
-        invoice:{
-            type:String
+    cancelInvoice: [{
+        invoice: {
+            type: String
         }
     }]
 }, { timestamps: true })
