@@ -120,6 +120,12 @@ const CompanySchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    openingBalance: {
+        type: String
+    },
+    openingType: {
+        type: String
+    },
     cancelInvoice: [{
         invoice: {
             type: String
