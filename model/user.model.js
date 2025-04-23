@@ -125,10 +125,10 @@ const UserSchema = new mongoose.Schema({
   address2: {
     type: String
   },
-  reference:{
-    type:Array
+  reference: {
+    type: Array
   }
- ,
+  ,
   last_job_firm_name: {
     type: String
   },
@@ -192,11 +192,11 @@ const UserSchema = new mongoose.Schema({
   },
   userRegister: {
     type: Number,
-    default:0
+    default: 0
   },
   userAllotted: {
     type: Number,
-    default:0
+    default: 0
   },
   billAmount: {
     type: Number
@@ -231,11 +231,14 @@ const UserSchema = new mongoose.Schema({
   shift: {
     type: String,
   },
-  qr_code:{
-    type:String
+  qr_code: {
+    type: String
   },
-  upi_id:{
-    type:String
+  appPassword: {
+    type: String
+  },
+  upi_id: {
+    type: String
   }
 }, { timestamps: true });
 

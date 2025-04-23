@@ -22,7 +22,8 @@ import { ledgerPartyForDebit } from "../service/ledger.js";
 import { addProductInWarehouse5, addProductInWarehouse6 } from "./product.controller.js";
 import { Stock } from "../model/stock.js";
 import { CompanyDetails } from "../model/companyDetails.model.js";
-import transporterss from "../service/email.js";
+// import transporterss from "../service/email.js";
+import nodemailer from "nodemailer";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -958,7 +959,7 @@ export const revertOutWordStock = async (orderItem, date) => {
       console.log(error);
     }
   };
-  
+
   export const invoicePartySend = async (req, res, next) => {
     try {
       let pdfPath = "";
@@ -980,19 +981,32 @@ export const revertOutWordStock = async (orderItem, date) => {
         address,
         superAdminName,
         customer,
+        appPassword,
+        email
       } = req.body;
+
+      const dynamicTransporter = nodemailer.createTransport({
+        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: email,
+          pass: appPassword,
+        },
+      });
   
       const mailOptions = {
         from: {
           name: "Distribution Management System",
-          address: process.env.EMAIL,
+          address: email,
         },
         to: customer,
         subject: "Sales Invoice",
         html: `
           <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
             <div style="margin:50px auto;width:70%;padding:20px 0">
-             <p style="font-size:1.5em; font-weight:500;">Hi ${partyName || "Customer"},</p>
+              <p style="font-size:1.5em; font-weight:500;">Hi ${partyName || "Customer"},</p>
               <p>${title || "Thank you for your purchase. Please find your invoice details below."}</p>
   
               <table style="width:100%;margin-top:20px;border-collapse:collapse">
@@ -1039,11 +1053,8 @@ export const revertOutWordStock = async (orderItem, date) => {
             ]
           : [],
       };
-  
-      await transporter.sendMail(mailOptions);
-      return res
-        .status(200)
-        .json({ message: "Invoice sent successfully", status: true });
+      await dynamicTransporter.sendMail(mailOptions);
+      return res.status(200).json({ message: "Invoice sent successfully", status: true });
   
     } catch (error) {
       console.error(error);
@@ -1054,6 +1065,7 @@ export const revertOutWordStock = async (orderItem, date) => {
       });
     }
   };
+  
   
   
   
