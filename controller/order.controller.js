@@ -963,15 +963,11 @@ export const revertOutWordStock = async (orderItem, date) => {
   export const invoicePartySend = async (req, res, next) => {
     try {
       let pdfPath = "";
-  
       if (req.file) {
-        console.log("req.file?.path", req.file?.path);
         pdfPath = req.file?.path;
         req.body.pdfPath = pdfPath;
       }
-  
       const fileName = req.file?.originalname || "invoice.pdf";
-  
       const {
         title,
         date,
