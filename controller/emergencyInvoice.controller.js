@@ -2,6 +2,10 @@ import { EmergencyInvoice } from "../model/emergencyInvoice.model.js";
 
 export const saveEmergencyInvoice = async (req, res, next) => {
     try {
+        const { partyId } = req.body;
+        if (!partyId) {
+            return res.json({ message: "Party Id Is Required", status: false })
+        }
         const invoiceData = await EmergencyInvoice.find({ partyId: req.body.partyId, status: "Pending" })
         if (invoiceData && invoiceData.length > 0) {
             return res.json({ message: "Already Processed Your Emergency Invoice Request ", status: false })
@@ -28,6 +32,9 @@ export const updateEmergencyInvoice = async (req, res, next) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
+        if(!req.body.partyId){
+            return res.json({ message: "Party Id Is Required", status: false })
+        }
         const emergencyInvoice = await EmergencyInvoice.findById(id)
         if (!emergencyInvoice) {
             return res.status(404).json({ message: "Not Found", status: false })
