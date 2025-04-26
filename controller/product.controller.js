@@ -1250,7 +1250,10 @@ export const HSNWiseSalesReport = async (req, res, next) => {
       targetQuery.createdAt = { $gte: startDate, $lte: endDate };
     }
     let orders = [];
+    console.log("targetQuery",targetQuery)
     const salesOrder = await CreateOrder.find(targetQuery).populate({ path: "orderItems.productId", model: "product" });
+    targetQuery={status:"completed"}
+    console.log("targetQuery",targetQuery)
     if (salesOrder.length === 0) {
       return res.status(404).json({ message: "Not Found", status: false });
     }
