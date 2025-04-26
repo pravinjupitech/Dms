@@ -1245,15 +1245,13 @@ export const HSNWiseSalesReport = async (req, res, next) => {
   try {
     const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
     const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
-    const targetQuery = { database: req.params.database };
+    const targetQuery = { database: req.params.database,status:"completed" };
     if (startDate && endDate) {
       targetQuery.createdAt = { $gte: startDate, $lte: endDate };
     }
     let orders = [];
     console.log("targetQuery",targetQuery)
     const salesOrder = await CreateOrder.find(targetQuery).populate({ path: "orderItems.productId", model: "product" });
-    targetQuery={status:"completed"}
-    console.log("targetQuery",targetQuery)
     if (salesOrder.length === 0) {
       return res.status(404).json({ message: "Not Found", status: false });
     }
