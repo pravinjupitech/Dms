@@ -72,6 +72,7 @@ import StartProductionRouter from "./routes/startProduction.route.js"
 import RawProductTargetRouter from "./routes/rawProductTarget.route.js"
 import EmergencyInvoiceRouter from "./routes/emergencyInvoice.route.js"
 import DynamicUnitRouter from "./routes/dynamicUnit.route.js"
+import AccountRouter from "./routes/accounts.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -95,7 +96,7 @@ app.get("/", (req, res) => {
 });
 app.get("/process", (req, res) => {
   res.send("server running!");
-  process.exit()  
+  process.exit()
 });
 
 
@@ -160,13 +161,14 @@ app.use("/termination", TerminationRouter)
 app.use("/bonus", BonusRouter)
 app.use("/check", customerCheckRouter)
 app.use("/branch", UserBranchRouter)
-app.use("/plan",PlanRequestRouter)
-app.use("/chat",ChatRouter)
-app.use("/rawProduct",RawProductRouter)
-app.use("/startProduction",StartProductionRouter)
-app.use("/product-target",RawProductTargetRouter)
-app.use("/emergency-invoice",EmergencyInvoiceRouter)
-app.use("/units",DynamicUnitRouter)
+app.use("/plan", PlanRequestRouter)
+app.use("/chat", ChatRouter)
+app.use("/rawProduct", RawProductRouter)
+app.use("/startProduction", StartProductionRouter)
+app.use("/product-target", RawProductTargetRouter)
+app.use("/emergency-invoice", EmergencyInvoiceRouter)
+app.use("/units", DynamicUnitRouter)
+app.use("/accounts", AccountRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
@@ -204,25 +206,25 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST","PUT","DELETE"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 io.on("connection", (socket) => {
   // console.log("A user connected");
 
   socket.on("joinRoom", (roomId) => {
-    socket.join(roomId); 
+    socket.join(roomId);
     // console.log(`User joined room: ${roomId}`);
   });
 
   socket.on("createRoom", () => {
-    const roomId = uuidv4(); 
-    socket.emit("roomCreated", roomId); 
+    const roomId = uuidv4();
+    socket.emit("roomCreated", roomId);
     // console.log(`Room created with ID: ${roomId}`);
   });
 
   socket.on("chatMessage", (data) => {
-    io.to(data.roomId).emit("chatMessage", data); 
+    io.to(data.roomId).emit("chatMessage", data);
     // console.log(`Message sent to room ${data.roomId}: ${data.message}`);
   });
   socket.on("disconnect", () => {
