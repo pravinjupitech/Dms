@@ -793,11 +793,11 @@ export const deletedSalesOrderMultiple = async (req, res, next) => {
             }
         }
         // console.log("order",order)
-        // if(order.status==="completed"){
-        //     const party=await Customer.findById(order.partyId)
-        //     party.remainingLimit+=order.grandTotal;
-        //     await party.save()
-        // }
+        if(order.status==="completed"){
+            const party=await Customer.findById(order.partyId)
+            party.remainingLimit+=order.grandTotal;
+            await party.save()
+        }
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
