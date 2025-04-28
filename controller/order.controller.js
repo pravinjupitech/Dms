@@ -8,7 +8,7 @@ import pdf from 'html-pdf'
 import { User } from "../model/user.model.js";
 import { Product } from "../model/product.model.js";
 import { CreateOrder } from "../model/createOrder.model.js";
-import {generateInvoice, generateOrderNo } from "../service/invoice.js";
+import { generateInvoice, generateOrderNo } from "../service/invoice.js";
 import { getCreateOrderHierarchy, getUserHierarchyBottomToTop } from "../rolePermission/RolePermission.js";
 import { Customer } from "../model/customer.model.js";
 import { createInvoiceTemplate } from "../Invoice/invoice.js";
@@ -47,10 +47,10 @@ export const createOrder = async (req, res, next) => {
 
         if (date1.toDateString() === date2.toDateString()) {
             if (party.paymentTerm.toLowerCase() !== "cash") {
-                const existOrders = await CreateOrder.find({ 
+                const existOrders = await CreateOrder.find({
                     partyId: req.body.partyId,
                     status: { $nin: ['Deactive', 'Cancelled', 'Cancel in process'] },
-                    paymentStatus: false 
+                    paymentStatus: false
                 }).sort({ date: 1, sortorder: -1 });
 
                 if (existOrders.length > 0) {
@@ -124,7 +124,7 @@ export const createOrder = async (req, res, next) => {
 
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
-        console.log("req.body",req.body)
+        console.log("req.body", req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -155,7 +155,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.database = user.database
                 // console.log("party after",party.remainingLimit)
                 // console.log("req.body.grandTotal",req.body.grandTotal)
-                party.remainingLimit-=req.body.grandTotal;
+                party.remainingLimit -= req.body.grandTotal;
                 await party.save()
                 // console.log("party before",party.remainingLimit)
 
@@ -185,7 +185,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
                 req.body.userId = party.created_by
                 req.body.database = user.database
                 req.body.paymentStatus = true;
-                party.remainingLimit-=req.body.grandTotal;
+                party.remainingLimit -= req.body.grandTotal;
                 await party.save()
                 const savedOrder = await CreateOrder.create(req.body)
                 if (savedOrder) {
@@ -289,9 +289,9 @@ export const deleteSalesOrder = async (req, res, next) => {
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
-        const companyDetails = await CompanyDetails.findOne({database:order.database})
-        if(companyDetails){
-            companyDetails.cancelInvoice.push({invoice:order.invoiceId})
+        const companyDetails = await CompanyDetails.findOne({ database: order.database })
+        if (companyDetails) {
+            companyDetails.cancelInvoice.push({ invoice: order.invoiceId })
             await companyDetails.save();
         }
         return res.status(200).json({ message: "delete successfull!", status: true })
@@ -538,7 +538,7 @@ export const checkPartyOrderLimit = async (req, res, next) => {
         const party = await Customer.findById(req.params.id)
         if (party) {
             // console.log("party",party)
-            const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit: party.limit;
+            const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit : party.limit;
             // const CustomerLimit = (party.remainingLimit > 0) ? party.remainingLimit+party.AdvanceAmount : party.limit;
             // console.log("CustomerLimit",CustomerLimit)
             return res.status(200).json({ CustomerLimit, message: `The limit on your order amount is ${CustomerLimit}`, status: true })
@@ -737,15 +737,15 @@ export const deletedSalesOrder = async (req, res, next) => {
                     await warehouse.save();
                     await product.save()
                 }
-                await revertOutWordStock(orderItem,order.date)
+                await revertOutWordStock(orderItem, order.date)
 
             } else {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
-        if(order.status==="completed"){
-            const party=await Customer.findById(order.partyId)
-            party.remainingLimit+=order.grandTotal;
+        if (order.status === "completed") {
+            const party = await Customer.findById(order.partyId)
+            party.remainingLimit += order.grandTotal;
             await party.save()
         }
         await UpdateCheckLimitSales(order)
@@ -753,9 +753,9 @@ export const deletedSalesOrder = async (req, res, next) => {
         await order.save();
 
         await Ledger.findOneAndDelete({ orderId: req.params.id })
-        const companyDetails = await CompanyDetails.findOne({database:order.database})
-        if(companyDetails){
-            companyDetails.cancelInvoice.push({invoice:order.invoiceId})
+        const companyDetails = await CompanyDetails.findOne({ database: order.database })
+        if (companyDetails) {
+            companyDetails.cancelInvoice.push({ invoice: order.invoiceId })
             await companyDetails.save();
         }
         return res.status(200).json({ message: "delete successfull!", status: true })
@@ -766,49 +766,49 @@ export const deletedSalesOrder = async (req, res, next) => {
 }
 export const deletedSalesOrderMultiple = async (req, res, next) => {
     try {
-        const{sales}=req.body;
-        for(let item of sales){
+        const { sales } = req.body;
+        for (let item of sales) {
             const order = await CreateOrder.findById(item)
-        if (!order) {
-            return res.status(404).json({ error: "Not Found", status: false });
-        }
-        for (const orderItem of order.orderItems) {
-            const product = await Product.findById({ _id: orderItem.productId });
-            if (product) {
-                const warehouse = await Warehouse.findById(orderItem.warehouse)
-                if (warehouse) {
-                    const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
-                    pro.currentStock += (orderItem.qty);
-                    product.qty += orderItem.qty;
-                    product.pendingQty -= orderItem.qty;
-                    await warehouse.save();
-                    await product.save()
-                }
-                // console.log("orderItem",orderItem)
-                // console.log("date",order.date)
-                await revertOutWordStock(orderItem,order.date)
-
-            } else {
-                console.error(`Product With ID ${orderItem.productId} Not Found`);
+            if (!order) {
+                return res.status(404).json({ error: "Not Found", status: false });
             }
-        }
-        // console.log("order",order)
-        if(order.status==="completed"){
-            const party=await Customer.findById(order.partyId)
-            party.remainingLimit+=order.grandTotal;
-            await party.save()
-        }
-        await UpdateCheckLimitSales(order)
-        order.status = "Deactive";
-        await order.save();
-        // console.log("totalssss",party.remainingLimit)
+            for (const orderItem of order.orderItems) {
+                const product = await Product.findById({ _id: orderItem.productId });
+                if (product) {
+                    const warehouse = await Warehouse.findById(orderItem.warehouse)
+                    if (warehouse) {
+                        const pro = warehouse.productItems.find((item) => item.productId === orderItem.productId.toString())
+                        pro.currentStock += (orderItem.qty);
+                        product.qty += orderItem.qty;
+                        product.pendingQty -= orderItem.qty;
+                        await warehouse.save();
+                        await product.save()
+                    }
+                    // console.log("orderItem",orderItem)
+                    // console.log("date",order.date)
+                    await revertOutWordStock(orderItem, order.date)
 
-        await Ledger.findOneAndDelete({ orderId: req.params.id })
-        const companyDetails = await CompanyDetails.findOne({database:order.database})
-        if(companyDetails){
-            companyDetails.cancelInvoice.push({invoice:order.invoiceId})
-            await companyDetails.save();
-        }
+                } else {
+                    console.error(`Product With ID ${orderItem.productId} Not Found`);
+                }
+            }
+            // console.log("order",order)
+            if (order.status === "completed") {
+                const party = await Customer.findById(order.partyId)
+                party.remainingLimit += order.grandTotal;
+                await party.save()
+            }
+            await UpdateCheckLimitSales(order)
+            order.status = "Deactive";
+            await order.save();
+            // console.log("totalssss",party.remainingLimit)
+
+            await Ledger.findOneAndDelete({ orderId: req.params.id })
+            const companyDetails = await CompanyDetails.findOne({ database: order.database })
+            if (companyDetails) {
+                companyDetails.cancelInvoice.push({ invoice: order.invoiceId })
+                await companyDetails.save();
+            }
         }
         return res.status(200).json({ message: "delete successfull!", status: true })
     } catch (err) {
@@ -937,69 +937,69 @@ export const CheckPartyPayment = async (req, res, next) => {
 }
 export const revertOutWordStock = async (orderItem, date) => {
     try {
-      const stock = await Stock.findOne({ date: date });
-      for (let productItem of stock.productItems) {
-          if (productItem.productId === orderItem.productId.toString()) {
-          productItem.currentStock += orderItem.qty;
-        //   productItem.pendingStock-=orderItem.qty;
-          productItem.sQty-=orderItem.qty;
-        //   productItem.totalPrice -= orderItem.totalPrice;
-          productItem.sTotal -= orderItem.totalPrice;
-          await stock.save();
+        const stock = await Stock.findOne({ date: date });
+        for (let productItem of stock.productItems) {
+            if (productItem.productId === orderItem.productId.toString()) {
+                productItem.currentStock += orderItem.qty;
+                //   productItem.pendingStock-=orderItem.qty;
+                productItem.sQty -= orderItem.qty;
+                //   productItem.totalPrice -= orderItem.totalPrice;
+                productItem.sTotal -= orderItem.totalPrice;
+                await stock.save();
+            }
         }
-      }
-    //   for (let productItem of stock.productItems) {
-    //     if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
-    //       stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
-    //       await stock.save();
-    //       break;
-    //     }
-    //   }      
+        //   for (let productItem of stock.productItems) {
+        //     if (productItem.productId.toString() === orderItem.productId && productItem.currentStock === 0) {
+        //       stock.productItems = stock.productItems.filter(item => item.productId.toString() !== orderItem.productId);
+        //       await stock.save();
+        //       break;
+        //     }
+        //   }      
     } catch (error) {
-      console.log(error);
+        console.log(error);
     }
-  };
+};
 
-  export const invoicePartySend = async (req, res, next) => {
+export const invoicePartySend = async (req, res, next) => {
     try {
-      let pdfPath = "";
-      if (req.file) {
-        pdfPath = req.file?.path;
-        req.body.pdfPath = pdfPath;
-      }
-      const fileName = req.file?.originalname || "invoice.pdf";
-      const {
-        title,
-        date,
-        total,
-        invoiceId,
-        partyName,
-        address,
-        superAdminName,
-        customer,
-        appPassword,
-        email
-      } = req.body;
+        let pdfPath = "";
+        if (req.file) {
+            pdfPath = req.file?.path;
+            req.body.pdfPath = pdfPath;
+        }
+        const fileName = req.file?.originalname || "invoice.pdf";
+        const {
+            title,
+            date,
+            total,
+            invoiceId,
+            partyName,
+            address,
+            superAdminName,
+            customer,
+            appPassword,
+            email
+        } = req.body;
 
-      const dynamicTransporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-          user: email,
-          pass: appPassword,
-        },
-      });
-  
-      const mailOptions = {
-        from: {
-          name: "Distribution Management System",
-          address: email,
-        },
-        to: customer,
-        subject: "Sales Invoice",
-        html: `
+        const dynamicTransporter = nodemailer.createTransport({
+            service: "gmail",
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+                user: email,
+                pass: appPassword,
+            },
+        });
+
+        const mailOptions = {
+            from: {
+                name: "Distribution Management System",
+                address: email,
+            },
+            to: customer,
+            subject: "Sales Invoice",
+            html: `
           <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
             <div style="margin:50px auto;width:70%;padding:20px 0">
               <p style="font-size:1.5em; font-weight:500;">Hi ${partyName || "Customer"},</p>
@@ -1039,29 +1039,46 @@ export const revertOutWordStock = async (orderItem, date) => {
               </div>
             </div>
           </div>`,
-        attachments: pdfPath
-          ? [
-              {
-                filename: fileName,
-                path: pdfPath,
-                contentType: "application/pdf",
-              },
-            ]
-          : [],
-      };
-      await dynamicTransporter.sendMail(mailOptions);
-      return res.status(200).json({ message: "Invoice sent successfully", status: true });
-  
+            attachments: pdfPath
+                ? [
+                    {
+                        filename: fileName,
+                        path: pdfPath,
+                        contentType: "application/pdf",
+                    },
+                ]
+                : [],
+        };
+        await dynamicTransporter.sendMail(mailOptions);
+        return res.status(200).json({ message: "Invoice sent successfully", status: true });
+
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({
-        message: "Internal Server Error",
-        error: error.message,
-        status: false,
-      });
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false,
+        });
     }
-  };
-  
-  
-  
-  
+};
+
+export const updateOrderArn = async (req, res, next) => {
+    try {
+        const { ARN } = req.body;
+        const order = await CreateOrder.findById(req.params.id)
+        if (!order) {
+            return res.json({ message: "Sales Invoice Not Found", status: false })
+        }
+        order.ARN = ARN;
+        await order.save();
+        res.status(200).json({ message: "Data Updated", status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false,
+        });
+    }
+}
+

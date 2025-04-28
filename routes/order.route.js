@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, invoicePartySend, updateCreateOrder, updateCreateOrderStatus} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, invoicePartySend, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -43,5 +43,5 @@ router.get("/sales-calculated/:database", SalesOrderCalculate)
 router.get("/debitor-calculate/:database", DebitorCalculate)
 router.get("/testing/:database", CheckPartyPayment)
 router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
-
+router.put("/update-arn/:id",updateOrderArn)
 export default router;
