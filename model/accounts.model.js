@@ -15,6 +15,9 @@ const accountSchema = new mongoose.Schema({
         },
         side: {
             type: String
+        },
+        accountType:{
+            type:Array
         }
     }]
 }, { timestamps: true })
