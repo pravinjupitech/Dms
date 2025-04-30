@@ -190,6 +190,7 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.setRule) {
         req.body.setRule = JSON.parse(req.body.setRule)
       }
+     if(req.body.rolename){
       const findRole = await Role.findById(req.body.rolename);
       if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
         if (!existingUser.pakerId) {
@@ -197,6 +198,7 @@ export const UpdateUser = async (req, res, next) => {
           req.body.pakerId = pakerId;
         }
       }
+     }
       // if (req.body.subscriptionPlan) {
       //   const sub = await Subscription.findById({ _id: req.body.subscriptionPlan })
       //   if (sub) {
