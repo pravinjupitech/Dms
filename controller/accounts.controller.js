@@ -4,12 +4,10 @@ export const savedAccount = async (req, res, next) => {
     try {
         const { database, created_by, Accounts } = req.body;
         const findAccounts = await Account.findOne({ database: database, created_by: created_by })
-
         if (findAccounts) {
             Accounts.forEach(item => {
                 findAccounts.Accounts.push(item)
             });
-
             await findAccounts.save();
             return res.status(200).json({ message: "Account saved", status: true })
         } else {
@@ -31,7 +29,6 @@ export const viewAccount = async (req, res, next) => {
         return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
     }
 }
-
 
 export const deleteAccount = async (req, res, next) => {
     try {

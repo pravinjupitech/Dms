@@ -231,6 +231,9 @@ const UserSchema = new mongoose.Schema({
   shift: {
     type: String,
   },
+  account: {
+    type: String
+  },
   qr_code: {
     type: String
   },

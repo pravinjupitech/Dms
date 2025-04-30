@@ -34,10 +34,10 @@ export const SaveUser = async (req, res, next) => {
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
-    if (req.body.setRule) {
+    if (req.body.setRule && req.body.setRule.length > 0) {
       req.body.setRule = await JSON.parse(req.body.setRule);
     }
-    if (req.body.reference) {
+    if (req.body.reference && req.body.reference.length > 0) {
       req.body.reference = await JSON.parse(req.body.reference);
     }
     if (req.body.subscriptionPlan) {
@@ -72,7 +72,7 @@ export const SaveUser = async (req, res, next) => {
         }
       }
     }
-    if (req.body.role&&req.body.role.length > 0) {
+    if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
     const findRole = await Role.findById(req.body.rolename);
@@ -178,7 +178,7 @@ export const UpdateUser = async (req, res, next) => {
       })
     }
     const userId = req.params.id;
-    if (req.body.role&&req.body.role.length > 0) {
+    if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
     const existingUser = await User.findById(userId);
@@ -206,8 +206,8 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
-      
-      if (req.body.warehouse&&req.body.warehouse?.length > 0) {
+
+      if (req.body.warehouse && req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
       if (req.body.reference) {
@@ -436,59 +436,59 @@ export const saveUserWithExcel = async (req, res) => {
           // if (!shifts) {
           //   shiftss.push(document.id)
           // } else {
-            // const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
-            // if (!branchs) {
-            //   branchss.push(document.id)
-            // } else {
-              document[rolename] = role._id.toString()
-              // document[shift] = shifts._id.toString()
-              // document[branch] = branchs._id.toString()
-              if (document.id) {
-                const existingId = await User.findOne({ id: document.id, database: document.database, status: "Active" });
-                console.log("existingId",existingId)
-                if (existingId) {
-                  existingIds.push(document.id)
-                } else {
-                  if (document.Pan_No) {
-                    const existingRecord = await User.findOne({
-                      Pan_No: document.Pan_No, database: document.database, status: "Active"
-                    });
-                    if (!existingRecord) {
-                      const userLimit = await SubscriptionAdminPlan(document);
-                      if (userLimit) {
-                        const insertedDocument = await User.create(document);
-                        insertedDocuments.push(insertedDocument);
-                      } else {
-                        planLimit.push(document.id);
-                      }
-                    } else {
-                      existingParts.push(document.Pan_No);
-                    }
+          // const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
+          // if (!branchs) {
+          //   branchss.push(document.id)
+          // } else {
+          document[rolename] = role._id.toString()
+          // document[shift] = shifts._id.toString()
+          // document[branch] = branchs._id.toString()
+          if (document.id) {
+            const existingId = await User.findOne({ id: document.id, database: document.database, status: "Active" });
+            console.log("existingId", existingId)
+            if (existingId) {
+              existingIds.push(document.id)
+            } else {
+              if (document.Pan_No) {
+                const existingRecord = await User.findOne({
+                  Pan_No: document.Pan_No, database: document.database, status: "Active"
+                });
+                if (!existingRecord) {
+                  const userLimit = await SubscriptionAdminPlan(document);
+                  if (userLimit) {
+                    const insertedDocument = await User.create(document);
+                    insertedDocuments.push(insertedDocument);
                   } else {
-                    if (document.Aadhar_No) {
-                      const existingRecord = await User.findOne({
-                        Aadhar_No: document.Aadhar_No, database: document.database, status: "Active"
-                      });
-                      if (!existingRecord) {
-                        // const userLimit = await SubscriptionAdminPlan(document);
-                        // if (userLimit) {
-                          const insertedDocument = await User.create(document);
-                          insertedDocuments.push(insertedDocument);
-                        // } else {
-                        //   planLimit.push(document.id);
-                        // }
-                      } else {
-                        existingParts.push(document.Aadhar_No);
-                      }
-                    } else {
-                      panMobile.push(document.Aadhar_No);
-                    }
+                    planLimit.push(document.id);
                   }
+                } else {
+                  existingParts.push(document.Pan_No);
                 }
               } else {
-                IdNotExisting.push(document.firstName)
+                if (document.Aadhar_No) {
+                  const existingRecord = await User.findOne({
+                    Aadhar_No: document.Aadhar_No, database: document.database, status: "Active"
+                  });
+                  if (!existingRecord) {
+                    // const userLimit = await SubscriptionAdminPlan(document);
+                    // if (userLimit) {
+                    const insertedDocument = await User.create(document);
+                    insertedDocuments.push(insertedDocument);
+                    // } else {
+                    //   planLimit.push(document.id);
+                    // }
+                  } else {
+                    existingParts.push(document.Aadhar_No);
+                  }
+                } else {
+                  panMobile.push(document.Aadhar_No);
+                }
               }
-            // }
+            }
+          } else {
+            IdNotExisting.push(document.firstName)
+          }
+          // }
           // }
         }
       } else {
@@ -559,9 +559,9 @@ export const updateUserWithExcel = async (req, res) => {
       document[database] = req.params.database
       // if (document.database) {
       const role = await Role.findOne({ id: document.rolename, database: document.database })
-      console.log("role",role)
-      console.log("document.rolename",document.rolename)
-      console.log("document.database",document.database)
+      console.log("role", role)
+      console.log("document.rolename", document.rolename)
+      console.log("document.database", document.database)
       if (!role) {
         roles.push(document.id)
       } else {
