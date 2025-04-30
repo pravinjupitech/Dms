@@ -75,11 +75,13 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
+   if(req.body.rolename){
     const findRole = await Role.findById(req.body.rolename);
     if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
       const pakerId = await generateUniqueSixDigitNumber();
       req.body.pakerId = pakerId;
     }
+   }
     if (req.body.warehouse) {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
