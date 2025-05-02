@@ -234,6 +234,9 @@ const UserSchema = new mongoose.Schema({
   account: {
     type: String
   },
+  OpeningBalance:{
+    type:String
+  },
   qr_code: {
     type: String
   },
