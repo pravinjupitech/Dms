@@ -424,6 +424,7 @@ export const updateCreateOrder = async (req, res, next) => {
             const newOrderItems = updatedFields.orderItems || [];
             for (const newOrderItem of newOrderItems) {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                console.log("newOrderItem",newOrderItem)
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
                     console.log("quantityChange",quantityChange)
@@ -439,7 +440,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                 pro.currentStock += (quantityChange);
                                 // pro.currentStock -= orderItem.qty
                                 pro.price = newOrderItems.price;
-                                pro.totalPrice +=newOrderItems.totalAmount
+                                pro.totalPrice +=parseFloat(newOrderItems.totalAmount)
                                 pro.transferQty += (quantityChange);
                                 warehouse.markModified('productItems');
                                 await warehouse.save();
