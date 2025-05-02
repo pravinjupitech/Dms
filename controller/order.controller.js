@@ -437,19 +437,26 @@ export const updateCreateOrder = async (req, res, next) => {
                             if (warehouse) {
                                 const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
                                 console.log("pro", pro)
-                                pro.gstPercentage = product.GSTRate
-                                pro.currentStock += (quantityChange);
-                                // pro.currentStock -= orderItem.qty
-                                pro.price = newOrderItems.price;
-                                pro.totalPrice += newOrderItem.totalPrice;
-                                pro.transferQty += (quantityChange);
-                                warehouse.markModified('productItems');
-                                await warehouse.save();
-                            }
-                            await product.save()
-                            const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
-                            if (stock) {
-                                console.log("Stock", stock)
+                                if (pro) {
+                                    pro.gstPercentage = product.GSTRate
+                                    pro.currentStock += (quantityChange);
+                                    // pro.currentStock -= orderItem.qty
+                                    pro.price = newOrderItems.price;
+                                    pro.totalPrice += newOrderItem.totalPrice;
+                                    pro.transferQty += (quantityChange);
+                                    warehouse.markModified('productItems');
+                                    await warehouse.save();
+                                    await product.save()
+                                    const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
+                                    if (stock) {
+                                        const findStock = stock.productItems.find((item) => item.productId === newOrderItem.productId)
+                                    }
+                                    console.log("findStock",findStock)
+                                    if (findStock) {
+                                        findStock.currentStock += (quantityChange)
+                                        await stock.save();
+                                    }
+                                }
                             }
                         } else {
                             console.error(`Product with ID ${newOrderItem.productId} not found`);
