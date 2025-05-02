@@ -454,20 +454,23 @@ export const updateCreateOrder = async (req, res, next) => {
                                     await warehouse.save();
                                     await product.save()
                                     const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
+                                    const ledger = await Ledger.findOne({ party: updatedFields.partyId, date: updatedFields.date })
                                     if (stock) {
                                         const findStock = stock.productItems.find((item) => item.productId.toString() === newOrderItem.productId)
                                         if (findStock) {
                                             findStock.currentStock += (quantityChange)
                                             findStock.sQty += (quantityChange)
                                             findStock.sTotal += sTotalChange
+                                            if (ledger) {
+                                                ledger.debit += sTotalChange;
+                                            }
                                             await stock.save();
+                                            await ledger.save();
                                         }
                                     }
-                                    const ledger = await Ledger.findOne({ party: updatedFields.partyId, date: updatedFields.date })
+                                   
                                     console.log("ladger", ledger)
-                                    if (ledger) {
-                                        ledger.debit += sTotalChange;
-                                    }
+                                    
                                 }
                             }
                         } else {
