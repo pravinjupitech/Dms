@@ -436,11 +436,12 @@ export const updateCreateOrder = async (req, res, next) => {
                             const warehouse = await Warehouse.findById({ _id: product.warehouse })
                             if (warehouse) {
                                 const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
+                                console.log("pro",pro)
                                 pro.gstPercentage = product.GSTRate
                                 pro.currentStock += (quantityChange);
                                 // pro.currentStock -= orderItem.qty
                                 pro.price = newOrderItems.price;
-                                pro.totalPrice +=parseFloat(newOrderItems.totalAmount)
+                                pro.totalPrice +=newOrderItem.taxableAmount
                                 pro.transferQty += (quantityChange);
                                 warehouse.markModified('productItems');
                                 await warehouse.save();
