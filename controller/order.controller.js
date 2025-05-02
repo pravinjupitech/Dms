@@ -428,8 +428,11 @@ export const updateCreateOrder = async (req, res, next) => {
         else if (order.status === 'completed') {
             const oldOrderItems = order.orderItems || [];
             const newOrderItems = updatedFields.orderItems || [];
+            console.log("oldOrderItems",oldOrderItems)
             for (const newOrderItem of newOrderItems) {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                console.log("newOrderItem",newOrderItem)
+
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
                     const sTotalChange = newOrderItem.totalPrice - oldOrderItem.totalPrice
