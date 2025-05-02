@@ -419,8 +419,7 @@ export const updateCreateOrder = async (req, res, next) => {
             return res.json({ message: "Party Not Found", status: false })
         }
         console.log("party",party)
-        party.remainingLimit += sTotalChange;
-        await party.save();
+      
         const order = await CreateOrder.findById({ _id: orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
@@ -434,7 +433,8 @@ export const updateCreateOrder = async (req, res, next) => {
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
                     const sTotalChange = newOrderItem.totalPrice - oldOrderItem.totalPrice
-                   
+                    party.remainingLimit += sTotalChange;
+                    await party.save();
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
                         if (product) {
@@ -485,6 +485,8 @@ export const updateCreateOrder = async (req, res, next) => {
         } else {
             const oldOrderItems = order.orderItems || [];
             const newOrderItems = updatedFields.orderItems || [];
+            party.remainingLimit += sTotalChange;
+            await party.save();
             for (const newOrderItem of newOrderItems) {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
                 if (oldOrderItem) {
