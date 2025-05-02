@@ -414,10 +414,18 @@ export const updateCreateOrder = async (req, res, next) => {
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }
+        const party = await Customer.findById({ _id: updatedFields.partyId })
+        if (!party) {
+            return res.json({ message: "Party Not Found", status: false })
+        }
+        console.log("party",party)
+        party.remainingLimit += sTotalChange;
+        await party.save();
         const order = await CreateOrder.findById({ _id: orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
         }
+
         else if (order.status === 'completed') {
             const oldOrderItems = order.orderItems || [];
             const newOrderItems = updatedFields.orderItems || [];
@@ -425,7 +433,8 @@ export const updateCreateOrder = async (req, res, next) => {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-                    const sTotalChange=newOrderItem.totalPrice-oldOrderItem.totalPrice
+                    const sTotalChange = newOrderItem.totalPrice - oldOrderItem.totalPrice
+                   
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
                         if (product) {
@@ -450,9 +459,14 @@ export const updateCreateOrder = async (req, res, next) => {
                                         if (findStock) {
                                             findStock.currentStock += (quantityChange)
                                             findStock.sQty += (quantityChange)
-                                            findStock.sTotal+=sTotalChange
+                                            findStock.sTotal += sTotalChange
                                             await stock.save();
                                         }
+                                    }
+                                    const ledger = await Ledger.findOne({ party: updatedFields.partyId, date: updatedFields.date })
+                                    console.log("ladger", ledger)
+                                    if (ledger) {
+                                        ledger.debit += sTotalChange;
                                     }
                                 }
                             }
@@ -484,6 +498,16 @@ export const updateCreateOrder = async (req, res, next) => {
                                 await warehouse.save();
                             }
                             await product.save()
+                            const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
+                            if (stock) {
+                                const findStock = stock.productItems.find((item) => item.productId.toString() === newOrderItem.productId)
+                                if (findStock) {
+                                    findStock.pendingStock += (quantityChange)
+                                    // findStock.pendingQty += (quantityChange)
+                                    findStock.pendingStockTotal+= sTotalChange
+                                    await stock.save();
+                                }
+                            }
                         } else {
                             console.error(`Product with ID ${newOrderItem.productId} not found`);
                         }
