@@ -429,6 +429,7 @@ export const updateCreateOrder = async (req, res, next) => {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
                     const sTotalChange=newOrderItem.totalPrice-oldOrderItem.totalPrice
                     console.log("quantityChange", quantityChange)
+                    console.log("sTotalChange", sTotalChange)
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
                         if (product) {
@@ -437,7 +438,6 @@ export const updateCreateOrder = async (req, res, next) => {
                             const warehouse = await Warehouse.findById({ _id: product.warehouse })
                             if (warehouse) {
                                 const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
-                                console.log("pro", pro)
                                 if (pro) {
                                     pro.gstPercentage = product.GSTRate
                                     pro.currentStock += (quantityChange);
@@ -450,9 +450,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                     await product.save()
                                     const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
                                     if (stock) {
-                                        console.log("stock",stock,newOrderItem.productId)
                                         const findStock = stock.productItems.find((item) => item.productId.toString() === newOrderItem.productId)
-                                        console.log("findStock",findStock)
                                         if (findStock) {
                                             findStock.currentStock += (quantityChange)
                                             findStock.sQty += (quantityChange)
