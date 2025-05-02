@@ -410,7 +410,7 @@ export const updateCreateOrder = async (req, res, next) => {
     try {
         const orderId = req.params.id;
         const updatedFields = req.body;
-        console.log("requestbody",updatedFields)
+        console.log("requestbody", updatedFields)
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }
@@ -420,14 +420,14 @@ export const updateCreateOrder = async (req, res, next) => {
         }
         else if (order.status === 'completed') {
             const oldOrderItems = order.orderItems || [];
-            console.log("oldOrderItems",oldOrderItems)
+            console.log("oldOrderItems", oldOrderItems)
             const newOrderItems = updatedFields.orderItems || [];
             for (const newOrderItem of newOrderItems) {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
-                console.log("newOrderItem",newOrderItem)
+                console.log("newOrderItem", newOrderItem)
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-                    console.log("quantityChange",quantityChange)
+                    console.log("quantityChange", quantityChange)
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
                         if (product) {
@@ -436,17 +436,21 @@ export const updateCreateOrder = async (req, res, next) => {
                             const warehouse = await Warehouse.findById({ _id: product.warehouse })
                             if (warehouse) {
                                 const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
-                                console.log("pro",pro)
+                                console.log("pro", pro)
                                 pro.gstPercentage = product.GSTRate
                                 pro.currentStock += (quantityChange);
                                 // pro.currentStock -= orderItem.qty
                                 pro.price = newOrderItems.price;
-                                pro.totalPrice +=newOrderItem.totalPrice;
+                                pro.totalPrice += newOrderItem.totalPrice;
                                 pro.transferQty += (quantityChange);
                                 warehouse.markModified('productItems');
                                 await warehouse.save();
                             }
                             await product.save()
+                            const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
+                            if (stock) {
+                                console.log("Stock", stock)
+                            }
                         } else {
                             console.error(`Product with ID ${newOrderItem.productId} not found`);
                         }
