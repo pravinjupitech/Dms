@@ -427,7 +427,7 @@ export const updateCreateOrder = async (req, res, next) => {
                 console.log("newOrderItem", newOrderItem)
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-                    const sTotalChange=newOrderItem.totalPrice=oldOrderItem.totalPrice
+                    const sTotalChange=newOrderItem.totalPrice-oldOrderItem.totalPrice
                     console.log("quantityChange", quantityChange)
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
