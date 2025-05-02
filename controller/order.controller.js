@@ -449,12 +449,13 @@ export const updateCreateOrder = async (req, res, next) => {
                                     await product.save()
                                     const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
                                     if (stock) {
-                                        const findStock = stock.productItems.find((item) => item.productId === newOrderItem.productId)
-                                    }
-                                    console.log("findStock",findStock)
-                                    if (findStock) {
-                                        findStock.currentStock += (quantityChange)
-                                        await stock.save();
+                                        console.log("stock",stock,newOrderItem.productId)
+                                        const findStock = stock.productItems.find((item) => item.productId.toString() === newOrderItem.productId)
+                                        console.log("findStock",findStock)
+                                        if (findStock) {
+                                            findStock.currentStock += (quantityChange)
+                                            await stock.save();
+                                        }
                                     }
                                 }
                             }
