@@ -455,6 +455,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                         if (findStock) {
                                             findStock.currentStock += (quantityChange)
                                             findStock.sQty += (quantityChange)
+                                            findStock.sTotal+=newOrderItem.totalPrice
                                             await stock.save();
                                         }
                                     }
