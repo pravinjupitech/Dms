@@ -461,7 +461,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                     const ledger = await Ledger.findOne({ partyId: updatedFields.partyId, date: updatedFields.date,particular:"SalesInvoice" });
                                     console.log("ladger", ledger)
                                     if (ledger) {
-                                        ledger.debit += sTotalChange;
+                                        ledger.debit =updatedFields.grandTotal;
                                         await ledger.save();
                                     }
                                     if (stock) {
