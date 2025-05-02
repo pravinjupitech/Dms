@@ -149,11 +149,11 @@ export const checkLimit = async (body) => {
 };
 export const UpdateCheckLimitSales = async (body) => {
     try {
-        // const over = await Customer.findById({ _id: body.partyId, status: "Active" })
-        // if (over) {
-        //     over.remainingLimit += body.grandTotal
-        //     await over.save()
-        // }
+        const over = await Customer.findById({ _id: body.partyId, status: "Active" })
+        if (over) {
+            over.remainingLimit += body.grandTotal
+            await over.save()
+        }
         const existOver = await OverDueReport.findOne({ partyId: body.partyId, activeStatus: "Active" })
         if (existOver) {
             existOver.remainingAmount -= body.grandTotal;

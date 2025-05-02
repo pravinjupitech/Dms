@@ -124,7 +124,7 @@ export const createOrder = async (req, res, next) => {
 
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
-        console.log("req.body", req.body)
+        // console.log("req.body", req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -410,6 +410,7 @@ export const updateCreateOrder = async (req, res, next) => {
     try {
         const orderId = req.params.id;
         const updatedFields = req.body;
+        console.log("requestbody",updatedFields)
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }
@@ -417,35 +418,71 @@ export const updateCreateOrder = async (req, res, next) => {
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
         }
-        else if (order.status === 'completed')
-            return res.status(400).json({ message: "this order not updated", status: false })
-        const oldOrderItems = order.orderItems || [];
-        const newOrderItems = updatedFields.orderItems || [];
-        for (const newOrderItem of newOrderItems) {
-            const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
-            if (oldOrderItem) {
-                const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-                if (quantityChange !== 0) {
-                    const product = await Product.findById({ _id: newOrderItem.productId });
-                    if (product) {
-                        product.qty -= quantityChange;
-                        product.pendingQty += quantityChange;
-                        const warehouse = await Warehouse.findById({ _id: product.warehouse })
-                        if (warehouse) {
-                            const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
-                            pro.currentStock -= (quantityChange);
-                            await warehouse.save();
+        else if (order.status === 'completed') {
+            const oldOrderItems = order.orderItems || [];
+            console.log("oldOrderItems",oldOrderItems)
+            const newOrderItems = updatedFields.orderItems || [];
+            for (const newOrderItem of newOrderItems) {
+                const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                if (oldOrderItem) {
+                    const quantityChange = newOrderItem.qty - oldOrderItem.qty;
+                    console.log("quantityChange",quantityChange)
+                    if (quantityChange !== 0) {
+                        const product = await Product.findById({ _id: newOrderItem.productId });
+                        if (product) {
+                            product.qty -= quantityChange;
+                            // product.pendingQty += quantityChange;
+                            const warehouse = await Warehouse.findById({ _id: product.warehouse })
+                            if (warehouse) {
+                                const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
+                                pro.gstPercentage = product.GSTRate
+                                pro.currentStock -= (quantityChange);
+                                // pro.currentStock -= orderItem.qty
+                                pro.price = newOrderItems.price;
+                                pro.totalPrice -= (newOrderItems.qty * newOrderItems.price);
+                                pro.transferQty -= (quantityChange);
+                                warehouse.markModified('productItems');
+                                await warehouse.save();
+                            }
+                            await product.save()
+                        } else {
+                            console.error(`Product with ID ${newOrderItem.productId} not found`);
                         }
-                        await product.save()
-                    } else {
-                        console.error(`Product with ID ${newOrderItem.productId} not found`);
                     }
                 }
             }
+            Object.assign(order, updatedFields);
+            const updatedOrder = await order.save();
+            return res.status(200).json({ orderDetail: updatedOrder, status: true });
+        } else {
+            const oldOrderItems = order.orderItems || [];
+            const newOrderItems = updatedFields.orderItems || [];
+            for (const newOrderItem of newOrderItems) {
+                const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                if (oldOrderItem) {
+                    const quantityChange = newOrderItem.qty - oldOrderItem.qty;
+                    if (quantityChange !== 0) {
+                        const product = await Product.findById({ _id: newOrderItem.productId });
+                        if (product) {
+                            product.qty -= quantityChange;
+                            product.pendingQty += quantityChange;
+                            const warehouse = await Warehouse.findById({ _id: product.warehouse })
+                            if (warehouse) {
+                                const pro = warehouse.productItems.find((item) => item.productId.toString() === newOrderItem.productId.toString())
+                                pro.currentStock -= (quantityChange);
+                                await warehouse.save();
+                            }
+                            await product.save()
+                        } else {
+                            console.error(`Product with ID ${newOrderItem.productId} not found`);
+                        }
+                    }
+                }
+            }
+            Object.assign(order, updatedFields);
+            const updatedOrder = await order.save();
+            return res.status(200).json({ orderDetail: updatedOrder, status: true });
         }
-        Object.assign(order, updatedFields);
-        const updatedOrder = await order.save();
-        return res.status(200).json({ orderDetail: updatedOrder, status: true });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -743,11 +780,11 @@ export const deletedSalesOrder = async (req, res, next) => {
                 console.error(`Product With ID ${orderItem.productId} Not Found`);
             }
         }
-        if (order.status === "completed") {
-            const party = await Customer.findById(order.partyId)
-            party.remainingLimit += order.grandTotal;
-            await party.save()
-        }
+        // if (order.status === "completed") {
+        //     const party = await Customer.findById(order.partyId)
+        //     party.remainingLimit += order.grandTotal;
+        //     await party.save()
+        // }
         await UpdateCheckLimitSales(order)
         order.status = "Deactive";
         await order.save();
