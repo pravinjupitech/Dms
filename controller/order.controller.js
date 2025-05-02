@@ -441,7 +441,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                 pro.currentStock += (quantityChange);
                                 // pro.currentStock -= orderItem.qty
                                 pro.price = newOrderItems.price;
-                                pro.totalPrice +=newOrderItem.taxableAmount
+                                pro.totalPrice +=newOrderItem.totalPrice;
                                 pro.transferQty += (quantityChange);
                                 warehouse.markModified('productItems');
                                 await warehouse.save();
