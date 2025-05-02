@@ -427,6 +427,7 @@ export const updateCreateOrder = async (req, res, next) => {
                 console.log("newOrderItem", newOrderItem)
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
+                    const sTotalChange=newOrderItem.totalPrice=oldOrderItem.totalPrice
                     console.log("quantityChange", quantityChange)
                     if (quantityChange !== 0) {
                         const product = await Product.findById({ _id: newOrderItem.productId });
@@ -455,7 +456,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                         if (findStock) {
                                             findStock.currentStock += (quantityChange)
                                             findStock.sQty += (quantityChange)
-                                            findStock.sTotal+=newOrderItem.totalPrice
+                                            findStock.sTotal+=sTotalChange
                                             await stock.save();
                                         }
                                     }
