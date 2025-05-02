@@ -440,6 +440,7 @@ export const updateCreateOrder = async (req, res, next) => {
                                 // pro.currentStock -= orderItem.qty
                                 pro.price = newOrderItems.price;
                                 let updateTotal= parseFloat(newOrderItems.qty * newOrderItems.price)
+                                
                                 pro.totalPrice -=updateTotal
                                 pro.transferQty -= (quantityChange);
                                 warehouse.markModified('productItems');
