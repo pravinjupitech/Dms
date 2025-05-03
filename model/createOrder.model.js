@@ -77,6 +77,15 @@ const createOrderSchema = new mongoose.Schema({
     AssignDeliveryBoy: {
         type: String
     },
+    CNImage: {
+        type: String
+    },
+    CNNumber: {
+        type: String
+    },
+    CNDate: {
+        type: String
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user"
@@ -309,15 +318,15 @@ const createOrderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    Remark:{
-        type:String
+    Remark: {
+        type: String
     },
-    DispatchStatus:{
-        type:Boolean,
-        default:false
+    DispatchStatus: {
+        type: Boolean,
+        default: false
     },
-    otp:{
-        type:Number
+    otp: {
+        type: Number
     }
 }, { timestamps: true })
 

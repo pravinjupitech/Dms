@@ -1381,3 +1381,27 @@ export const updateOrderArn = async (req, res, next) => {
     }
 }
 
+export const updateCNDetails = async (req, res, next) => {
+    try {
+        const order = await CreateOrder.findById(req.params.id)
+        if (!order) {
+            return res.json({ message: "Sales Invoice Not Found", status: false })
+        }
+        if (req.file && req.file.filename) {
+            order.CNImage = req.file.filename;
+        }
+        const {CNNumber,CNDate } = req.body;
+        order.CNNumber = CNNumber;
+        order.CNDate = CNDate;
+        await order.save();
+        res.status(200).json({ message: "Data Updated", status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false,
+        });
+    }
+}
+
