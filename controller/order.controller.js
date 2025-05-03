@@ -410,7 +410,6 @@ export const updateCreateOrder = async (req, res, next) => {
     try {
         const orderId = req.params.id;
         const updatedFields = req.body;
-        console.log("requestbody", updatedFields)
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }
@@ -418,21 +417,15 @@ export const updateCreateOrder = async (req, res, next) => {
         if (!party) {
             return res.json({ message: "Party Not Found", status: false })
         }
-        console.log("party", party)
-
         const order = await CreateOrder.findById({ _id: orderId });
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
         }
-
         else if (order.status === 'completed') {
             const oldOrderItems = order.orderItems || [];
             const newOrderItems = updatedFields.orderItems || [];
-            console.log("oldOrderItems",oldOrderItems)
             for (const newOrderItem of newOrderItems) {
                 const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
-                console.log("newOrderItem",newOrderItem)
-
                 if (oldOrderItem) {
                     const quantityChange = newOrderItem.qty - oldOrderItem.qty;
                     const sTotalChange = newOrderItem.totalPrice - oldOrderItem.totalPrice
@@ -459,7 +452,6 @@ export const updateCreateOrder = async (req, res, next) => {
                                     await product.save()
                                     const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
                                     const ledger = await Ledger.findOne({ partyId: updatedFields.partyId, date: updatedFields.date,particular:"SalesInvoice" });
-                                    console.log("ladger", ledger)
                                     if (ledger) {
                                         ledger.debit =updatedFields.grandTotal;
                                         await ledger.save();
