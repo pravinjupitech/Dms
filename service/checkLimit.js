@@ -86,17 +86,16 @@ export const checkLimit = async (body) => {
                 let amount = 0;
                 if(party.AdvanceAmount>0){
                     amount = party.AdvanceAmount-body.grandTotal;
-                    console.log("amount",amount)
                     if(amount>0){
-                        console.log("saved with advance amount");
+                        // console.log("saved with advance amount");
                         party.AdvanceAmount = amount;
                         party.remainingLimit = party.remainingLimit - body.grandTotal
                         await party.save()
                     } else{
-                        console.log("saved with advance zero");
+                        // console.log("saved with advance zero");
                         party.AdvanceAmount = 0;
                         party.remainingLimit = party.remainingLimit + amount
-                        console.log("party.remainingLimit",party.remainingLimit)
+                        // console.log("party.remainingLimit",party.remainingLimit)
                         await party.save()
                     }
                 }else{
@@ -104,7 +103,7 @@ export const checkLimit = async (body) => {
                     // over.totalAmount = over.totalAmount + body.grandTotal
                     // over.remainingAmount = remainingAmount;
                     // over.lockingAmount = party.limit
-                    console.log("party.remainingLimit",party.remainingLimit)
+                    // console.log("party.remainingLimit",party.remainingLimit)
                     await party.save()
                 }
                 if (party.remainingLimit < 0) {
@@ -131,7 +130,7 @@ export const checkLimit = async (body) => {
                 // }
                 const remainingAmount = party.limit - body.grandTotal
                 party.remainingLimit = remainingAmount
-                console.log("calling",remainingAmount)
+                // console.log("calling",remainingAmount)
                 await party.save()
                 body.totalAmount = body.grandTotal
                 body.remainingAmount = remainingAmount;
