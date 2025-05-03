@@ -80,6 +80,7 @@ export const UpdateCheckLimit = async (body, limit) => {
 export const checkLimit = async (body) => {
     try {
         const party = await Customer.findById(body.partyId)
+        console.log("partychecklimit",party)
         if (party) {
             if (party.remainingLimit > 0) {
                 let amount = 0;
