@@ -90,9 +90,10 @@ export const checkLimit = async (body) => {
                         party.AdvanceAmount = amount;
                         await party.save()
                     } else{
-                        // console.log("saved with advance zero");
+                        console.log("saved with advance zero");
                         party.AdvanceAmount = 0;
                         party.remainingLimit = party.remainingLimit + amount
+                        console.log("party.remainingLimit",party.remainingLimit)
                         await party.save()
                     }
                 }else{
