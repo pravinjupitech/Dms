@@ -101,6 +101,7 @@ export const checkLimit = async (body) => {
                     // over.totalAmount = over.totalAmount + body.grandTotal
                     // over.remainingAmount = remainingAmount;
                     // over.lockingAmount = party.limit
+                    console.log("party.remainingLimit",party.remainingLimit)
                     await party.save()
                 }
                 if (party.remainingLimit < 0) {
