@@ -86,8 +86,9 @@ export const checkLimit = async (body) => {
                 let amount = 0;
                 if(party.AdvanceAmount>0){
                     amount = party.AdvanceAmount-body.grandTotal;
+                    console.log("amount",amount)
                     if(amount>0){
-                        // console.log("saved with advance amount");
+                        console.log("saved with advance amount");
                         party.AdvanceAmount = amount;
                         await party.save()
                     } else{
@@ -129,6 +130,7 @@ export const checkLimit = async (body) => {
                 // }
                 const remainingAmount = party.limit - body.grandTotal
                 party.remainingLimit = remainingAmount
+                console.log("calling",remainingAmount)
                 await party.save()
                 body.totalAmount = body.grandTotal
                 body.remainingAmount = remainingAmount;

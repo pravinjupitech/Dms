@@ -107,7 +107,6 @@ export const createOrder = async (req, res, next) => {
             req.body.database = user.database;
             req.body.totalAmount = req.body.grandTotal;
             req.body.orderId = savedOrder._id;
-console.log("party",party)
             if (party.paymentTerm === "credit") {
                 await checkLimit(req.body);
             }
