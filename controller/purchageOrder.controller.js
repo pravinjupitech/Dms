@@ -286,55 +286,59 @@ export const updatePurchaseOrder = async (req, res, next) => {
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
         }
-        else if (order.status === 'completed')
+        else if (order.status === 'completed'){
+
             return res.status(400).json({ message: "this order not updated", status: false })
-        const oldOrderItems = order.orderItems || [];
-        const newOrderItems = updatedFields.orderItems || [];
-        for (const newOrderItem of newOrderItems) {
-            // const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
-            // if (oldOrderItem) {
-            // const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-            // if (quantityChange !== 0) {
-            const product = await Product.findById({ _id: newOrderItem.productId });
-            if (product) {
-                const group = await CustomerGroup.find({ database: req.body.database, status: "Active" })
-                if (group.length > 0) {
-                    const maxDiscount = group.reduce((max, group) => {
-                        return group.discount > max.discount ? group : max;
-                    });
-                    groupDiscount = maxDiscount.discount;
-                }
-                //     product.Size -= quantityChange;
-
-                //change this line to -------------------
-                product.basicPrice = await newOrderItem.basicPrice;
-                product.landedCost = await newOrderItem.landedCost;
-                product.Purchase_Rate = await newOrderItem.landedCost;
-                if (!product.ProfitPercentage || product.ProfitPercentage === 0) {
-                    product.SalesRate = product.Purchase_Rate * 1.03;
-                    product.Product_MRP = (product.SalesRate) * ((100 + product.GSTRate) / 100) * ((100 + groupDiscount) / 100);
-                } else {
-
-                    product.SalesRate = (product.Purchase_Rate * (100 + product.ProfitPercentage)) / 100;
-                    product.Product_MRP = (product.SalesRate * ((100 + product.GSTRate) / 100) * ((100 + groupDiscount) / 100));
-                }
-                // console.log("SalesRate", product.SalesRate, "Product_MRP", product.Product_MRP, "landedCost", product.landedCost, "Purchase_Rate", product.Purchase_Rate, "groupDiscount", groupDiscount, "GSTRate", product.GSTRate, "ProfitPercentage", product.ProfitPercentage);
-                await product.save();
-                // console.log("product", product);
-                //this line ---------------------
-
-                // product.basicPrice = await newOrderItem.basicPrice;
-                // product.landedCost = await newOrderItem.landedCost;
-                // await product.save();
-            } else {
-                console.error(`Product with ID ${newOrderItem.productId} not found`);
-            }
-            // }
-            // }
         }
-        Object.assign(order, updatedFields);
-        const updatedOrder = await order.save();
-        return res.status(200).json({ orderDetail: updatedOrder, status: true });
+            else{
+                const oldOrderItems = order.orderItems || [];
+                const newOrderItems = updatedFields.orderItems || [];
+                for (const newOrderItem of newOrderItems) {
+                    // const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                    // if (oldOrderItem) {
+                    // const quantityChange = newOrderItem.qty - oldOrderItem.qty;
+                    // if (quantityChange !== 0) {
+                    const product = await Product.findById({ _id: newOrderItem.productId });
+                    if (product) {
+                        const group = await CustomerGroup.find({ database: req.body.database, status: "Active" })
+                        if (group.length > 0) {
+                            const maxDiscount = group.reduce((max, group) => {
+                                return group.discount > max.discount ? group : max;
+                            });
+                            groupDiscount = maxDiscount.discount;
+                        }
+                        //     product.Size -= quantityChange;
+        
+                        //change this line to -------------------
+                        product.basicPrice = await newOrderItem.basicPrice;
+                        product.landedCost = await newOrderItem.landedCost;
+                        product.Purchase_Rate = await newOrderItem.landedCost;
+                        if (!product.ProfitPercentage || product.ProfitPercentage === 0) {
+                            product.SalesRate = product.Purchase_Rate * 1.03;
+                            product.Product_MRP = (product.SalesRate) * ((100 + product.GSTRate) / 100) * ((100 + groupDiscount) / 100);
+                        } else {
+        
+                            product.SalesRate = (product.Purchase_Rate * (100 + product.ProfitPercentage)) / 100;
+                            product.Product_MRP = (product.SalesRate * ((100 + product.GSTRate) / 100) * ((100 + groupDiscount) / 100));
+                        }
+                        // console.log("SalesRate", product.SalesRate, "Product_MRP", product.Product_MRP, "landedCost", product.landedCost, "Purchase_Rate", product.Purchase_Rate, "groupDiscount", groupDiscount, "GSTRate", product.GSTRate, "ProfitPercentage", product.ProfitPercentage);
+                        await product.save();
+                        // console.log("product", product);
+                        //this line ---------------------
+        
+                        // product.basicPrice = await newOrderItem.basicPrice;
+                        // product.landedCost = await newOrderItem.landedCost;
+                        // await product.save();
+                    } else {
+                        console.error(`Product with ID ${newOrderItem.productId} not found`);
+                    }
+                    // }
+                    // }
+                }
+                Object.assign(order, updatedFields);
+                const updatedOrder = await order.save();
+                return res.status(200).json({ orderDetail: updatedOrder, status: true });
+            }
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error" });
