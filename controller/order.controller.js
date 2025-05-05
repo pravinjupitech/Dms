@@ -721,6 +721,7 @@ export const updateCreateOrder = async (req, res, next) => {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     console.log("sitem",sItem)
                     if (sItem) {
+                        sItem.currentStock += qtyChange
                         sItem.pendingStock += qtyChange;
                         sItem.pendingStockTotal += priceChange;
                         await stock.save();
