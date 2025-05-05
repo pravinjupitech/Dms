@@ -719,9 +719,9 @@ export const updateCreateOrder = async (req, res, next) => {
                 }
 
                 if (stock) {
-                    console.log("stock",stock)
+                    // console.log("stock",stock)
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
-                    console.log("sitem",sItem)
+                    // console.log("sitem",sItem)
                     if (sItem) {
                         sItem.currentStock -= qtyChange
                         sItem.pendingStock += qtyChange;
