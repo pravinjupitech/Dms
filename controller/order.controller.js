@@ -602,7 +602,7 @@ export const updateCreateOrder = async (req, res, next) => {
                     const sItem = stock.productItems.find(p => p.productId.toString() === oldItem.productId.toString());
                     if (sItem) {
                         sItem.pendingStock -= oldItem.qty;
-                        whItem.currentStock += oldItem.qty;
+                        sItem.currentStock += oldItem.qty;
                         sItem.pendingStockTotal -= oldItem.totalPrice;
                         await stock.save();
                     }
@@ -659,7 +659,7 @@ export const updateCreateOrder = async (req, res, next) => {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     if (sItem) {
                         sItem.pendingStock += newItem.qty;
-                        whItem.currentStock -= newItem.qty;
+                        sItem.currentStock -= newItem.qty;
                         sItem.pendingStockTotal += newItem.totalPrice;
                         await stock.save();
                     }
