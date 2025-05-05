@@ -86,6 +86,9 @@ const createOrderSchema = new mongoose.Schema({
     CNDate: {
         type: String
     },
+    CNQty: {
+        type: String
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user"
