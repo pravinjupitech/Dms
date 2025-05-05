@@ -721,7 +721,7 @@ export const updateCreateOrder = async (req, res, next) => {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     console.log("sitem",sItem)
                     if (sItem) {
-                        sItem.currentStock += qtyChange
+                        sItem.currentStock -= qtyChange
                         sItem.pendingStock += qtyChange;
                         sItem.pendingStockTotal += priceChange;
                         await stock.save();
@@ -1393,9 +1393,10 @@ export const updateCNDetails = async (req, res, next) => {
         if (req.file && req.file.filename) {
             order.CNImage = req.file.filename;
         }
-        const { CNNumber, CNDate } = req.body;
+        const { CNNumber, CNDate,CNQty } = req.body;
         order.CNNumber = CNNumber;
         order.CNDate = CNDate;
+        order.CNQty=CNQty;
         await order.save();
         res.status(200).json({ message: "Data Updated", status: true })
     } catch (error) {
