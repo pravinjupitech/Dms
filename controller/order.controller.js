@@ -558,7 +558,7 @@ export const updateCreateOrder = async (req, res, next) => {
         const isCompleted = order.status === 'completed';
 
         for (const oldItem of removedItems) {
-            console.log("oldeItem remove",oldItem)
+            console.log("oldeItem remove", oldItem)
             const product = await Product.findById({ _id: oldItem.productId });
             if (!product) continue;
 
@@ -613,7 +613,7 @@ export const updateCreateOrder = async (req, res, next) => {
         }
 
         for (const newItem of addedItems) {
-            console.log("add newItem",newItem)
+            console.log("add newItem", newItem)
             const product = await Product.findById({ _id: newItem.productId });
             if (!product) continue;
 
@@ -669,7 +669,7 @@ export const updateCreateOrder = async (req, res, next) => {
         }
 
         for (const newItem of updatedItems) {
-            console.log("update same newItem",newItem)
+            console.log("update same newItem", newItem)
 
             const oldItem = oldMap.get(newItem.productId.toString());
             const qtyChange = newItem.qty - oldItem.qty;
@@ -717,7 +717,9 @@ export const updateCreateOrder = async (req, res, next) => {
                 }
 
                 if (stock) {
+                    console.log("stock",stock)
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+                    console.log("sitem",sItem)
                     if (sItem) {
                         sItem.pendingStock += qtyChange;
                         sItem.pendingStockTotal += priceChange;
@@ -1390,7 +1392,7 @@ export const updateCNDetails = async (req, res, next) => {
         if (req.file && req.file.filename) {
             order.CNImage = req.file.filename;
         }
-        const {CNNumber,CNDate } = req.body;
+        const { CNNumber, CNDate } = req.body;
         order.CNNumber = CNNumber;
         order.CNDate = CNDate;
         await order.save();
