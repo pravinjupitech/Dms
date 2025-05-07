@@ -213,11 +213,11 @@ export const updateOrderStatusByDeliveryBoy = async (req, res) => {
                 await customer.save();
             }
             if (50000 > orders.grandTotal) {
-              const companyDetails = await CompanyDetails.findOne({database:orders.database});
-              if(companyDetails){
-                companyDetails.cancelInvoice.push({invoice:orders.invoiceId})
-                await companyDetails.save();
-              }
+                const companyDetails = await CompanyDetails.findOne({ database: orders.database });
+                if (companyDetails) {
+                    companyDetails.cancelInvoice.push({ invoice: orders.invoiceId })
+                    await companyDetails.save();
+                }
             }
         } else {
             const user = await Customer.findById(partyId);
@@ -232,10 +232,10 @@ export const updateOrderStatusByDeliveryBoy = async (req, res) => {
                 return res.status(400).json({ message: "Incorrect OTP", status: false });
             }
             // const result = await generateInvoice(user.database);
-          
+
             // let challanNo = result
             // let invoiceId = result
-          
+
             user.otpVerify = undefined
 
             const commonUpdate = { status, paymentMode, CNUpload, invoiceId, challanNo, CNDetails };
@@ -376,6 +376,20 @@ export const ViewWarehouseOrderCancel = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false })
     }
 }
+
+export const ViewWarehouseByOrders = async (req, res, next) => {
+    try {
+        const order = await CreateOrder.find({ "orderItems.warehouse": req.params.id, status: { $ne: "Deactive" } }).populate({ path: "orderItems.productId", model: "product" }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).populate({ path: "AssignDeliveryBoy", model: "user" })
+        if (order.length === 0) {
+            return res.status(404).json({ message: "warehouse stock not found", status: false })
+        }
+        return res.status(200).json({ Order: order, status: false })
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(500).json({ error: "Internal Server Error", status: false })
+    }
+}
 export const SendOtpToDeliveryWarehouse = async (req, res) => {
     try {
         const otp = Math.floor(1000 + Math.random() * 9000);
@@ -383,7 +397,7 @@ export const SendOtpToDeliveryWarehouse = async (req, res) => {
         if (!existing) {
             return res.status(404).json({ message: "order not found", status: false })
         }
-         const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, status: "Active" })
+        const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, status: "Active" })
         if (!warehouse) {
             return res.status(404).json({ message: "warehouse not found", status: false })
         }
@@ -432,11 +446,11 @@ export const OrderCancelWarehouse = async (req, res, next) => {
                             product.qty += item.qty;
                             product.pendingQty -= item.qty;
                             // pro.pendingStock -= (item.qty)
-                            await addProductInWarehouse9(product, item.warehouse, item,existingOrder.date );
+                            await addProductInWarehouse9(product, item.warehouse, item, existingOrder.date);
                             await warehouse.save();
                             await product.save();
                         }
-                    } else{
+                    } else {
                         return res.status(400).json({ message: "otp does not matched", status: false });
                     }
                 } else {
