@@ -338,7 +338,7 @@ export const ViewOtp = async (req, res) => {
 };
 export const ViewWarehouseByOrder = async (req, res, next) => {
     try {
-        const order = await CreateOrder.find({ "orderItems.warehouse": req.params.id, status: "Billing", status: { $ne: "Deactive" } }).populate({ path: "orderItems.productId", model: "product" }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).populate({ path: "AssignDeliveryBoy", model: "user" })
+        const order = await CreateOrder.find({ "orderItems.warehouse": req.params.id,status: { $ne: "Deactive" } }).populate({ path: "orderItems.productId", model: "product" }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).populate({ path: "AssignDeliveryBoy", model: "user" })
         if (order.length === 0) {
             return res.status(404).json({ message: "warehouse stock not found", status: false })
         }
