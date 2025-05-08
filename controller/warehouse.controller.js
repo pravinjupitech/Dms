@@ -633,6 +633,7 @@ const ClosingStock = async (productItems) => {
     }
 }
 
+const resetOTP = {};
 export const forgetPassword = async (request, response, next) => {
     try {
         const { Username } = request.body;
