@@ -351,9 +351,7 @@ export const updatePassword = async (request, response, next) => {
             return response.status(400).json({ error: "Password don't match", status: false });
         } else {
             // request.body.password = await bcrypt.hash(request.body.password, await bcrypt.genSalt(15));
-            console.log("request",request.body)
             const user = await Customer.updateMany({ _id: userId }, { password: request.body.password }, { new: true });
-    console.log("user",user)
             if (user.modifiedCount > 0)
                 return response.status(200).json({ Message: "Password Updated success", status: true });
             return response.status(400).json({ Message: "Unauthorized User...", status: false });
