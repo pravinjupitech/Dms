@@ -265,8 +265,14 @@ export const SuperAdminList = async (req, res, next) => {
 
 export const SignInWithMobile = async (req, res, next) => {
     try {
-        const { mobileNo } = req.body;
-        let existingAccount = await Customer.findOne({ mobileNumber: mobileNo }).populate({ path: "rolename", model: "role", });
+        const { mobileNo,email,password} = req.body;
+        let existingAccount = await Customer.findOne({
+            $or: [
+                { mobileNumber: mobileNo },
+                { email: email }
+            ],
+            password:password
+        }).populate({ path: "rolename", model: "role" });
         if (!existingAccount) {
             return res.status(400).json({ message: "Incorrect mobile No.", status: false });
         }
