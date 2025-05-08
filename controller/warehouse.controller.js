@@ -9,6 +9,7 @@ import { Product } from "../model/product.model.js";
 import { CreateOrder } from "../model/createOrder.model.js";
 import { Role } from "../model/role.model.js";
 import { Customer } from "../model/customer.model.js";
+import transporterss from "../service/email.js";
 dotenv.config();
 
 export const SignIn = async (req, res, next) => {
@@ -652,7 +653,7 @@ export const forgetPassword = async (request, response, next) => {
                 otp +
                 '</h2><p style={{ fontSize: "0.9em" }}Regards,<br />SoftNumen Software Solutions</p><hr style={{ border: "none", borderTop: "1px solid #eee" }} /></div</div>',
         };
-        await transporter.sendMail(mailOptions, (error, info) => {
+        await transporterss.sendMail(mailOptions, (error, info) => {
             !error ? response.status(201).json({ warehouse: warehouse, message: "send otp on email", status: true }) : console.log(error) || response.json({ error: "something went wrong" });
         });
     } catch (error) {
