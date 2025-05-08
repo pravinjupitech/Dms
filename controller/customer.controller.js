@@ -314,10 +314,7 @@ export const forgetPassword = async (request, response, next) => {
             return response.status(404).json({ message: "Customer not found" });
         }
         var mailOptions = {
-            from: {
-                name: "Distribution Management System",
-                address: "vikramsveltose022@gmail.com",
-            },
+            from:process.env.EMAIL,
             to: email,
             subject: "Password has been reset",
             html:
