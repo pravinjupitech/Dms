@@ -1,5 +1,5 @@
 import express from "express";
-import { DeleteWarehouse, HSNStockSummary, SaveWarehouse, SignIn, StockCalculate, UpdateWarehouse, ViewWarehouse, ViewWarehouseById, ViewWarehouseForProduct, ViewWarehouseList, ViewWarehouseListIncharge, WarehouseDifferenceReport, WarehouseReport, getWarehouseData, savedd } from "../controller/warehouse.controller.js";
+import { DeleteWarehouse, HSNStockSummary, SaveWarehouse, SignIn, StockCalculate, UpdateWarehouse, ViewWarehouse, ViewWarehouseById, ViewWarehouseForProduct, ViewWarehouseList, ViewWarehouseListIncharge, WarehouseDifferenceReport, WarehouseReport, forgetPassword, getWarehouseData, otpVerify, savedd, updatePassword } from "../controller/warehouse.controller.js";
 
 const router = express.Router();
 
@@ -21,4 +21,7 @@ router.post("/hsn-stock-summary/:database", HSNStockSummary)
 
 router.get("/stock-calculate/:database", StockCalculate)
 router.get("/saved/:database", savedd)
+router.post("/forget-password",forgetPassword)
+router.post("/otp-verify",otpVerify)
+router.put("/update-password/:id",updatePassword)
 export default router;

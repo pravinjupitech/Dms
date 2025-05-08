@@ -632,3 +632,61 @@ const ClosingStock = async (productItems) => {
         console.error("Error in ClosingStock function:", err);
     }
 }
+
+export const forgetPassword = async (request, response, next) => {
+    try {
+        const { Username } = request.body;
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        resetOTP[Username] = otp;
+        let warehouse = await Warehouse.findOne({ Username: Username })
+        if (!warehouse) {
+            return response.status(404).json({ message: "Warehouse not found" });
+        }
+        var mailOptions = {
+            from:process.env.EMAIL,
+            to: Username,
+            subject: "Password has been reset",
+            html:
+                '<div style={{fontFamily: "Helvetica,Arial,sans-serif",minWidth: 1000,overflow: "auto",lineHeight: 2}}<div style={{ margin: "50px auto", width: "70%", padding: "20px 0" }}><div style={{ borderBottom: "1px solid #eee" }}><a href=""style={{ fontSize: "1.4em",color: "#00466a" textDecoration: "none",fontWeight: 600}}></a></div><p style={{ fontSize: "1.1em" }}></p><p>The password for your distribution management system account has been successfully reset</p><h2 value="otp" style={{ background: "#00466a", margin: "0 auto",width: "max-content" padding: "0 10px",color: "#fff",borderRadius: 4}}>' +
+                otp +
+                '</h2><p style={{ fontSize: "0.9em" }}Regards,<br />SoftNumen Software Solutions</p><hr style={{ border: "none", borderTop: "1px solid #eee" }} /></div</div>',
+        };
+        await transporter.sendMail(mailOptions, (error, info) => {
+            !error ? response.status(201).json({ warehouse: warehouse, message: "send otp on email", status: true }) : console.log(error) || response.json({ error: "something went wrong" });
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({ message: "Internal Server error" });
+    }
+};
+export const otpVerify = async (req, res, next) => {
+    try {
+        const { otp, Username } = req.body;
+        if (otp == resetOTP[Username]) {
+            delete resetOTP[Username];
+            return res.status(201).json({ message: "otp matched successfully", status: true });
+        } else {
+            return res.status(400).json({ error: "Invalid otp", status: false });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Internal server error...", status: false });
+    }
+};
+export const updatePassword = async (request, response, next) => {
+    try {
+        const userId = request.params.id;
+        if (request.body.Password !== request.body.confirmPassword) {
+            return response.status(400).json({ error: "Password don't match", status: false });
+        } else {
+            // request.body.password = await bcrypt.hash(request.body.password, await bcrypt.genSalt(15));
+            const user = await Warehouse.updateMany({ _id: userId }, { Password: request.body.Password }, { new: true });
+            if (user.modifiedCount > 0)
+                return response.status(200).json({ Message: "Password Updated success", status: true });
+            return response.status(400).json({ Message: "Unauthorized User...", status: false });
+        }
+    } catch (err) {
+        console.log(err);
+        return response.status(500).json({ Message: "Internal Server Error...", status: false });
+    }
+};
