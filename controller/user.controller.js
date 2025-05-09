@@ -317,8 +317,8 @@ export const forgetPassword = async (request, response, next) => {
     const { email } = request.body;
     const otp = Math.floor(100000 + Math.random() * 900000);
     resetOTP[email] = otp;
-    const user = await User.findOne({ email });
-    const user1 = await Customer.findOne({ email });
+    const user = await User.findOne({ email:email ,status:"Active"});
+    const user1 = await Customer.findOne({ email:email,status:"Active" });
     if (!user && !user1) {
       return response.status(404).json({ message: "User not found" });
     }
