@@ -640,7 +640,7 @@ export const forgetPassword = async (request, response, next) => {
         const { Username } = request.body;
         const otp = Math.floor(100000 + Math.random() * 900000);
         resetOTP[Username] = otp;
-        let warehouse = await Warehouse.findOne({ Username: Username })
+        let warehouse = await Warehouse.findOne({ Username: Username,status:"Active" })
         if (!warehouse) {
             return response.status(404).json({ message: "Warehouse not found" });
         }
