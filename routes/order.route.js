@@ -44,5 +44,5 @@ router.get("/debitor-calculate/:database", DebitorCalculate)
 router.get("/testing/:database", CheckPartyPayment)
 router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
 router.put("/update-arn/:id",updateOrderArn)
-router.put("/update-cndetails/:id",upload.single("CNImage",updateCNDetails))
+router.put("/update-cndetails/:id",upload.single("CNImage"),updateCNDetails)
 export default router;
