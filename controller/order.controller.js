@@ -45,12 +45,12 @@ export const createOrder = async (req, res, next) => {
         }
 
         if (date1.toDateString() === date2.toDateString()) {
-            if (party.paymentTerm.toLowerCase() !== "cash") {
-                const existOrders = await CreateOrder.find({
-                    partyId: req.body.partyId,
-                    status: { $nin: ['Deactive', 'Cancelled', 'Cancel in process'] },
-                    paymentStatus: false
-                }).sort({ date: 1, sortorder: -1 });
+            // if (party.paymentTerm.toLowerCase() !== "cash") {
+            //     const existOrders = await CreateOrder.find({
+            //         partyId: req.body.partyId,
+            //         status: { $nin: ['Deactive', 'Cancelled', 'Cancel in process'] },
+            //         paymentStatus: false
+            //     }).sort({ date: 1, sortorder: -1 });
 
                 // if (existOrders.length > 0) {
                 //     const due = existOrders[0];
@@ -62,7 +62,7 @@ export const createOrder = async (req, res, next) => {
                 //         return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
                 //     }
                 // }
-            }
+            // }
 
             const orderNo = await generateOrderNo(user.database);
             for (const orderItem of orderItems) {
