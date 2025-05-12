@@ -36,7 +36,6 @@ export const createOrder = async (req, res, next) => {
         const date2 = new Date(req.body.date);
         const party = await Customer.findById({ _id: req.body.partyId });
         const user = await User.findOne({ _id: party.created_by });
-console.log("party",party)
         if (!user) {
             return res.status(401).json({ message: "No user found", status: false });
         }
@@ -53,19 +52,16 @@ console.log("party",party)
                     paymentStatus: false
                 }).sort({ date: 1, sortorder: -1 });
 
-                if (existOrders.length > 0) {
-                    const due = existOrders[0];
-                    console.log("due",due)
-                    const lastOrderDate = due?.date;
-                    const currentDate = new Date();
-                    const timeDifference = currentDate - lastOrderDate;
-console.log("timeDifference",currentDate,lastOrderDate,timeDifference)
-                    const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                    console.log("days",days)
-                    if (days >= party.lockInTime) {
-                        return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
-                    }
-                }
+                // if (existOrders.length > 0) {
+                //     const due = existOrders[0];
+                //     const lastOrderDate = due?.date;
+                //     const currentDate = new Date();
+                //     const timeDifference = currentDate - lastOrderDate;
+                //     const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+                //     if (days >= party.lockInTime) {
+                //         return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
+                //     }
+                // }
             }
 
             const orderNo = await generateOrderNo(user.database);
