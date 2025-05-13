@@ -294,10 +294,10 @@ export const updatePurchaseOrder = async (req, res, next) => {
                 const oldOrderItems = order.orderItems || [];
                 const newOrderItems = updatedFields.orderItems || [];
                 for (const newOrderItem of newOrderItems) {
-                    // const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
-                    // if (oldOrderItem) {
-                    // const quantityChange = newOrderItem.qty - oldOrderItem.qty;
-                    // if (quantityChange !== 0) {
+                    const oldOrderItem = oldOrderItems.find(item => item.productId.toString() === newOrderItem.productId.toString());
+                    if (oldOrderItem) {
+                    const quantityChange = newOrderItem.qty - oldOrderItem.qty;
+                    if (quantityChange !== 0) {
                     const product = await Product.findById({ _id: newOrderItem.productId });
                     if (product) {
                         const group = await CustomerGroup.find({ database: req.body.database, status: "Active" })
@@ -307,7 +307,7 @@ export const updatePurchaseOrder = async (req, res, next) => {
                             });
                             groupDiscount = maxDiscount.discount;
                         }
-                        //     product.Size -= quantityChange;
+                            product.Size -= quantityChange;
         
                         //change this line to -------------------
                         product.basicPrice = await newOrderItem.basicPrice;
@@ -332,8 +332,8 @@ export const updatePurchaseOrder = async (req, res, next) => {
                     } else {
                         console.error(`Product with ID ${newOrderItem.productId} not found`);
                     }
-                    // }
-                    // }
+                    }
+                    }
                 }
                 Object.assign(order, updatedFields);
                 const updatedOrder = await order.save();
