@@ -416,9 +416,10 @@ export const updatePurchaseOrder = async (req, res, next) => {
             console.log("update same newItem", newItem)
 
             const oldItem = oldMap.get(newItem.productId.toString());
+            console.log("newItem.qty",newItem.qty,oldItem.qty)
             const qtyChange = newItem.qty - oldItem.qty;
             const priceChange = newItem.totalPrice - oldItem.totalPrice;
-
+console.log("qtyChange priceChange",qtyChange,priceChange)
             if (qtyChange === 0 && priceChange === 0) continue;
 
             const product = await Product.findById({ _id: newItem.productId });
@@ -432,21 +433,25 @@ export const updatePurchaseOrder = async (req, res, next) => {
 
                 if (warehouse) {
                     const whItem = warehouse.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+                    console.log("whItem",whItem)
                     if (whItem) {
                         whItem.currentStock -= qtyChange;
                         whItem.totalPrice += priceChange;
                     }
                     await warehouse.save();
+                                        console.log("afterwhItem",whItem)
                 }
 
                 if (stock) {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+                    console.log("sItem",sItem)
                     if (sItem) {
                         sItem.currentStock -= qtyChange;
                         sItem.pQty += qtyChange;
                         sItem.pTotal += priceChange;
                         await stock.save();
                     }
+                                        console.log("aftersItem",sItem)
                 }
             } else {
                 product.qty -= qtyChange;
