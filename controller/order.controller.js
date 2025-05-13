@@ -557,7 +557,7 @@ export const updateCreateOrder = async (req, res, next) => {
         const isCompleted = order.status === 'completed';
 
         for (const oldItem of removedItems) {
-            console.log("oldeItem remove", oldItem)
+            // console.log("oldeItem remove", oldItem)
             const product = await Product.findById({ _id: oldItem.productId });
             if (!product) continue;
 
