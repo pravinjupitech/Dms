@@ -345,9 +345,9 @@ export const updatePurchaseOrder = async (req, res, next) => {
                 if (stock) {
                     const sItem = stock.productItems.find(p => p.productId.toString() === oldItem.productId.toString());
                     if (sItem) {
-                        sItem.pendingStock -= oldItem.qty;
+                        // sItem.pendingStock -= oldItem.qty;
                         sItem.currentStock += oldItem.qty;
-                        sItem.pendingStockTotal -= oldItem.totalPrice;
+                        // sItem.pendingStockTotal -= oldItem.totalPrice;
                         await stock.save();
                     }
                 }
@@ -401,9 +401,9 @@ export const updatePurchaseOrder = async (req, res, next) => {
                 if (stock) {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     if (sItem) {
-                        sItem.pendingStock += newItem.qty;
+                        // sItem.pendingStock += newItem.qty;
                         sItem.currentStock -= newItem.qty;
-                        sItem.pendingStockTotal += newItem.totalPrice;
+                        // sItem.pendingStockTotal += newItem.totalPrice;
                         await stock.save();
                     }
                 }
@@ -466,8 +466,8 @@ export const updatePurchaseOrder = async (req, res, next) => {
                     // console.log("sitem",sItem)
                     if (sItem) {
                         sItem.currentStock -= qtyChange
-                        sItem.pendingStock += qtyChange;
-                        sItem.pendingStockTotal += priceChange;
+                        // sItem.pendingStock += qtyChange;
+                        // sItem.pendingStockTotal += priceChange;
                         await stock.save();
                     }
                 }
