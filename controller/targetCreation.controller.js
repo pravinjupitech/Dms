@@ -90,118 +90,94 @@ export const SaveTargetCreation555 = async (req, res) => {
 // save target start from salesPerson
 
 export const SaveTargetCreation = async (req, res) => {
-    try {
-        // ✅ Ensure file is uploaded
-        if (!req.file) {
-            return res.status(400).json({ message: "Excel file is required", status: false });
-        }
+     try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Excel file is required" });
+    }
 
-        const filePath = req.file.path;
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
 
-        // ✅ Read Excel file
-        const workbook = xlsx.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = xlsx.utils.sheet_to_json(sheet);
+    if (rows.length === 0) {
+      return res.status(400).json({ message: "Excel file is empty" });
+    }
 
-        // ✅ Delete uploaded file after use
-        fs.unlinkSync(filePath);
+    const userId = rows[0].userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User Not Found" });
+    }
 
-        if (!rows.length) {
-            return res.status(400).json({ message: "Excel file is empty", status: false });
-        }
+    // Filter rows with valid qtyAssign
+    const products = rows
+      .filter(row => row.qtyAssign != null && Number(row.qtyAssign) > 0)
+      .map(row => ({
+        productId: row.productId,
+        qtyAssign: Number(row.qtyAssign),
+        price: Number(row.price) || 0,
+        totalPrice: Number(row.totalPrice) || 0,
+        assignPercentage: (row.assignPercentageMonth != null && row.assignPercentagePercend != null)
+          ? [{
+              month: Number(row.assignPercentageMonth),
+              percentage: Number(row.assignPercentagePercend)
+            }]
+          : []
+      }));
 
-        const userId = rows[0].userId;
-        const user = await User.findById(userId);
+    if (products.length === 0) {
+      return res.status(400).json({ message: "No valid products with qtyAssign found." });
+    }
 
-        if (!user) {
-            return res.status(400).json({ message: "User Not Found", status: false });
-        }
+    const grandTotal = products.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
 
-        // ✅ Map valid products
-        const products = rows
-            .filter(row => row.qtyAssign != null && !isNaN(Number(row.qtyAssign)))
-            .map(row => {
-                const assignMonth = Number(row.month);
-                const assignPercent = Number(row.percentage);
-console.log(row)
-                const product = {
-                    productId: row.productId,
-                    qtyAssign: Number(row.qtyAssign),
-                    price: Number(row.price) || 0,
-                    totalPrice: (Number(row.qtyAssign) || 0) * (Number(row.price) || 0),
-                    assignPercentage: [],
-                };
+    const targetData = {
+      userId,
+      created_by: user.created_by,
+      database: user.database,
+      salesPersonId: "salesPerson",
+      products,
+      grandTotal
+    };
 
-                // Only push valid assignPercentage
-                if (!isNaN(assignMonth) && !isNaN(assignPercent)) {
-                    product.assignPercentage.push({
-                        month: assignMonth,
-                        percentage: assignPercent,
-                    });
-                }
+    const target = await TargetCreation.create(targetData);
 
-                return product;
-            });
+    // SuperAdmin logic
+    const checkUser = await User.findById(user.created_by).populate("rolename");
+    if (checkUser?.rolename?.roleName === "SuperAdmin") {
+      return res.status(200).json({ message: "Target saved successfully", status: true });
+    }
 
-        if (!products.length) {
-            return res.status(400).json({ message: "No valid products found with qtyAssign", status: false });
-        }
+    // Merge with last target if exists
+    const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
+    const lastTarget = existingTargets[existingTargets.length - 1];
 
-        const grandTotal = products.reduce((acc, item) => acc + item.totalPrice, 0);
-
-        const bodyData = {
-            database: user.database,
-            userId: user._id,
-            created_by: user.created_by,
-            salesPersonId: "salesPerson", // you may want to customize this
-            products,
-            grandTotal,
-            startDate: new Date().toISOString().slice(0, 10),
-            endDate: new Date().toISOString().slice(0, 10),
-        };
-
-        // ✅ Save target for salesperson
-        await TargetCreation.create(bodyData);
-
-        // ✅ Check if creator is SuperAdmin
-        const creator = await User.findById(user.created_by).populate({
-            path: "rolename",
-            model: "role",
-        });
-
-        if (creator?.rolename?.roleName === "SuperAdmin") {
-            return res.status(200).json({ message: "Target saved successfully", status: true });
-        }
-
-        // ✅ Update team target for creator if exists
-        const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
-        const lastTarget = existingTargets[existingTargets.length - 1];
-
-        if (lastTarget) {
-            for (let product of products) {
-                const existingProduct = lastTarget.products.find(p => p.productId === product.productId);
-                if (existingProduct) {
-                    existingProduct.qtyAssign += product.qtyAssign;
-                    existingProduct.totalPrice = existingProduct.qtyAssign * existingProduct.price;
-                } else {
-                    lastTarget.products.push(product);
-                }
-            }
-
-            lastTarget.grandTotal += grandTotal;
-            await lastTarget.save();
-            await TargetAssignUser(user.created_by, grandTotal);
+    if (lastTarget) {
+      for (let product of products) {
+        const existingProduct = lastTarget.products.find(p => p.productId === product.productId);
+        if (existingProduct) {
+          existingProduct.qtyAssign += product.qtyAssign;
+          existingProduct.totalPrice = existingProduct.qtyAssign * product.price;
         } else {
-            // No previous target, create a new one
-            await TargetCreation.create({
-                ...bodyData,
-                userId: user.created_by,
-            });
-
-            await TargetAssignUser(user.created_by, grandTotal);
+          lastTarget.products.push(product);
         }
+      }
+      lastTarget.grandTotal += grandTotal;
+      await lastTarget.save();
+      await TargetAssignUser(user.created_by, grandTotal);
+    } else {
+      const newPayload = {
+        userId: user.created_by,
+        products,
+        grandTotal,
+        database: user.database
+      };
+      await TargetCreation.create(newPayload);
+      await TargetAssignUser(user.created_by, grandTotal);
+    }
 
-        return res.status(200).json({ message: "Target saved successfully", status: true });
+    return res.status(200).json({ message: "Target saved successfully", status: true });
+
     } catch (error) {
         console.error("Error in SaveTargetCreation:", error);
         return res.status(500).json({ error: "Internal Server Error", details: error.message });
