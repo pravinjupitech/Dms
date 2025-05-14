@@ -92,7 +92,7 @@ export const SaveTargetCreation555 = async (req, res) => {
 export const SaveTargetCreation = async (req, res) => {
     try {
         // ✅ Ensure file is uploaded
-        if (!req.file || !req.file.path) {
+        if (!req.file) {
             return res.status(400).json({ message: "Excel file is required", status: false });
         }
 
