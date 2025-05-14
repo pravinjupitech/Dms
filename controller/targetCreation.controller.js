@@ -92,7 +92,7 @@ export const SaveTargetCreation = async (req, res) => {
     try {
         // Read uploaded Excel file
         const filePath = req.file?.path;
-        if (!filePath || !fs.existsSync(filePath)) {
+        if (req.file) {
             return res.status(400).json({ message: "Excel file is required", status: false });
         }
 
