@@ -88,17 +88,23 @@ export const SaveTargetCreation555 = async (req, res) => {
     }
 };
 // save target start from salesPerson
+
 export const SaveTargetCreation = async (req, res) => {
     try {
-        // Read uploaded Excel file
-        const filePath = req.file?.path;
-         if (!req.file) {
-      return res.status(400).json({ message: "Excel file is required" });
-    }
+        // ✅ Ensure file is uploaded
+        if (!req.file || !req.file.path) {
+            return res.status(400).json({ message: "Excel file is required", status: false });
+        }
 
+        const filePath = req.file.path;
+
+        // ✅ Read Excel file
         const workbook = xlsx.readFile(filePath);
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = xlsx.utils.sheet_to_json(sheet);
+
+        // ✅ Delete uploaded file after use
+        fs.unlinkSync(filePath);
 
         if (!rows.length) {
             return res.status(400).json({ message: "Excel file is empty", status: false });
@@ -111,25 +117,26 @@ export const SaveTargetCreation = async (req, res) => {
             return res.status(400).json({ message: "User Not Found", status: false });
         }
 
-        // Map products
+        // ✅ Map valid products
         const products = rows
             .filter(row => row.qtyAssign != null && !isNaN(Number(row.qtyAssign)))
             .map(row => {
-                const assignMonth = Number(row.assignPercentageMonth);
-                const assignPercent = Number(row.assignPercentagePercend);
-
+                const assignMonth = Number(row.month);
+                const assignPercent = Number(row.percentage);
+console.log(row)
                 const product = {
                     productId: row.productId,
                     qtyAssign: Number(row.qtyAssign),
                     price: Number(row.price) || 0,
                     totalPrice: (Number(row.qtyAssign) || 0) * (Number(row.price) || 0),
-                    assignPercentage: []
+                    assignPercentage: [],
                 };
 
+                // Only push valid assignPercentage
                 if (!isNaN(assignMonth) && !isNaN(assignPercent)) {
                     product.assignPercentage.push({
                         month: assignMonth,
-                        percentage: assignPercent
+                        percentage: assignPercent,
                     });
                 }
 
@@ -146,24 +153,27 @@ export const SaveTargetCreation = async (req, res) => {
             database: user.database,
             userId: user._id,
             created_by: user.created_by,
-            salesPersonId: "salesPerson",
+            salesPersonId: "salesPerson", // you may want to customize this
             products,
             grandTotal,
             startDate: new Date().toISOString().slice(0, 10),
             endDate: new Date().toISOString().slice(0, 10),
         };
 
-        // Save for salesperson
+        // ✅ Save target for salesperson
         await TargetCreation.create(bodyData);
 
-        // Check creator's role
-        const creator = await User.findById(user.created_by).populate({ path: "rolename", model: "role" });
+        // ✅ Check if creator is SuperAdmin
+        const creator = await User.findById(user.created_by).populate({
+            path: "rolename",
+            model: "role",
+        });
 
         if (creator?.rolename?.roleName === "SuperAdmin") {
             return res.status(200).json({ message: "Target saved successfully", status: true });
         }
 
-        // Handle team targets
+        // ✅ Update team target for creator if exists
         const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
         const lastTarget = existingTargets[existingTargets.length - 1];
 
@@ -181,22 +191,23 @@ export const SaveTargetCreation = async (req, res) => {
             lastTarget.grandTotal += grandTotal;
             await lastTarget.save();
             await TargetAssignUser(user.created_by, grandTotal);
-
         } else {
+            // No previous target, create a new one
             await TargetCreation.create({
                 ...bodyData,
-                userId: user.created_by
+                userId: user.created_by,
             });
 
             await TargetAssignUser(user.created_by, grandTotal);
         }
 
         return res.status(200).json({ message: "Target saved successfully", status: true });
-       } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Internal Server Error" });
+    } catch (error) {
+        console.error("Error in SaveTargetCreation:", error);
+        return res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 };
+
 
 // export const SaveTargetCreation = async (req, res) => {
 //     try {
