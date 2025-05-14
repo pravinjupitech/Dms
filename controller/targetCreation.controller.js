@@ -117,8 +117,8 @@ export const SaveTargetCreation = async (req, res) => {
         totalPrice: Number(row.totalPrice) || 0,
         assignPercentage: (row.assignPercentageMonth != null && row.assignPercentagePercend != null)
           ? [{
-              month: Number(row.assignPercentageMonth),
-              percentage: Number(row.assignPercentagePercend)
+              month: Number(row.month),
+              percentage: Number(row.percentage)
             }]
           : []
       }));
