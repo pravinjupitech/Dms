@@ -88,47 +88,133 @@ export const SaveTargetCreation555 = async (req, res) => {
 };
 // save target start from salesPerson
 export const SaveTargetCreation = async (req, res) => {
-    try {
-        const user = await User.findById(req.body.userId);
-        if (!user) {
-            return res.status(400).json({ message: "User Not Found", status: false });
-        }
-        req.body.database = user.database;
-        req.body.salesPersonId = "salesPerson";
-        const target = await TargetCreation.create(req.body);
-        req.body.salesPersonId = undefined
-        // check user role
-        const checkUser = await User.findById(user.created_by).populate({ path: "rolename", model: "role" });
-        if (checkUser.rolename.roleName === "SuperAdmin") {
-            console.log("SuperAdmin detected, not saving target.");
-            return res.status(200).json({ message: "Target saved successfully", status: true });
-        }
-        const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
-        const lastTarget = existingTargets[existingTargets.length - 1];
-        if (lastTarget) {
-            for (let product of req.body.products) {
-                const existingProduct = lastTarget.products.find(p => p.productId === product.productId);
-                if (existingProduct) {
-                    existingProduct.qtyAssign += product.qtyAssign;
-                    existingProduct.totalPrice = existingProduct.qtyAssign * existingProduct.price;
-                } else {
-                    lastTarget.products.push(product);
-                }
-            }
-            lastTarget.grandTotal += req.body.grandTotal;
-            await lastTarget.save();
-            await TargetAssignUser(user.created_by, req.body.grandTotal)
+     try {
+    if (!req.file) return res.status(400).json({ message: "File is required" });
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: "Excel file is empty" });
+    }
+
+    const userId = rows[0].userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({ message: "User Not Found", status: false });
+    }
+
+    // Filter rows that contain a valid qtyAssign
+    const products = rows
+      .filter(row => row.qtyAssign != null && Number(row.qtyAssign) > 0)
+      .map(row => ({
+        productId: row.productId,
+        qtyAssign: Number(row.qtyAssign),
+        price: Number(row.price) || 0,
+        totalPrice: Number(row.totalPrice) || 0,
+        assignPercentageMonth: Number(row.assignPercentageMonth) || 0,
+        assignPercentagePercend: Number(row.assignPercentagePercend) || 0
+      }));
+
+    if (products.length === 0) {
+      return res.status(400).json({ message: "No valid products with qtyAssign found." });
+    }
+
+    const grandTotal = products.reduce((sum, p) => sum + p.totalPrice, 0);
+
+    const payload = {
+      userId,
+      products,
+      grandTotal,
+      database: user.database,
+      salesPersonId: "salesPerson"
+    };
+
+    const target = await TargetCreation.create(payload);
+
+    // check creator role
+    const checkUser = await User.findById(user.created_by).populate("rolename");
+    if (checkUser?.rolename?.roleName === "SuperAdmin") {
+      return res.status(200).json({ message: "Target saved successfully", status: true });
+    }
+
+    const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
+    const lastTarget = existingTargets[existingTargets.length - 1];
+
+    if (lastTarget) {
+      for (let product of products) {
+        const existingProduct = lastTarget.products.find(p => p.productId === product.productId);
+        if (existingProduct) {
+          existingProduct.qtyAssign += product.qtyAssign;
+          existingProduct.totalPrice = existingProduct.qtyAssign * product.price;
         } else {
-            req.body.userId = user.created_by;
-            const newTarget = await TargetCreation.create(req.body);
-            await TargetAssignUser(user.created_by, req.body.grandTotal)
+          lastTarget.products.push(product);
         }
-        return res.status(200).json({ message: "Target saved successfully", status: true });
+      }
+      lastTarget.grandTotal += grandTotal;
+      await lastTarget.save();
+      await TargetAssignUser(user.created_by, grandTotal);
+    } else {
+      const newPayload = {
+        userId: user.created_by,
+        products,
+        grandTotal,
+        database: user.database
+      };
+      await TargetCreation.create(newPayload);
+      await TargetAssignUser(user.created_by, grandTotal);
+    }
+
+    return res.status(200).json({ message: "Target saved successfully", status: true });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+// export const SaveTargetCreation = async (req, res) => {
+//     try {
+//         const user = await User.findById(req.body.userId);
+//         if (!user) {
+//             return res.status(400).json({ message: "User Not Found", status: false });
+//         }
+//         req.body.database = user.database;
+//         req.body.salesPersonId = "salesPerson";
+//         const target = await TargetCreation.create(req.body);
+//         req.body.salesPersonId = undefined
+//         // check user role
+//         const checkUser = await User.findById(user.created_by).populate({ path: "rolename", model: "role" });
+//         if (checkUser.rolename.roleName === "SuperAdmin") {
+//             console.log("SuperAdmin detected, not saving target.");
+//             return res.status(200).json({ message: "Target saved successfully", status: true });
+//         }
+//         const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
+//         const lastTarget = existingTargets[existingTargets.length - 1];
+//         if (lastTarget) {
+//             for (let product of req.body.products) {
+//                 const existingProduct = lastTarget.products.find(p => p.productId === product.productId);
+//                 if (existingProduct) {
+//                     existingProduct.qtyAssign += product.qtyAssign;
+//                     existingProduct.totalPrice = existingProduct.qtyAssign * existingProduct.price;
+//                 } else {
+//                     lastTarget.products.push(product);
+//                 }
+//             }
+//             lastTarget.grandTotal += req.body.grandTotal;
+//             await lastTarget.save();
+//             await TargetAssignUser(user.created_by, req.body.grandTotal)
+//         } else {
+//             req.body.userId = user.created_by;
+//             const newTarget = await TargetCreation.create(req.body);
+//             await TargetAssignUser(user.created_by, req.body.grandTotal)
+//         }
+//         return res.status(200).json({ message: "Target saved successfully", status: true });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ error: "Internal Server Error" });
+//     }
+// };
 
 
 export const DeleteTargetCreation = async (req, res, next) => {
