@@ -112,15 +112,17 @@ export const SaveTargetCreation = async (req, res) => {
     // Filter rows with valid qtyAssign
     const products = rows
       .filter(row => row.qtyAssign != null && Number(row.qtyAssign) > 0)
-      .map(row => ({
+      .map(row =>
+                console.log("row",row)
+        ({
         productId: row.productId,
         qtyAssign: Number(row.qtyAssign),
         price: Number(row.price) || 0,
         totalPrice: Number(row.totalPrice) || 0,
-        assignPercentage: (row.assignPercentageMonth != null && row.assignPercentagePercend != null)
+        assignPercentage: (row.month != null && row.percentage != null)
           ? [{
-              month: Number(row.assignPercentageMonth),
-              percentage: Number(row.assignPercentagePercend)
+              month: Number(row.month),
+              percentage: Number(row.percentage)
             }]
           : []
       }));
@@ -128,8 +130,8 @@ export const SaveTargetCreation = async (req, res) => {
     if (products.length === 0) {
       return res.status(400).json({ message: "No valid products with qtyAssign found." });
     }
-
     const grandTotal = products.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+    console.log("products",products,grandTotal)
 
     const targetData = {
       userId,
@@ -139,7 +141,7 @@ export const SaveTargetCreation = async (req, res) => {
       products,
       grandTotal
     };
-
+console.log("targetData",targetData)
     const target = await TargetCreation.create(targetData);
 
     // SuperAdmin logic
@@ -173,6 +175,7 @@ export const SaveTargetCreation = async (req, res) => {
         database: user.database
       };
       await TargetCreation.create(newPayload);
+      console.log("target",newPayload)
       await TargetAssignUser(user.created_by, grandTotal);
     }
 
