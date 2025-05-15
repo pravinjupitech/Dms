@@ -36,7 +36,8 @@ export const SaveUser = async (req, res, next) => {
     }
    if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
     let last4 = '';
-
+let existName = req.body.firstName.split(" ");
+let fname = existName[0]; 
     if (req.body.Aadhar_No) {
         const adhar = req.body.Aadhar_No.trim();
         last4 = adhar.slice(-4);
@@ -45,7 +46,7 @@ export const SaveUser = async (req, res, next) => {
         last4 = pan.slice(-4);
     }
 
-    req.body.sId = `${req.body.firstName}${last4}`;
+    req.body.sId = `${fname}${last4}`;
 }
 
     if (req.body.setRule && req.body.setRule.length > 0) {
