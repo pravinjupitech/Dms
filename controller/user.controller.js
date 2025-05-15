@@ -236,14 +236,13 @@ let fname = existName[0];
         const pan = req.body.Pan_No.trim();
         last4 = pan.slice(-4);
     }
-
     req.body.sId = `${fname}${last4}`;
 }
 
       if (req.body.warehouse && req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
-      if (req.body.reference) {
+      if (req.body.reference&&req.body.reference.length>0) {
         req.body.reference = await JSON.parse(req.body.reference)
       }
       const updatedUser = req.body;
