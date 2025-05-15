@@ -4,6 +4,9 @@ const ProductSchema = new mongoose.Schema({
     id: {
         type: String
     },
+    sId: {
+        type: String
+    },
     created_by: {
         type: String
     },
@@ -11,11 +14,11 @@ const ProductSchema = new mongoose.Schema({
         type: String
     },
     partyId: [{
-        partyId:{
-            type:String
+        partyId: {
+            type: String
         },
-        purchaseDate:{
-            type:Date
+        purchaseDate: {
+            type: Date
         }
     }],
     primaryUnit: {
@@ -54,7 +57,7 @@ const ProductSchema = new mongoose.Schema({
     },
     qty: {
         type: Number,
-        default:0
+        default: 0
     },
     discount: {
         type: Number
@@ -97,8 +100,8 @@ const ProductSchema = new mongoose.Schema({
     Opening_Stock: {
         type: Number
     },
-    openingRate:{
-type:Number
+    openingRate: {
+        type: Number
     },
     Purchase_Rate: {
         type: Number

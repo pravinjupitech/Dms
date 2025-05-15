@@ -38,6 +38,14 @@ export const SaveProduct = async (req, res) => {
     if (req.body.Opening_Stock) {
       req.body.qty = req.body.Opening_Stock
     }
+    if (req.body.Product_Title && req.body.HSN_Code) {
+            let last4 = '';
+            let existName = req.body.Product_Title.split(" ");
+            let fname = existName[0];
+            const hsn = req.body.HSN_Code.trim();
+            last4 = hsn.slice(-4);
+            req.body.sId = `${fname}${last4}`;
+        }
     const product = await Product.create(req.body);
     await addProductInWarehouse1(req.body, product.warehouse, product)
     // await addProductInStock(req.body, product.warehouse, product)
@@ -148,6 +156,14 @@ export const UpdateProduct = async (req, res, next) => {
         req.body.qty = existingProduct.qty + qty
         await addProductInWarehouse(req.body, req.body.warehouse, existingProduct)
       }
+      if (req.body.Product_Title && req.body.HSN_Code) {
+            let last4 = '';
+            let existName = req.body.Product_Title.split(" ");
+            let fname = existName[0];
+            const hsn = req.body.HSN_Code.trim();
+            last4 = hsn.slice(-4);
+            req.body.sId = `${fname}${last4}`;
+        }
       const updatedProduct = req.body;
       const product = await Product.findByIdAndUpdate(productId, updatedProduct, { new: true });
       return res.status(200).json({ message: "Product Updated Successfully", status: true });
@@ -305,6 +321,14 @@ export const saveItemWithExcel = async (req, res) => {
           WarehouseNotExisting.push(document.warehouse)
         } else {
           document[warehouse] = existingWarehouse._id.toString()
+          if (document.Product_Title && document.HSN_Code) {
+            let last4 = '';
+            let existName = document.Product_Title.split(" ");
+            let fname = existName[0];
+            const hsn = document.HSN_Code.trim();
+            last4 = hsn.slice(-4);
+            document['sId'] = `${fname}${last4}`;
+        }
           if (document.id) {
             const existingId = await Product.findOne({ id: document.id, database: document.database, status: "Active" });
             if (existingId) {
