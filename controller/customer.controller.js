@@ -41,6 +41,15 @@ export const SaveCustomer = async (req, res, next) => {
             })
             req.body.shopPhoto = images;
         }
+
+        if (req.body.CompanyName && req.body.aadharNo) {
+            let last4 = '';
+            let existName = req.body.CompanyName.split(" ");
+            let fname = existName[0];
+            const adhar = req.body.aadharNo.trim();
+            last4 = adhar.slice(-4);
+            req.body.sId = `${fname}${last4}`;
+        }
         if (!req.body.OpeningBalance) {
             return res.status(400).json({ message: "Opening Balance Required", status: false })
         }
@@ -89,7 +98,7 @@ export const DeleteCustomer = async (req, res, next) => {
         if (!customer) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
-        const purchageOrder = await PurchaseOrder.find({partyId: req.params.id, status: { $in: ["pending", "completed"] } })
+        const purchageOrder = await PurchaseOrder.find({ partyId: req.params.id, status: { $in: ["pending", "completed"] } })
         const salesOrder = await CreateOrder.find({
             partyId: req.params.id,
             status: { $in: ["pending", "completed"] }
@@ -170,6 +179,14 @@ export const UpdateCustomer = async (req, res, next) => {
                         req.body.autoBillingStatus = (req.body.remainingLimit > 0) ? "open" : "locked"
                     }
                 }
+            }
+            if (req.body.CompanyName && req.body.aadharNo) {
+                let last4 = '';
+                let existName = req.body.CompanyName.split(" ");
+                let fname = existName[0];
+                const adhar = req.body.aadharNo.trim();
+                last4 = adhar.slice(-4);
+                req.body.sId = `${fname}${last4}`;
             }
             if (req.body.bankDetails) {
                 req.body.bankDetails = JSON.parse(req.body.bankDetails)
@@ -265,13 +282,13 @@ export const SuperAdminList = async (req, res, next) => {
 
 export const SignInWithMobile = async (req, res, next) => {
     try {
-        const { mobileNo,email,password} = req.body;
+        const { mobileNo, email, password } = req.body;
         let existingAccount = await Customer.findOne({
             $or: [
                 { mobileNumber: mobileNo },
                 { email: email }
             ],
-            password:password
+            password: password
         }).populate({ path: "rolename", model: "role" });
         if (!existingAccount) {
             return res.status(400).json({ message: "Incorrect mobile No.", status: false });
@@ -309,12 +326,12 @@ export const forgetPassword = async (request, response, next) => {
         const { email } = request.body;
         const otp = Math.floor(100000 + Math.random() * 900000);
         resetOTP[email] = otp;
-        const user = await Customer.findOne({ email:email,status:"Active" });
+        const user = await Customer.findOne({ email: email, status: "Active" });
         if (!user) {
             return response.status(404).json({ message: "Customer not found" });
         }
         var mailOptions = {
-            from:process.env.EMAIL,
+            from: process.env.EMAIL,
             to: email,
             subject: "Password has been reset",
             html:
@@ -454,13 +471,13 @@ export const saveExcelFile = async (req, res) => {
         let comPanNo = "comPanNo";
         let category = "category";
         let database = "database";
-        let status="status";
+        let status = "status";
         let rolename = "rolename";
         let remainingLimit = "remainingLimit";
         let City = "City";
         let State = "State";
         let District = "District";
-        let created_by="created_by";
+        let created_by = "created_by";
         const filePath = await req.file.path;
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
@@ -492,8 +509,8 @@ export const saveExcelFile = async (req, res) => {
                 // document[heading] = cellValue;
             }
             document[database] = req.params.database
-            document[status]="Active"
-            document[created_by]=document.assignSalesPerson
+            document[status] = "Active"
+            document[created_by] = document.assignSalesPerson
             if (document.database) {
                 if (document.limit) {
                     document[remainingLimit] = document.limit
@@ -523,6 +540,14 @@ export const saveExcelFile = async (req, res) => {
                             document[State] = data.state;
                             document[City] = data.city;
                             document[District] = data.district
+                        }
+                        if (document.CompanyName &&document.aadharNo) {
+                            let last4 = '';
+                            let existName = document.CompanyName.split(" ");
+                            let fname = existName[0];
+                            const adhar = document.aadharNo.trim();
+                            last4 = adhar.slice(-4);
+                           document['sId'] = `${fname}${last4}`;
                         }
                         if (document.gstNumber) {
                             if (document.gstNumber.length !== 15) {
@@ -656,6 +681,14 @@ export const updateExcelFile = async (req, res) => {
                             document['State'] = data.state;
                             document['City'] = data.city;
                             document['District'] = data.district;
+                        }
+                         if (document.CompanyName &&document.aadharNo) {
+                            let last4 = '';
+                            let existName = document.CompanyName.split(" ");
+                            let fname = existName[0];
+                            const adhar = document.aadharNo.trim();
+                            last4 = adhar.slice(-4);
+                           document['sId'] = `${fname}${last4}`;
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };

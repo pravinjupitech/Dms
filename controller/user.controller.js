@@ -469,7 +469,7 @@ export const saveUserWithExcel = async (req, res) => {
         const pan =document.Pan_No.trim();
         last4 = pan.slice(-4);
       }
-      document["sId"] = `${fname}${last4}`;
+     document['sId'] = `${fname}${last4}`;
     }
 
       if (document.database) {
@@ -613,7 +613,7 @@ export const updateUserWithExcel = async (req, res) => {
         const pan =document.Pan_No.trim();
         last4 = pan.slice(-4);
       }
-      document["sId"] = `${fname}${last4}`;
+     document['sId'] = `${fname}${last4}`;
     }
       // if (document.database) {
       const role = await Role.findOne({ id: document.rolename, database: document.database })
