@@ -143,7 +143,6 @@ export const SaveTargetCreation = async (req, res) => {
     };
 console.log("targetData",targetData)
     const target = await TargetCreation.create(targetData);
-
     // SuperAdmin logic
     const checkUser = await User.findById(user.created_by).populate("rolename");
     if (checkUser?.rolename?.roleName === "SuperAdmin") {

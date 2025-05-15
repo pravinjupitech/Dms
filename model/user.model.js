@@ -3,6 +3,9 @@ const UserSchema = new mongoose.Schema({
   id: {
     type: String
   },
+  sId: {
+    type: String
+  },
   companyName: {
     type: String
   },
@@ -234,8 +237,8 @@ const UserSchema = new mongoose.Schema({
   account: {
     type: String
   },
-  OpeningBalance:{
-    type:String
+  OpeningBalance: {
+    type: String
   },
   qr_code: {
     type: String

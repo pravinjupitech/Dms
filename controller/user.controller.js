@@ -34,6 +34,20 @@ export const SaveUser = async (req, res, next) => {
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
+   if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+    let last4 = '';
+
+    if (req.body.Aadhar_No) {
+        const adhar = req.body.Aadhar_No.trim();
+        last4 = adhar.slice(-4);
+    } else if (req.body.Pan_No) {
+        const pan = req.body.Pan_No.trim();
+        last4 = pan.slice(-4);
+    }
+
+    req.body.sId = `${req.body.firstName}${last4}`;
+}
+
     if (req.body.setRule && req.body.setRule.length > 0) {
       req.body.setRule = await JSON.parse(req.body.setRule);
     }
@@ -210,6 +224,19 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
+       if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+    let last4 = '';
+
+    if (req.body.Aadhar_No) {
+        const adhar = req.body.Aadhar_No.trim();
+        last4 = adhar.slice(-4);
+    } else if (req.body.Pan_No) {
+        const pan = req.body.Pan_No.trim();
+        last4 = pan.slice(-4);
+    }
+
+    req.body.sId = `${req.body.firstName}${last4}`;
+}
 
       if (req.body.warehouse && req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
