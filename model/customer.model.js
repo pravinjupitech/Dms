@@ -4,6 +4,9 @@ const CustomerSchema = new mongoose.Schema({
   id: {
     type: String
   },
+  sId:{
+    type:String
+  },
   userName: {
     type: String
   },
