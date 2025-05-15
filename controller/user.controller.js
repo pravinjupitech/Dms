@@ -34,20 +34,20 @@ export const SaveUser = async (req, res, next) => {
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
-   if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
-    let last4 = '';
-let existName = req.body.firstName.split(" ");
-let fname = existName[0]; 
-    if (req.body.Aadhar_No) {
+    if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+      let last4 = '';
+      let existName = req.body.firstName.split(" ");
+      let fname = existName[0];
+      if (req.body.Aadhar_No) {
         const adhar = req.body.Aadhar_No.trim();
         last4 = adhar.slice(-4);
-    } else if (req.body.Pan_No) {
+      } else if (req.body.Pan_No) {
         const pan = req.body.Pan_No.trim();
         last4 = pan.slice(-4);
-    }
+      }
 
-    req.body.sId = `${fname}${last4}`;
-}
+      req.body.sId = `${fname}${last4}`;
+    }
 
     if (req.body.setRule && req.body.setRule.length > 0) {
       req.body.setRule = await JSON.parse(req.body.setRule);
@@ -90,13 +90,13 @@ let fname = existName[0];
     if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
-   if(req.body.rolename){
-    const findRole = await Role.findById(req.body.rolename);
-    if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
-      const pakerId = await generateUniqueSixDigitNumber();
-      req.body.pakerId = pakerId;
+    if (req.body.rolename) {
+      const findRole = await Role.findById(req.body.rolename);
+      if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
+        const pakerId = await generateUniqueSixDigitNumber();
+        req.body.pakerId = pakerId;
+      }
     }
-   }
     if (req.body.warehouse) {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
@@ -205,15 +205,15 @@ export const UpdateUser = async (req, res, next) => {
       if (req.body.setRule) {
         req.body.setRule = JSON.parse(req.body.setRule)
       }
-     if(req.body.rolename){
-      const findRole = await Role.findById(req.body.rolename);
-      if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
-        if (!existingUser.pakerId) {
-          const pakerId = await generateUniqueSixDigitNumber();
-          req.body.pakerId = pakerId;
+      if (req.body.rolename) {
+        const findRole = await Role.findById(req.body.rolename);
+        if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
+          if (!existingUser.pakerId) {
+            const pakerId = await generateUniqueSixDigitNumber();
+            req.body.pakerId = pakerId;
+          }
         }
       }
-     }
       // if (req.body.subscriptionPlan) {
       //   const sub = await Subscription.findById({ _id: req.body.subscriptionPlan })
       //   if (sub) {
@@ -225,24 +225,23 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
-       if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
-    let last4 = '';
-let existName = req.body.firstName.split(" ");
-let fname = existName[0]; 
-    if (req.body.Aadhar_No) {
-        const adhar = req.body.Aadhar_No.trim();
-        last4 = adhar.slice(-4);
-    } else if (req.body.Pan_No) {
-        const pan = req.body.Pan_No.trim();
-        last4 = pan.slice(-4);
-    }
-    req.body.sId = `${fname}${last4}`;
-}
-
+      if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+        let last4 = '';
+        let existName = req.body.firstName.split(" ");
+        let fname = existName[0];
+        if (req.body.Aadhar_No) {
+          const adhar = req.body.Aadhar_No.trim();
+          last4 = adhar.slice(-4);
+        } else if (req.body.Pan_No) {
+          const pan = req.body.Pan_No.trim();
+          last4 = pan.slice(-4);
+        }
+        req.body.sId = `${fname}${last4}`;
+      }
       if (req.body.warehouse && req.body.warehouse?.length > 0) {
         req.body.warehouse = JSON.parse(req.body.warehouse)
       }
-      if (req.body.reference&&req.body.reference.length>0) {
+      if (req.body.reference && req.body.reference?.length > 0) {
         req.body.reference = await JSON.parse(req.body.reference)
       }
       const updatedUser = req.body;
@@ -345,8 +344,8 @@ export const forgetPassword = async (request, response, next) => {
     const { email } = request.body;
     const otp = Math.floor(100000 + Math.random() * 900000);
     resetOTP[email] = otp;
-    const user = await User.findOne({ email:email ,status:"Active"});
-    const user1 = await Customer.findOne({ email:email,status:"Active" });
+    const user = await User.findOne({ email: email, status: "Active" });
+    const user1 = await Customer.findOne({ email: email, status: "Active" });
     if (!user && !user1) {
       return response.status(404).json({ message: "User not found" });
     }
@@ -459,6 +458,20 @@ export const saveUserWithExcel = async (req, res) => {
         // document[heading] = cellValue;
       }
       document[database] = req.params.database
+       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
+      let last4 = '';
+      let existName = document.firstName.split(" ");
+      let fname = existName[0];
+      if (document.Aadhar_No) {
+        const adhar =document.Aadhar_No.trim();
+        last4 = adhar.slice(-4);
+      } else if (document.Pan_No) {
+        const pan =document.Pan_No.trim();
+        last4 = pan.slice(-4);
+      }
+      document["sId"] = `${fname}${last4}`;
+    }
+
       if (document.database) {
         const role = await Role.findOne({ id: document.rolename, database: document.database })
         if (!role) {
@@ -589,6 +602,19 @@ export const updateUserWithExcel = async (req, res) => {
         // document[heading] = cellValue;
       }
       document[database] = req.params.database
+       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
+      let last4 = '';
+      let existName = document.firstName.split(" ");
+      let fname = existName[0];
+      if (document.Aadhar_No) {
+        const adhar =document.Aadhar_No.trim();
+        last4 = adhar.slice(-4);
+      } else if (document.Pan_No) {
+        const pan =document.Pan_No.trim();
+        last4 = pan.slice(-4);
+      }
+      document["sId"] = `${fname}${last4}`;
+    }
       // if (document.database) {
       const role = await Role.findOne({ id: document.rolename, database: document.database })
       console.log("role", role)
