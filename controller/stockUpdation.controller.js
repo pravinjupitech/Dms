@@ -902,7 +902,8 @@ export const stockReport = async (req, res, next) => {
                         closingQty: 0,
                         closingAveRate: 0,
                         closingTotal: 0,
-                        totalTax: 0
+                        totalTax: 0,
+                        gstPercentage:0
                     };
                 }
 
@@ -912,7 +913,7 @@ export const stockReport = async (req, res, next) => {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
 
-                    // Each product gets full tax (not proportional)
+                    // Add full tax (not proportional)
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
                 } else {
@@ -955,7 +956,8 @@ export const stockReport = async (req, res, next) => {
                         closingQty: 0,
                         closingAveRate: 0,
                         closingTotal: 0,
-                        totalTax: 0
+                        totalTax: 0,
+                        gstPercentage:0
                     };
                 }
 
@@ -966,7 +968,7 @@ export const stockReport = async (req, res, next) => {
                     entry.sTotal += sTotal;
                 } else {
                     entry.pendingStock += qty;
-                    entry.pendingStockTotal+=totalPrice;
+                    entry.pendingStockTotal += sTotal;
                 }
             }
         }
@@ -982,6 +984,7 @@ export const stockReport = async (req, res, next) => {
                 entry.oQty = product.Opening_Stock || 0;
                 entry.Product_Title = product.Product_Title || "";
                 entry.HSN_Code = product.HSN_Code || "";
+                entry.gstPercentage = product.GSTRate || "";
 
                 entry.openingCombineTotal = entry.openingRate * entry.oQty;
 
@@ -1001,6 +1004,8 @@ export const stockReport = async (req, res, next) => {
                     : 0;
 
                 entry.closingTotal = entry.closingQty * entry.closingAveRate;
+
+                entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
             }
         }
 
