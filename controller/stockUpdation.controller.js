@@ -868,7 +868,8 @@ export const stockReport = async (req, res, next) => {
                   (po.labourCost || 0) +
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0)
+                  (po.transportationCost || 0)+
+                  (po.tax || 0)
                 : 0;
 
             for (const item of po.orderItems) {
@@ -965,6 +966,7 @@ export const stockReport = async (req, res, next) => {
                     entry.sTotal += sTotal;
                 } else {
                     entry.pendingStock += qty;
+                    entry.pendingStockTotal+=totalPrice;
                 }
             }
         }
@@ -991,7 +993,6 @@ export const stockReport = async (req, res, next) => {
                     ? entry.sTotal / entry.sQty
                     : 0;
 
-                // Closing calculations
                 entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
 
                 const totalQty = entry.oQty + entry.pQty;
