@@ -967,7 +967,6 @@ export const stockReport = async (req, res, next) => {
             }
         }
         const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
-
         for (const product of productList) {
             const id = product._id.toString();
             const entry = productMap[id];
@@ -990,7 +989,6 @@ export const stockReport = async (req, res, next) => {
                 entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
 
                 entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
-
                 const totalQty = entry.oQty + entry.pQty;
                 entry.closingAveRate = totalQty > 0
                     ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
