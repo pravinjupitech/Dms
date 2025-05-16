@@ -1041,7 +1041,6 @@ export const stockReport = async (req, res, next) => {
             data: stockReport,
             totalSummary
         });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({
