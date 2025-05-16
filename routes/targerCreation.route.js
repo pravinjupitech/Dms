@@ -26,7 +26,8 @@ router.post("/achievements/:id/:database", called)
 // router.post("/test", yes)
 router.post("/check/:id/:database", checkTarget)
 
-router.post("/customer-target", SavePartyTarget)
+// router.post("/customer-target", SavePartyTarget)
+router.post("/customer-target",upload.single('file'), SavePartyTarget)
 router.get("/view-customer-target/:database", ViewPartyTarget)
 
 router.get("/target-calculate/:database", targetCalculation)
