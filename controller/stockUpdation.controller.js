@@ -10,6 +10,7 @@ import { ClosingStock } from "../model/closingStock.model.js";
 import { warehouseNo } from "../service/invoice.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
 import { RawProduct } from "../model/rawProduct.model.js";
+import { otpVerify } from "./warehouse.controller.js";
 
 export const viewInWardStockToWarehouse = async (req, res, next) => {
     try {
@@ -38,76 +39,76 @@ export const viewOutWardStockToWarehouse = async (req, res, next) => {
 
 export const stockTransferToWarehouse = async (req, res) => {
     try {
-      const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
-      if (!warehousefrom) {
-        return res.status(400).json({ message: "Warehouse From Not Found", status: false });
-      }
-      
-      const warehouseno = await warehouseNo(warehousefrom.database);
-      warehousefrom.warehouseNo = warehousefrom.id + warehouseno;
-  
-      const { warehouseToId, warehouseFromId, stockTransferDate, productItems, grandTotal, transferStatus, created_by, InwardStatus, OutwardStatus } = req.body;
-  
-      for (const item of productItems) {
-        const sourceProduct = await Warehouse.findOne({
-          _id: warehouseFromId,
-          'productItems.productId': item.productId,
-        });  
-        const sourceRawProduct = await Warehouse.findOne({
-          _id: warehouseFromId,
-          'productItems.rawProductId': item.productId
-        });
-  
-        if (sourceProduct || sourceRawProduct) {
-          const sourceProductItem = sourceProduct?.productItems?.find(
-            (pItem) => pItem.productId && pItem.productId.toString() === item.productId.toString());
-  
-          const sourceRawProductItem = sourceRawProduct?.productItems?.find(
-            (pItem) => pItem.rawProductId && pItem.rawProductId.toString() === item.productId.toString());
-  
-          if (sourceProductItem) {
-            sourceProductItem.currentStock -= item.transferQty;
-            sourceProductItem.pendingStock += item.transferQty;
-            sourceProductItem.totalPrice -= item.totalPrice;
-            sourceProduct.markModified('productItems');
-            await sourceProduct.save();
-          } else if (sourceRawProductItem) {
-            sourceRawProductItem.price = item.price;
-            sourceRawProductItem.pendingStock += item.transferQty;
-            sourceRawProductItem.markModified("productItems");
-            await sourceRawProduct.save();
-          } else {
-            return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
-          }
-        } else {
-          return res.status(400).json({ error: 'Product not found in the source warehouse' });
+        const warehousefrom = await Warehouse.findOne({ _id: req.body.warehouseFromId });
+        if (!warehousefrom) {
+            return res.status(400).json({ message: "Warehouse From Not Found", status: false });
         }
-      }
-  
-      const stockTransfer = new StockUpdation({
-        created_by,
-        warehouseToId,
-        warehouseFromId,
-        stockTransferDate,
-        productItems,
-        grandTotal,
-        transferStatus,
-        InwardStatus,
-        OutwardStatus,
-        database: warehousefrom.database,
-        warehouseNo: warehousefrom.warehouseNo,
-      });
-  
-      await stockTransfer.save();
-      await warehousefrom.save();
-  
-      return res.status(201).json({ message: 'Stock transfer successful', status: true });
+
+        const warehouseno = await warehouseNo(warehousefrom.database);
+        warehousefrom.warehouseNo = warehousefrom.id + warehouseno;
+
+        const { warehouseToId, warehouseFromId, stockTransferDate, productItems, grandTotal, transferStatus, created_by, InwardStatus, OutwardStatus } = req.body;
+
+        for (const item of productItems) {
+            const sourceProduct = await Warehouse.findOne({
+                _id: warehouseFromId,
+                'productItems.productId': item.productId,
+            });
+            const sourceRawProduct = await Warehouse.findOne({
+                _id: warehouseFromId,
+                'productItems.rawProductId': item.productId
+            });
+
+            if (sourceProduct || sourceRawProduct) {
+                const sourceProductItem = sourceProduct?.productItems?.find(
+                    (pItem) => pItem.productId && pItem.productId.toString() === item.productId.toString());
+
+                const sourceRawProductItem = sourceRawProduct?.productItems?.find(
+                    (pItem) => pItem.rawProductId && pItem.rawProductId.toString() === item.productId.toString());
+
+                if (sourceProductItem) {
+                    sourceProductItem.currentStock -= item.transferQty;
+                    sourceProductItem.pendingStock += item.transferQty;
+                    sourceProductItem.totalPrice -= item.totalPrice;
+                    sourceProduct.markModified('productItems');
+                    await sourceProduct.save();
+                } else if (sourceRawProductItem) {
+                    sourceRawProductItem.price = item.price;
+                    sourceRawProductItem.pendingStock += item.transferQty;
+                    sourceRawProductItem.markModified("productItems");
+                    await sourceRawProduct.save();
+                } else {
+                    return res.status(400).json({ error: 'Insufficient quantity in the source warehouse or product not found' });
+                }
+            } else {
+                return res.status(400).json({ error: 'Product not found in the source warehouse' });
+            }
+        }
+
+        const stockTransfer = new StockUpdation({
+            created_by,
+            warehouseToId,
+            warehouseFromId,
+            stockTransferDate,
+            productItems,
+            grandTotal,
+            transferStatus,
+            InwardStatus,
+            OutwardStatus,
+            database: warehousefrom.database,
+            warehouseNo: warehousefrom.warehouseNo,
+        });
+
+        await stockTransfer.save();
+        await warehousefrom.save();
+
+        return res.status(201).json({ message: 'Stock transfer successful', status: true });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error', status: false });
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error', status: false });
     }
-  };
-  
+};
+
 export const viewWarehouseStock = async (req, res) => {
     try {
         const database = req.params.database;
@@ -119,7 +120,7 @@ export const viewWarehouseStock = async (req, res) => {
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({ error: 'Internal Server Error',status:false });
+        res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 }
 export const updateWarehousetoWarehouse = async (req, res, next) => {
@@ -134,20 +135,20 @@ export const updateWarehousetoWarehouse = async (req, res, next) => {
             const sourceRawProduct = await Warehouse.findOne({
                 _id: existingFactory.warehouseFromId,
                 "productItems.rawProductId": item.productId,
-              });
-              const sourceMainProduct = await Warehouse.findOne({
+            });
+            const sourceMainProduct = await Warehouse.findOne({
                 _id: existingFactory.warehouseFromId,
                 "productItems.productId": item.productId,
-              });
-              const sourceProduct = sourceMainProduct || sourceRawProduct;
+            });
+            const sourceProduct = sourceMainProduct || sourceRawProduct;
             if (sourceProduct) {
                 const sourceRawProductItem = sourceProduct.productItems.find(
                     (pItem) => pItem.rawProductId === item.productId
-                  );
-                  const sourceMainProductItem = sourceProduct.productItems.find(
+                );
+                const sourceMainProductItem = sourceProduct.productItems.find(
                     (pItem) => pItem.productId === item.productId
-                  );
-                  const sourceProductItem = sourceMainProductItem || sourceRawProductItem;
+                );
+                const sourceProductItem = sourceMainProductItem || sourceRawProductItem;
                 if (sourceProductItem) {
                     sourceProductItem.pendingStock -= (item.transferQty);
                     sourceProduct.markModified('productItems');
@@ -155,40 +156,41 @@ export const updateWarehousetoWarehouse = async (req, res, next) => {
                     const destinationMainProduct = await Warehouse.findOne({
                         _id: existingFactory.warehouseToId,
                         "productItems.productId": item.destinationProductId,
-                      });
-                      const destinationRawProduct = await Warehouse.findOne({
+                    });
+                    const destinationRawProduct = await Warehouse.findOne({
                         _id: existingFactory.warehouseToId,
                         "productItems.rawProductId": item.destinationProductId,
-                      });
-                      const destinationProduct =
+                    });
+                    const destinationProduct =
                         destinationMainProduct || destinationRawProduct;
                     if (destinationProduct) {
                         const destinationMainProductItem =
-              destinationProduct.productItems.find(
-                (pItem) => pItem.productId === item.destinationProductId
-              );
-            const destinationRawProductItem =
-              destinationProduct.productItems.find(
-                (pItem) => pItem.rawProductId === item.destinationProductId
-              );
-            const destinationProductItem =
-              destinationMainProductItem || destinationRawProductItem;
-              if (destinationProductItem) {
-              const modelName = destinationProductItem.rawProductId
-              ? RawProduct
-              : Product;
-            const product = await modelName.findOne({
-              _id: item.destinationProductId,
-            });
+                            destinationProduct.productItems.find(
+                                (pItem) => pItem.productId === item.destinationProductId
+                            );
+                        const destinationRawProductItem =
+                            destinationProduct.productItems.find(
+                                (pItem) => pItem.rawProductId === item.destinationProductId
+                            );
+                        const destinationProductItem =
+                            destinationMainProductItem || destinationRawProductItem;
+                        if (destinationProductItem) {
+                            const modelName = destinationProductItem.rawProductId
+                                ? RawProduct
+                                : Product;
+                            const product = await modelName.findOne({
+                                _id: item.destinationProductId,
+                            });
 
-            if (product) {
-              product.qty += item.transferQty;
-              await product.save();
-            }
-                        destinationProductItem.price = item.price;
-                        destinationProductItem.currentStock += (item.transferQty);
-                        destinationProductItem.totalPrice += item.totalPrice;
-                        await destinationProduct.save();}
+                            if (product) {
+                                product.qty += item.transferQty;
+                                await product.save();
+                            }
+                            destinationProductItem.price = item.price;
+                            destinationProductItem.currentStock += (item.transferQty);
+                            destinationProductItem.totalPrice += item.totalPrice;
+                            await destinationProduct.save();
+                        }
                     } else {
                         item.currentStock = item.transferQty
                         await Warehouse.updateOne({ _id: existingFactory.warehouseToId },
@@ -846,3 +848,191 @@ export const ClosingSales = async (orderItem, warehouse) => {
         console.log(err)
     }
 }
+
+export const stockReport = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const purchaseOrders = await PurchaseOrder.find({ database, status: { $ne: "Deactive" } });
+        const salesOrders = await CreateOrder.find({ database, status: { $ne: "Deactive" } });
+
+        const productMap = {};
+        const allProductIds = new Set();
+
+        // Process Purchase Orders
+        for (const po of purchaseOrders) {
+            const status = po.status || 'pending';
+
+            if (status === 'completed') {
+                // Only calculate totalTax if order is completed
+                const totalTax =
+                    (po.coolieAndCartage || 0) +
+                    (po.labourCost || 0) +
+                    (po.localFreight || 0) +
+                    (po.miscellaneousCost || 0) +
+                    (po.transportationCost || 0);
+
+                const orderTotalItemValue = po.orderItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+
+                for (const item of po.orderItems) {
+                    const productId = item.productId?.toString();
+                    if (!productId) continue;
+
+                    allProductIds.add(productId);
+                    const qty = item.qty || 0;
+                    const totalPrice = item.totalPrice || 0;
+
+                    if (!productMap[productId]) {
+                        productMap[productId] = {
+                            productId,
+                            pQty: 0,
+                            purchasePendingQty: 0,
+                            sQty: 0,
+                            salesPendingQty: 0,
+                            openingRate: 0,
+                            oQty: 0,
+                            Product_Title: "",
+                            HSN_Code: "",
+                            openingCombineTotal: 0,
+                            pTotalPrice: 0,
+                            avgPurchaseRate: 0,
+                            totalPurchaseData: 0,
+                            pendingStock: 0,
+                            pendingRate: 0,
+                            pendingStockTotal: 0,
+                            sRate: 0,
+                            sTotal: 0,
+                            closingQty: 0,
+                            closingAveRate: 0,
+                            closingTotal: 0
+                        };
+                    }
+
+                    productMap[productId].pQty += qty;
+                    productMap[productId].pTotalPrice += totalPrice;
+
+                    const taxShare = orderTotalItemValue > 0
+                        ? (totalPrice / orderTotalItemValue) * totalTax
+                        : 0;
+
+                    productMap[productId].totalPurchaseData += totalPrice + taxShare;
+                }
+
+            } else {
+                // If not completed, only update pending qty
+                for (const item of po.orderItems) {
+                    const productId = item.productId?.toString();
+                    if (!productId) continue;
+
+                    allProductIds.add(productId);
+                    const qty = item.qty || 0;
+
+                    if (!productMap[productId]) {
+                        productMap[productId] = {
+                            productId,
+                            pQty: 0,
+                            purchasePendingQty: 0,
+                            sQty: 0,
+                            salesPendingQty: 0,
+                            openingRate: 0,
+                            oQty: 0,
+                            Product_Title: "",
+                            HSN_Code: "",
+                            openingCombineTotal: 0,
+                            pTotalPrice: 0,
+                            avgPurchaseRate: 0,
+                            totalPurchaseData: 0,
+                            pendingStock: 0,
+                            pendingRate: 0,
+                            pendingStockTotal: 0,
+                            sRate: 0,
+                            sTotal: 0,
+                            closingQty: 0,
+                            closingAveRate: 0,
+                            closingTotal: 0
+                        };
+                    }
+
+                    productMap[productId].purchasePendingQty += qty;
+                }
+            }
+        }
+
+        // Process Sales Orders
+        for (const so of salesOrders) {
+            const status = so.status || 'pending';
+
+            for (const item of so.orderItems) {
+                const productId = item.productId?.toString();
+                if (!productId) continue;
+
+                allProductIds.add(productId);
+                const qty = item.qty || 0;
+
+                if (!productMap[productId]) {
+                    productMap[productId] = {
+                        productId,
+                        pQty: 0,
+                        purchasePendingQty: 0,
+                        sQty: 0,
+                        salesPendingQty: 0,
+                        openingRate: 0,
+                        oQty: 0,
+                        Product_Title: "",
+                        HSN_Code: "",
+                        openingCombineTotal: 0,
+                        pTotalPrice: 0,
+                        avgPurchaseRate: 0,
+                        totalPurchaseData: 0
+                    };
+                }
+
+                if (status === 'completed') {
+                    productMap[productId].sQty += qty;
+                } else {
+                    productMap[productId].salesPendingQty += qty;
+                }
+            }
+        }
+
+        // Product Info
+        const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
+
+        for (const product of productList) {
+            const id = product._id.toString();
+            const mapEntry = productMap[id];
+            if (mapEntry) {
+                mapEntry.openingRate = product.openingRate || 0;
+                mapEntry.oQty = product.Opening_Stock || 0;
+                mapEntry.Product_Title = product.Product_Title || "";
+                mapEntry.HSN_Code = product.HSN_Code || "";
+                mapEntry.openingCombineTotal = mapEntry.openingRate * mapEntry.oQty;
+
+                mapEntry.avgPurchaseRate = mapEntry.pQty > 0
+                    ? (mapEntry.pTotalPrice / mapEntry.pQty)
+                    : 0;
+            }
+        }
+
+        const stockReport = Object.values(productMap);
+
+        return res.status(200).json({
+            message: "Stock report generated successfully",
+            status: true,
+            data: stockReport
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+};
+
+
+
+
+
