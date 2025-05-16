@@ -871,8 +871,6 @@ export const stockReport = async (req, res, next) => {
                   (po.transportationCost || 0)
                 : 0;
 
-            const orderTotalItemValue = po.orderItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
@@ -913,9 +911,9 @@ export const stockReport = async (req, res, next) => {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
 
-                    const taxShare = orderTotalItemValue > 0 ? (totalPrice / orderTotalItemValue) * totalTax : 0;
-                    entry.totalTax += taxShare;
-                    entry.totalPurchaseData += totalPrice + taxShare;
+                    // Each product gets full tax (not proportional)
+                    entry.totalTax += totalTax;
+                    entry.totalPurchaseData += totalPrice + totalTax;
                 } else {
                     entry.purchasePendingQty += qty;
                 }
@@ -982,9 +980,9 @@ export const stockReport = async (req, res, next) => {
                 entry.oQty = product.Opening_Stock || 0;
                 entry.Product_Title = product.Product_Title || "";
                 entry.HSN_Code = product.HSN_Code || "";
+
                 entry.openingCombineTotal = entry.openingRate * entry.oQty;
 
-                // avgPurchaseRate includes totalTax now
                 entry.avgPurchaseRate = entry.pQty > 0
                     ? (entry.pTotalPrice + entry.totalTax) / entry.pQty
                     : 0;
@@ -992,6 +990,16 @@ export const stockReport = async (req, res, next) => {
                 entry.sRate = entry.sQty > 0
                     ? entry.sTotal / entry.sQty
                     : 0;
+
+                // Closing calculations
+                entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
+
+                const totalQty = entry.oQty + entry.pQty;
+                entry.closingAveRate = totalQty > 0
+                    ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
+                    : 0;
+
+                entry.closingTotal = entry.closingQty * entry.closingAveRate;
             }
         }
 
@@ -1012,6 +1020,7 @@ export const stockReport = async (req, res, next) => {
         });
     }
 };
+
 
 
 
