@@ -859,7 +859,6 @@ export const stockReport = async (req, res, next) => {
         const productMap = {};
         const allProductIds = new Set();
 
-        // Purchase Orders
         for (const po of purchaseOrders) {
             const status = po.status || 'pending';
 
@@ -910,8 +909,6 @@ export const stockReport = async (req, res, next) => {
                 if (status === 'completed') {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
-
-                    // Each product gets full tax (not proportional)
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
                 } else {
@@ -920,7 +917,6 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        // Sales Orders
         for (const so of salesOrders) {
             const status = so.status || 'pending';
 
@@ -969,8 +965,6 @@ export const stockReport = async (req, res, next) => {
                 }
             }
         }
-
-        // Product Info and Calculations
         const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
 
         for (const product of productList) {
@@ -1006,9 +1000,8 @@ export const stockReport = async (req, res, next) => {
         }
 
         const stockReport = Object.values(productMap);
-
-        // Calculate Grand Total Summary
         const totalSummary = stockReport.reduce((acc, item) => {
+            acc.Product_Title="Total";
             acc.pQty += item.pQty || 0;
             acc.purchasePendingQty += item.purchasePendingQty || 0;
             acc.sQty += item.sQty || 0;
