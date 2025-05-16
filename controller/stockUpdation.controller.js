@@ -867,7 +867,8 @@ export const stockReport = async (req, res, next) => {
                   (po.labourCost || 0) +
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0)
+                  (po.transportationCost || 0)+
+                  (po.tax)
                 : 0;
 
             for (const item of po.orderItems) {
