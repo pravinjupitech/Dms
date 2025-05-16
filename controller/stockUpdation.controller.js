@@ -868,8 +868,7 @@ export const stockReport = async (req, res, next) => {
                   (po.labourCost || 0) +
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0)+
-                  (po.tax || 0)
+                  (po.transportationCost || 0)
                 : 0;
 
             for (const item of po.orderItems) {
@@ -902,8 +901,7 @@ export const stockReport = async (req, res, next) => {
                         closingQty: 0,
                         closingAveRate: 0,
                         closingTotal: 0,
-                        totalTax: 0,
-                        gstPercentage:0
+                        totalTax: 0
                     };
                 }
 
@@ -913,7 +911,7 @@ export const stockReport = async (req, res, next) => {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
 
-                    // Add full tax (not proportional)
+                    // Each product gets full tax (not proportional)
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
                 } else {
@@ -956,8 +954,7 @@ export const stockReport = async (req, res, next) => {
                         closingQty: 0,
                         closingAveRate: 0,
                         closingTotal: 0,
-                        totalTax: 0,
-                        gstPercentage:0
+                        totalTax: 0
                     };
                 }
 
@@ -973,7 +970,7 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        // Product Info
+        // Product Info and Calculations
         const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
 
         for (const product of productList) {
@@ -984,7 +981,6 @@ export const stockReport = async (req, res, next) => {
                 entry.oQty = product.Opening_Stock || 0;
                 entry.Product_Title = product.Product_Title || "";
                 entry.HSN_Code = product.HSN_Code || "";
-                entry.gstPercentage = product.GSTRate || "";
 
                 entry.openingCombineTotal = entry.openingRate * entry.oQty;
 
@@ -996,6 +992,8 @@ export const stockReport = async (req, res, next) => {
                     ? entry.sTotal / entry.sQty
                     : 0;
 
+                entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
+
                 entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
 
                 const totalQty = entry.oQty + entry.pQty;
@@ -1004,17 +1002,50 @@ export const stockReport = async (req, res, next) => {
                     : 0;
 
                 entry.closingTotal = entry.closingQty * entry.closingAveRate;
-
-                entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
             }
         }
 
         const stockReport = Object.values(productMap);
 
+        // Calculate Grand Total Summary
+        const totalSummary = stockReport.reduce((acc, item) => {
+            acc.pQty += item.pQty || 0;
+            acc.purchasePendingQty += item.purchasePendingQty || 0;
+            acc.sQty += item.sQty || 0;
+            acc.oQty += item.oQty || 0;
+            acc.openingCombineTotal += item.openingCombineTotal || 0;
+            acc.pTotalPrice += item.pTotalPrice || 0;
+            acc.totalPurchaseData += item.totalPurchaseData || 0;
+            acc.pendingStock += item.pendingStock || 0;
+            acc.pendingStockTotal += item.pendingStockTotal || 0;
+            acc.pendingRate += item.pendingRate || 0;
+            acc.sTotal += item.sTotal || 0;
+            acc.closingQty += item.closingQty || 0;
+            acc.closingTotal += item.closingTotal || 0;
+            acc.totalTax += item.totalTax || 0;
+            return acc;
+        }, {
+            pQty: 0,
+            purchasePendingQty: 0,
+            sQty: 0,
+            oQty: 0,
+            openingCombineTotal: 0,
+            pTotalPrice: 0,
+            totalPurchaseData: 0,
+            pendingStock: 0,
+            pendingStockTotal: 0,
+            pendingRate: 0,
+            sTotal: 0,
+            closingQty: 0,
+            closingTotal: 0,
+            totalTax: 0
+        });
+
         return res.status(200).json({
             message: "Stock report generated successfully",
             status: true,
-            data: stockReport
+            data: stockReport,
+            totalSummary
         });
 
     } catch (error) {
@@ -1026,6 +1057,7 @@ export const stockReport = async (req, res, next) => {
         });
     }
 };
+
 
 
 
