@@ -867,9 +867,10 @@ export const stockReport = async (req, res, next) => {
                   (po.labourCost || 0) +
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0)
+                  (po.transportationCost || 0)+
+                  (po.tax||0)
                 : 0;
-
+// console.log("totalTax",totalTax)
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
@@ -905,12 +906,12 @@ export const stockReport = async (req, res, next) => {
                 }
 
                 const entry = productMap[productId];
-
                 if (status === 'completed') {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
+                    // console.log("totalPurchaseData",entry,entry.totalTax,totalTax)
                 } else {
                     entry.purchasePendingQty += qty;
                 }
@@ -966,7 +967,6 @@ export const stockReport = async (req, res, next) => {
             }
         }
         const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
-
         for (const product of productList) {
             const id = product._id.toString();
             const entry = productMap[id];
@@ -989,7 +989,6 @@ export const stockReport = async (req, res, next) => {
                 entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
 
                 entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
-
                 const totalQty = entry.oQty + entry.pQty;
                 entry.closingAveRate = totalQty > 0
                     ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
@@ -1040,7 +1039,6 @@ export const stockReport = async (req, res, next) => {
             data: stockReport,
             totalSummary
         });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({
