@@ -868,9 +868,9 @@ export const stockReport = async (req, res, next) => {
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
                   (po.transportationCost || 0)+
-                  (po.tax)
+                  (po.tax||0)
                 : 0;
-
+// console.log("totalTax",totalTax)
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
@@ -906,12 +906,12 @@ export const stockReport = async (req, res, next) => {
                 }
 
                 const entry = productMap[productId];
-
                 if (status === 'completed') {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
+                    // console.log("totalPurchaseData",entry,entry.totalTax,totalTax)
                 } else {
                     entry.purchasePendingQty += qty;
                 }
