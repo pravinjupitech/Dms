@@ -36,7 +36,7 @@ const TargetCreationSchema = new mongoose.Schema({
         },
         assignPercentage: [{
             month: {
-                type: Number
+                type: String
             },
             percentage: {
                 type: Number
