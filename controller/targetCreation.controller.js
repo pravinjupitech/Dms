@@ -1703,7 +1703,8 @@ export const SavePartyTarget = async (req, res) => {
                 };
             }
 
-            groupedData[key].products.push({
+            if(qtyAssign>0){
+                groupedData[key].products.push({
                 productId,
                 qtyAssign: parseFloat(qtyAssign) || 0,
                 price: parseFloat(price) || 0,
@@ -1712,7 +1713,8 @@ export const SavePartyTarget = async (req, res) => {
                     month: month?.toString() || "",
                     percentage: parseFloat(percentage) || 0
                 }]
-            });
+            })
+            }
         }
 
         const savedDocuments = [];
@@ -1774,7 +1776,7 @@ export const SavePartyTarget = async (req, res) => {
 // view party target
 export const ViewPartyTarget = async (req, res, next) => {
     try {
-        const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } }).populate({ path: "products.productId", model: "product" })
+        const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } })
         if (party.length === 0) {
             return res.status(404).json({ message: "target not found", status: false })
         }
