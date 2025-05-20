@@ -9,7 +9,7 @@ import moment from "moment";
 import { Role } from "../model/role.model.js";
 import xlsx from "xlsx";
 import ExcelJS from 'exceljs'
-import fs from "fs";
+import fs from 'fs/promises';
 const uniqueId = new Set();
 const uniqueUserId = new Set();
 const emptyObj = {};
@@ -1654,88 +1654,86 @@ export const latestAchievement2 = async (body, id, database) => {
 // save target customer
 
 export const SavePartyTarget = async (req, res) => {
+    const filePath = req.file?.path;
+
     try {
-        const filePath = req.file?.path;
         if (!filePath) {
-            return res.status(400).json({ message: "No file uploaded", status: false });
+            return res.status(400).json({ message: "No Excel file uploaded", status: false });
         }
 
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
 
-        // Extract headers
         const headerRow = worksheet.getRow(1);
-        const headings = [];
-        headerRow.eachCell(cell => headings.push(cell.value));
+        const headings = headerRow.values.slice(1); // Remove first empty value
 
-        // Group rows by partyId + salesPersonId + month + created_by
-        const groupMap = new Map();
+        const groupedData = {};
 
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
-            const dataRow = worksheet.getRow(rowIndex);
+            const row = worksheet.getRow(rowIndex);
             const rowData = {};
 
-            for (let colIndex = 1; colIndex <= headings.length; colIndex++) {
-                const heading = headings[colIndex - 1];
-                const cellValue = dataRow.getCell(colIndex).value;
+            headings.forEach((heading, i) => {
+                const cell = row.getCell(i + 1);
+                const value = cell.value;
+                rowData[heading] = typeof value === 'object' && value?.text ? value.text : value;
+            });
 
-                // Handle Excel rich text
-                rowData[heading] = (typeof cellValue === 'object' && cellValue?.text) ? cellValue.text : cellValue;
+            const {
+                salesPersonId,
+                partyId,
+                productId,
+                qtyAssign,
+                price,
+                totalPrice,
+                month,
+                percentage,
+                created_by
+            } = rowData;
+
+            const key = `${salesPersonId}_${partyId}_${created_by}`;
+
+            if (!groupedData[key]) {
+                groupedData[key] = {
+                    salesPersonId,
+                    partyId,
+                    created_by,
+                    products: []
+                };
             }
 
-            const key = `${rowData.salesPersonId}_${rowData.partyId}_${rowData.month}_${rowData.created_by}`;
-
-            const productEntry = {
-                productId: rowData.productId,
-                qtyAssign: Number(rowData.qtyAssign) || 0,
-                price: Number(rowData.price) || 0,
-                totalPrice: Number(rowData.totalPrice) || 0,
+            groupedData[key].products.push({
+                productId,
+                qtyAssign: parseFloat(qtyAssign) || 0,
+                price: parseFloat(price) || 0,
+                totalPrice: parseFloat(totalPrice) || 0,
                 assignPercentage: [{
-                    month: rowData.month,
-                    percentage: Number(rowData.percentage) || 0
+                    month: month?.toString() || "",
+                    percentage: parseFloat(percentage) || 0
                 }]
-            };
-
-            if (groupMap.has(key)) {
-                groupMap.get(key).products.push(productEntry);
-            } else {
-                groupMap.set(key, {
-                    created_by: rowData.created_by,
-                    salesPersonId: rowData.salesPersonId,
-                    partyId: rowData.partyId,
-                    month: rowData.month,
-                    products: [productEntry]
-                });
-            }
+            });
         }
 
         const savedDocuments = [];
 
-        // Iterate over grouped targets
-        for (let [key, groupedData] of groupMap) {
-            const customer = await Customer.findOne({ sId: groupedData.partyId });
-            if (!customer) {
+        for (const key in groupedData) {
+            const entry = groupedData[key];
+
+            const party = await Customer.findOne({ sId: entry.partyId });
+
+            if (!party) {
                 return res.status(404).json({
-                    message: `Customer with partyId ${groupedData.partyId} not found`,
+                    message: `Customer with ID ${entry.partyId} not found`,
                     status: false
                 });
             }
 
-            const documentToSave = {
-                created_by: groupedData.created_by,
-                salesPersonId: groupedData.salesPersonId,
-                partyId: groupedData.partyId,
-                database: customer.database,
-                products: groupedData.products
-            };
+            entry.database = party.database;
 
-            const saved = await TargetCreation.create(documentToSave);
+            const saved = await TargetCreation.create(entry);
             savedDocuments.push(saved);
         }
-
-        // Delete uploaded file
-        await fs.unlink(filePath).catch(err => console.warn("Could not delete uploaded file:", err.message));
 
         return res.status(200).json({
             message: `${savedDocuments.length} targets saved successfully.`,
@@ -1750,8 +1748,13 @@ export const SavePartyTarget = async (req, res) => {
             status: false,
             error: error.message
         });
+    } finally {
+        if (filePath) {
+            await fs.unlink(filePath).catch(err => console.error("File deletion error:", err));
+        }
     }
 };
+
 
 
 // export const SavePartyTarget = async (req, res) => {
