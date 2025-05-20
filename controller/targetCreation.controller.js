@@ -1654,11 +1654,20 @@ export const latestAchievement2 = async (body, id, database) => {
 // save target customer
 export const SavePartyTarget = async (req, res) => {
     try {
+        // Ensure uploaded file exists
+        if (!req.file || !req.file.path) {
+            return res.status(400).json({
+                message: "No Excel file uploaded",
+                status: false
+            });
+        }
+
         const filePath = req.file.path;
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
 
+        // Get headers from the first row
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell(cell => {
@@ -1675,21 +1684,35 @@ export const SavePartyTarget = async (req, res) => {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
 
-                if (heading === 'partyId' && typeof cellValue === 'object' && 'text' in cellValue) {
+                // Handle rich text objects in Excel
+                if (heading === 'partyId' && typeof cellValue === 'object' && cellValue !== null && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
                     document[heading] = cellValue;
                 }
             }
-            const party = await Customer.findOne({sId:document.partyId});
+
+            // Lookup by custom partyId (not MongoDB _id)
+            const party = await Customer.findOne({ sId: document.partyId });
             if (!party) {
-                return res.status(404).json({ message: `Customer with ID ${document.partyId} not found`, status: false });
+                return res.status(404).json({
+                    message: `Customer with partyId "${document.partyId}" not found`,
+                    status: false
+                });
             }
 
+            // Attach related data
             document.database = party.database;
+
+            // Save to DB
             const savedTarget = await TargetCreation.create(document);
             savedDocuments.push(savedTarget);
         }
+
+        // Clean up uploaded file
+        await fs.unlink(filePath).catch(err => {
+            console.warn("Warning: Failed to delete uploaded file:", err.message);
+        });
 
         return res.status(200).json({
             message: `${savedDocuments.length} targets saved successfully.`,
@@ -1706,6 +1729,7 @@ export const SavePartyTarget = async (req, res) => {
         });
     }
 };
+
 
 // export const SavePartyTarget = async (req, res) => {
 //     try {
