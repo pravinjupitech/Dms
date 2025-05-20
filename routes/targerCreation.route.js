@@ -1,19 +1,10 @@
 import express from "express";
 import multer from "multer";
 import { Achievement, AllSalesPersonAchievement, DeleteTargetCreation, SavePartyTarget, SaveTargetCreation, UpdateTargetCreation, ViewPartyTarget, ViewTargetCreation, ViewTargetCreationById, called, checkTarget, deleteProductFromTargetCreation, increasePercentage, latestAchievement, latestAchievementById, latestAchievementSalesById, targetCalculation, updateTargetProducts, viewTarget } from "../controller/targetCreation.controller.js";
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/'); 
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
-
-const upload = multer({ storage: storage });
+const uploads = multer({ dest: "public/ExcelFile/" })
 const router = express.Router();
 
-router.post("/save-target-creation",upload.single("file"),SaveTargetCreation);
+router.post("/save-target-creation",uploads.single("file"),SaveTargetCreation);
 // router.post("/save-target-creation", SaveTargetCreation);
 router.get("/view-target-creation/:id/:database", ViewTargetCreation);
 router.delete("/delete-target-creation/:id", DeleteTargetCreation);
@@ -35,7 +26,7 @@ router.post("/achievements/:id/:database", called)
 router.post("/check/:id/:database", checkTarget)
 
 // router.post("/customer-target", SavePartyTarget)
-router.post("/customer-target",upload.single('file'), SavePartyTarget)
+router.post("/customer-target",uploads.single('file'), SavePartyTarget)
 router.get("/view-customer-target/:database", ViewPartyTarget)
 
 router.get("/target-calculate/:database", targetCalculation)
