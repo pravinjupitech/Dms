@@ -1,8 +1,16 @@
 import express from "express";
 import multer from "multer";
 import { Achievement, AllSalesPersonAchievement, DeleteTargetCreation, SavePartyTarget, SaveTargetCreation, UpdateTargetCreation, ViewPartyTarget, ViewTargetCreation, ViewTargetCreationById, called, checkTarget, deleteProductFromTargetCreation, increasePercentage, latestAchievement, latestAchievementById, latestAchievementSalesById, targetCalculation, updateTargetProducts, viewTarget } from "../controller/targetCreation.controller.js";
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); 
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.post("/save-target-creation",upload.single("file"),SaveTargetCreation);
