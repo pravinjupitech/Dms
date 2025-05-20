@@ -1681,7 +1681,7 @@ export const SavePartyTarget = async (req, res) => {
                     document[heading] = cellValue;
                 }
             }
-            const party = await Customer.findById(document.partyId);
+            const party = await Customer.findOne({sId:document.partyId});
             if (!party) {
                 return res.status(404).json({ message: `Customer with ID ${document.partyId} not found`, status: false });
             }
