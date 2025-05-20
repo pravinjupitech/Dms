@@ -852,16 +852,12 @@ export const ClosingSales = async (orderItem, warehouse) => {
 export const stockReport = async (req, res, next) => {
     try {
         const { database } = req.params;
-
         const purchaseOrders = await PurchaseOrder.find({ database, status: { $ne: "Deactive" } });
         const salesOrders = await CreateOrder.find({ database, status: { $ne: "Deactive" } });
-
-        const productMap = {};
+       const productMap = {};
         const allProductIds = new Set();
-
         for (const po of purchaseOrders) {
             const status = po.status || 'pending';
-
             const totalTax = (status === 'completed')
                 ? (po.coolieAndCartage || 0) +
                   (po.labourCost || 0) +
@@ -870,7 +866,6 @@ export const stockReport = async (req, res, next) => {
                   (po.transportationCost || 0)+
                   (po.tax||0)
                 : 0;
-// console.log("totalTax",totalTax)
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
