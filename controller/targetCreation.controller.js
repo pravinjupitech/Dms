@@ -1666,7 +1666,7 @@ export const SavePartyTarget = async (req, res) => {
         const worksheet = workbook.getWorksheet(1);
 
         const headerRow = worksheet.getRow(1);
-        const headings = headerRow.values.slice(1); // Remove first empty value
+        const headings = headerRow.values.slice(1); 
 
         const groupedData = {};
 
@@ -1774,19 +1774,83 @@ export const SavePartyTarget = async (req, res) => {
 //     }
 // };
 // view party target
+
 export const ViewPartyTarget = async (req, res, next) => {
     try {
-        const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } })
-        if (party.length === 0) {
-            return res.status(404).json({ message: "target not found", status: false })
+        const targets = await TargetCreation.find({
+            database: req.params.database,
+            partyId: { $ne: null }
+        }).lean();
+
+        if (targets.length === 0) {
+            return res.status(404).json({ message: "Target not found", status: false });
         }
-        return res.status(200).json({ TargetCreation: party, status: true })
+
+        // Get unique party IDs
+        const partyIds = [...new Set(targets.map(t => t.partyId))];
+
+        // ✅ Flatten and extract productIds from nested products array
+        const productIds = [
+            ...new Set(
+                targets.flatMap(t => t.products?.map(p => p.productId) || [])
+            )
+        ];
+
+        // Fetch product and customer data
+        const products = await Product.find({ sId: { $in: productIds } }).lean();
+        const customers = await Customer.find({ sId: { $in: partyIds } }).lean();
+
+        // Create lookup maps
+        const productMap = {};
+        const customerMap = {};
+
+        products.forEach(product => {
+            productMap[product.sId] = product;
+        });
+
+        customers.forEach(customer => {
+            customerMap[customer.sId] = customer;
+        });
+
+        // Enrich each target with customer and products info
+        const enrichedTargets = targets.map(target => {
+            const enrichedProducts = target.products?.map(prod => ({
+                ...prod,
+                productDetails: productMap[prod.productId] || null
+            })) || [];
+
+            return {
+                ...target,
+                customer: customerMap[target.partyId] || null,
+                products: enrichedProducts
+            };
+        });
+
+        return res.status(200).json({
+            message: "Target data fetched successfully",
+            status: true,
+            data: enrichedTargets
+        });
+
+    } catch (err) {
+        console.error("Error in ViewPartyTarget:", err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
     }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ error: "Internal Server Error", status: false })
-    }
-}
+};
+
+// export const ViewPartyTarget = async (req, res, next) => {
+//     try {
+//         const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } }).populate({path:"partyId",model:"customer"})
+//         if (party.length === 0) {
+//             return res.status(404).json({ message: "target not found", status: false })
+//         }
+//         return res.status(200).json({ TargetCreation: party, status: true })
+//     }
+//     catch (err) {
+//         console.log(err)
+//         return res.status(500).json({ error: "Internal Server Error", status: false })
+//     }
+// }
 
 // For Dashboar
 export const targetCalculation = async (req, res, next) => {
