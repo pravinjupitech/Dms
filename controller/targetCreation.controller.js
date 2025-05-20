@@ -1725,7 +1725,7 @@ export const SavePartyTarget = async (req, res) => {
 // view party target
 export const ViewPartyTarget = async (req, res, next) => {
     try {
-        const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } }).populate({ path: "partyId", model: "customer" }).populate({ path: "products.productId", model: "product" })
+        const party = await TargetCreation.find({ database: req.params.database, partyId: { $ne: null } }).populate({ path: "products.productId", model: "product" })
         if (party.length === 0) {
             return res.status(404).json({ message: "target not found", status: false })
         }
