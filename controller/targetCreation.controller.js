@@ -1652,45 +1652,90 @@ export const latestAchievement2 = async (body, id, database) => {
 // ---------------------------------------------------------------------------------------
 
 // save target customer
+
 export const SavePartyTarget = async (req, res) => {
     try {
-        const filePath = req.file.path;
+        const filePath = req.file?.path;
+        if (!filePath) {
+            return res.status(400).json({ message: "No file uploaded", status: false });
+        }
+
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
 
+        // Extract headers
         const headerRow = worksheet.getRow(1);
         const headings = [];
-        headerRow.eachCell(cell => {
-            headings.push(cell.value);
-        });
+        headerRow.eachCell(cell => headings.push(cell.value));
 
-        const savedDocuments = [];
+        // Group rows by partyId + salesPersonId + month + created_by
+        const groupMap = new Map();
 
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
-            const document = {};
+            const rowData = {};
 
-            for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
-                const heading = headings[columnIndex - 1];
-                const cellValue = dataRow.getCell(columnIndex).value;
+            for (let colIndex = 1; colIndex <= headings.length; colIndex++) {
+                const heading = headings[colIndex - 1];
+                const cellValue = dataRow.getCell(colIndex).value;
 
-                if (heading === 'partyId' && typeof cellValue === 'object' && 'text' in cellValue) {
-                    document[heading] = cellValue.text;
-                } else {
-                    document[heading] = cellValue;
-                }
-            }
-            console.log("document",document)
-            const party = await Customer.findOne({sId:document.partyId});
-            if (!party) {
-                return res.status(404).json({ message: `Customer with ID ${document.partyId} not found`, status: false });
+                // Handle Excel rich text
+                rowData[heading] = (typeof cellValue === 'object' && cellValue?.text) ? cellValue.text : cellValue;
             }
 
-            document.database = party.database;
-            const savedTarget = await TargetCreation.create(document);
-            savedDocuments.push(savedTarget);
+            const key = `${rowData.salesPersonId}_${rowData.partyId}_${rowData.month}_${rowData.created_by}`;
+
+            const productEntry = {
+                productId: rowData.productId,
+                qtyAssign: Number(rowData.qtyAssign) || 0,
+                price: Number(rowData.price) || 0,
+                totalPrice: Number(rowData.totalPrice) || 0,
+                assignPercentage: [{
+                    month: rowData.month,
+                    percentage: Number(rowData.percentage) || 0
+                }]
+            };
+
+            if (groupMap.has(key)) {
+                groupMap.get(key).products.push(productEntry);
+            } else {
+                groupMap.set(key, {
+                    created_by: rowData.created_by,
+                    salesPersonId: rowData.salesPersonId,
+                    partyId: rowData.partyId,
+                    month: rowData.month,
+                    products: [productEntry]
+                });
+            }
         }
+
+        const savedDocuments = [];
+
+        // Iterate over grouped targets
+        for (let [key, groupedData] of groupMap) {
+            const customer = await Customer.findOne({ sId: groupedData.partyId });
+            if (!customer) {
+                return res.status(404).json({
+                    message: `Customer with partyId ${groupedData.partyId} not found`,
+                    status: false
+                });
+            }
+
+            const documentToSave = {
+                created_by: groupedData.created_by,
+                salesPersonId: groupedData.salesPersonId,
+                partyId: groupedData.partyId,
+                database: customer.database,
+                products: groupedData.products
+            };
+
+            const saved = await TargetCreation.create(documentToSave);
+            savedDocuments.push(saved);
+        }
+
+        // Delete uploaded file
+        await fs.unlink(filePath).catch(err => console.warn("Could not delete uploaded file:", err.message));
 
         return res.status(200).json({
             message: `${savedDocuments.length} targets saved successfully.`,
@@ -1707,6 +1752,7 @@ export const SavePartyTarget = async (req, res) => {
         });
     }
 };
+
 
 // export const SavePartyTarget = async (req, res) => {
 //     try {
