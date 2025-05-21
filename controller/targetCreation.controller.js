@@ -1665,7 +1665,7 @@ export const SavePartyTarget = async (req, res) => {
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
         const headerRow = worksheet.getRow(1);
-        const headings = headerRow.values.slice(1); 
+        const headings = headerRow.values.slice(1);
 
         const groupedData = {};
 
@@ -1702,18 +1702,17 @@ export const SavePartyTarget = async (req, res) => {
                 };
             }
 
-            if(qtyAssign>0){
-                console.log("qtyAssign",qtyAssign)
+            if (qtyAssign > 0) {
                 groupedData[key].products.push({
-                productId,
-                qtyAssign: parseFloat(qtyAssign) || 0,
-                price: parseFloat(price) || 0,
-                totalPrice: parseFloat(totalPrice) || 0,
-                assignPercentage: [{
-                    month: month?.toString() || "",
-                    percentage: parseFloat(percentage) || 0
-                }]
-            })
+                    productId,
+                    qtyAssign: parseFloat(qtyAssign) || 0,
+                    price: parseFloat(price) || 0,
+                    totalPrice: parseFloat(qtyAssign*price) || 0,
+                    assignPercentage: [{
+                        month: month?.toString() || "",
+                        percentage: parseFloat(percentage) || 0
+                    }]
+                })
             }
         }
 
@@ -1732,10 +1731,10 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             entry.database = party.database;
-if(entry?.products?.length>0){
-    const saved = await TargetCreation.create(entry);
-    savedDocuments.push(saved);
-}
+            if (entry?.products?.length > 0) {
+                const saved = await TargetCreation.create(entry);
+                savedDocuments.push(saved);
+            }
         }
 
         return res.status(200).json({
