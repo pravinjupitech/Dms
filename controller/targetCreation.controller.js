@@ -1732,7 +1732,7 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             entry.database = party.database;
-if(qtyAssign>0){
+if(entry.qtyAssign>0){
 
     const saved = await TargetCreation.create(entry);
     savedDocuments.push(saved);
