@@ -1664,7 +1664,6 @@ export const SavePartyTarget = async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
-
         const headerRow = worksheet.getRow(1);
         const headings = headerRow.values.slice(1); 
 
@@ -1704,6 +1703,7 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             if(qtyAssign>0){
+                console.log("qtyAssign",qtyAssign)
                 groupedData[key].products.push({
                 productId,
                 qtyAssign: parseFloat(qtyAssign) || 0,
@@ -1786,21 +1786,17 @@ export const ViewPartyTarget = async (req, res, next) => {
             return res.status(404).json({ message: "Target not found", status: false });
         }
 
-        // Get unique party IDs
         const partyIds = [...new Set(targets.map(t => t.partyId))];
 
-        // ✅ Flatten and extract productIds from nested products array
         const productIds = [
             ...new Set(
                 targets.flatMap(t => t.products?.map(p => p.productId) || [])
             )
         ];
 
-        // Fetch product and customer data
         const products = await Product.find({ sId: { $in: productIds } }).lean();
         const customers = await Customer.find({ sId: { $in: partyIds } }).lean();
 
-        // Create lookup maps
         const productMap = {};
         const customerMap = {};
 
@@ -1812,7 +1808,6 @@ export const ViewPartyTarget = async (req, res, next) => {
             customerMap[customer.sId] = customer;
         });
 
-        // Enrich each target with customer and products info
         const enrichedTargets = targets.map(target => {
             const enrichedProducts = target.products?.map(prod => ({
                 ...prod,
