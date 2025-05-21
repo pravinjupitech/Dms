@@ -1732,11 +1732,10 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             entry.database = party.database;
-// if(entry.qtyAssign>0){
-console.log("entry",entry)
+if(entry?.products?.length>0){
     const saved = await TargetCreation.create(entry);
     savedDocuments.push(saved);
-// }
+}
         }
 
         return res.status(200).json({
