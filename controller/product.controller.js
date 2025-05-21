@@ -38,14 +38,14 @@ export const SaveProduct = async (req, res) => {
     if (req.body.Opening_Stock) {
       req.body.qty = req.body.Opening_Stock
     }
-    if (req.body.Product_Title && req.body.HSN_Code) {
-            let last4 = '';
-            let existName = req.body.Product_Title.split(" ");
-            let fname = existName[0];
-            const hsn = req.body.HSN_Code.trim();
-            last4 = hsn.slice(-4);
-            req.body.sId = `${fname}${last4}`;
-        }
+    if (req.body.Product_Title && req.body.SubCategory && req.body.category) {
+      // let last4 = '';
+      // let existName = req.body.Product_Title.split(" ");
+      // let fname = existName[0];
+      // const hsn = req.body.HSN_Code.trim();
+      // last4 = hsn.slice(-4);
+      req.body.sId = `${req.body.category}-${req.body.SubCategory}-${req.body.Product_Title}`;
+    }
     const product = await Product.create(req.body);
     await addProductInWarehouse1(req.body, product.warehouse, product)
     // await addProductInStock(req.body, product.warehouse, product)
@@ -156,14 +156,14 @@ export const UpdateProduct = async (req, res, next) => {
         req.body.qty = existingProduct.qty + qty
         await addProductInWarehouse(req.body, req.body.warehouse, existingProduct)
       }
-      if (req.body.Product_Title && req.body.HSN_Code) {
-            let last4 = '';
-            let existName = req.body.Product_Title.split(" ");
-            let fname = existName[0];
-            const hsn = req.body.HSN_Code.trim();
-            last4 = hsn.slice(-4);
-            req.body.sId = `${fname}${last4}`;
-        }
+      if (req.body.Product_Title && req.body.SubCategory && req.body.category) {
+        // let last4 = '';
+        // let existName = req.body.Product_Title.split(" ");
+        // let fname = existName[0];
+        // const hsn = req.body.HSN_Code.trim();
+        // last4 = hsn.slice(-4);
+        req.body.sId = `${req.body.category}-${req.body.SubCategory}-${req.body.Product_Title}`;
+      }
       const updatedProduct = req.body;
       const product = await Product.findByIdAndUpdate(productId, updatedProduct, { new: true });
       return res.status(200).json({ message: "Product Updated Successfully", status: true });
@@ -321,14 +321,14 @@ export const saveItemWithExcel = async (req, res) => {
           WarehouseNotExisting.push(document.warehouse)
         } else {
           document[warehouse] = existingWarehouse._id.toString()
-          if (document.Product_Title && document.HSN_Code) {
-            let last4 = '';
-            let existName = document.Product_Title.split(" ");
-            let fname = existName[0];
-            const hsn = document.HSN_Code.trim();
-            last4 = hsn.slice(-4);
-            document['sId'] = `${fname}${last4}`;
-        }
+          if (document.Product_Title && document.SubCategory&&document.category) {
+            // let last4 = '';
+            // let existName = document.Product_Title.split(" ");
+            // let fname = existName[0];
+            // const hsn = document.HSN_Code.trim();
+            // last4 = hsn.slice(-4);
+            document['sId'] = `${document.category}-${document.SubCategory}-${document.Product_Title}`;
+          }
           if (document.id) {
             const existingId = await Product.findOne({ id: document.id, database: document.database, status: "Active" });
             if (existingId) {
@@ -413,6 +413,14 @@ export const updateItemWithExcel = async (req, res) => {
         document[heading] = cellValue;
       }
       document[database] = req.params.database
+        if (document.Product_Title && document.SubCategory&&document.category) {
+            // let last4 = '';
+            // let existName = document.Product_Title.split(" ");
+            // let fname = existName[0];
+            // const hsn = document.HSN_Code.trim();
+            // last4 = hsn.slice(-4);
+            document['sId'] = `${document.category}-${document.SubCategory}-${document.Product_Title}`;
+          }
       if (document.HSN_Code) {
         const existingWarehouse = await Warehouse.findOne({ id: document.warehouse, database: document.database, status: "Active" })
         if (!existingWarehouse) {
@@ -656,7 +664,7 @@ export const addProductInWarehouse3 = async (warehouse, warehouseId, orderItem, 
     const endOfDay = new Date(dates);
     startOfDay.setUTCHours(0, 0, 0, 0);
     endOfDay.setUTCHours(23, 59, 59, 999);
-    console.log("warehouse", warehouse,warehouseId)
+    console.log("warehouse", warehouse, warehouseId)
     const user = await Warehouse.findById({ _id: warehouseId })
     if (!user) {
       return console.log("warehouse not found")
@@ -1269,7 +1277,7 @@ export const HSNWiseSalesReport = async (req, res, next) => {
   try {
     const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
     const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
-    const targetQuery = { database: req.params.database,status:"completed" };
+    const targetQuery = { database: req.params.database, status: "completed" };
     if (startDate && endDate) {
       targetQuery.createdAt = { $gte: startDate, $lte: endDate };
     }
@@ -1323,7 +1331,7 @@ export const HSNWisePurchaseReport = async (req, res, next) => {
   try {
     const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
     const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
-    const targetQuery = { database: req.params.database,status:"completed" };
+    const targetQuery = { database: req.params.database, status: "completed" };
     if (startDate && endDate) {
       targetQuery.createdAt = { $gte: startDate, $lte: endDate };
     }
