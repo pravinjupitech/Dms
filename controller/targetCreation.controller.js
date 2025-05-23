@@ -1686,19 +1686,19 @@ export const SavePartyTarget = async (req, res) => {
                 productId,
                 qtyAssign,
                 price,
-                totalPrice,
                 month,
                 percentage,
                 created_by
             } = rowData;
 
-            const key = `${salesPersonId}_${partyId}_${created_by}`;
+            const key = `${salesPersonId}_${partyId}_${created_by}_${month}`;
 
             if (!groupedData[key]) {
                 groupedData[key] = {
                     salesPersonId,
                     partyId,
                     created_by,
+                    month: month?.toString() || "",
                     products: []
                 };
             }
@@ -1714,13 +1714,13 @@ export const SavePartyTarget = async (req, res) => {
                     qtyAssign: adjustedQty,
                     price: parsedPrice,
                     totalPrice: adjustedQty * parsedPrice,
+                    date: month?.toString() || "",
                     assignPercentage: [{
                         month: month?.toString() || "",
                         percentage: parsedPercentage
                     }]
                 });
             }
-
         }
 
         const savedDocuments = [];
@@ -1738,14 +1738,29 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             entry.database = party.database;
-            if (entry?.products?.length > 0) {
-                const saved = await TargetCreation.create(entry);
-                savedDocuments.push(saved);
+
+            // Check if a TargetCreation document already exists for this partyId and month
+            const existingTarget = await TargetCreation.findOne({
+                partyId: entry.partyId,
+                date: entry.month
+            });
+
+            if (existingTarget) {
+                // Append new products to the existing products array
+                existingTarget.products.push(...entry.products);
+                await existingTarget.save();
+                savedDocuments.push(existingTarget);
+            } else {
+                // Create a new TargetCreation document
+                if (entry?.products?.length > 0) {
+                    const saved = await TargetCreation.create(entry);
+                    savedDocuments.push(saved);
+                }
             }
         }
 
         return res.status(200).json({
-            message: `${savedDocuments.length} targets saved successfully.`,
+            message: `${savedDocuments.length} target(s) processed successfully.`,
             status: true,
             data: savedDocuments
         });
@@ -1763,6 +1778,7 @@ export const SavePartyTarget = async (req, res) => {
         }
     }
 };
+
 
 
 
