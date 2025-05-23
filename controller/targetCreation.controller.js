@@ -1737,23 +1737,15 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             entry.database = party.database;
-
-            // Check if a TargetCreation document already exists for this partyId and month
-            console.log("entry.partyId",entry.partyId,)
-            console.log("entry.month",entry.month)
             const existingTarget = await TargetCreation.findOne({
                 partyId: entry.partyId,
                 date: entry.date
             });
-console.log("existingTarget",existingTarget)
             if (existingTarget) {
-                // Append new products to the existing products array
-                existingTarget.products.push(...entry.products);
+                existingTarget.products = entry.products;
                 await existingTarget.save();
                 savedDocuments.push(existingTarget);
             } else {
-                console.log("existingTarget",existingTarget)
-                // Create a new TargetCreation document
                 if (entry?.products?.length > 0) {
                     const saved = await TargetCreation.create(entry);
                     savedDocuments.push(saved);
@@ -1805,7 +1797,7 @@ export const ViewPartyTarget = async (req, res, next) => {
         const targets = await TargetCreation.find({
             database: req.params.database,
             partyId: { $ne: null }
-        }).populate({path:"created_by",model:"user"}).lean();
+        }).populate({ path: "created_by", model: "user" }).lean();
 
         if (targets.length === 0) {
             return res.status(404).json({ message: "Target not found", status: false });
