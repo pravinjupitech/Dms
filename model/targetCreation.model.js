@@ -8,8 +8,8 @@ const TargetCreationSchema = new mongoose.Schema({
     database: {
         type: String
     },
-    userId:{
-        type:String
+    userId: {
+        type: String
     },
     salesPersonId: {
         type: String
@@ -43,6 +43,9 @@ const TargetCreationSchema = new mongoose.Schema({
             }
         }]
     }],
+    date: {
+        type: String
+    },
     startDate: {
         type: String
     },
