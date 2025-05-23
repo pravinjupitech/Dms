@@ -1739,17 +1739,20 @@ export const SavePartyTarget = async (req, res) => {
             entry.database = party.database;
 
             // Check if a TargetCreation document already exists for this partyId and month
+            console.log("entry.partyId",entry.partyId)
+            console.log("entry.month",entry.month)
             const existingTarget = await TargetCreation.findOne({
                 partyId: entry.partyId,
                 date: entry.month
             });
-
+console.log("existingTarget",existingTarget)
             if (existingTarget) {
                 // Append new products to the existing products array
                 existingTarget.products.push(...entry.products);
                 await existingTarget.save();
                 savedDocuments.push(existingTarget);
             } else {
+                console.log("existingTarget",existingTarget)
                 // Create a new TargetCreation document
                 if (entry?.products?.length > 0) {
                     const saved = await TargetCreation.create(entry);
