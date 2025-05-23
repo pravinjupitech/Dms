@@ -1705,9 +1705,9 @@ export const SavePartyTarget = async (req, res) => {
             if (qtyAssign > 0) {
                 groupedData[key].products.push({
                     productId,
-                    qtyAssign: parseFloat(qtyAssign) || 0,
+                    qtyAssign: parseFloat(qtyAssign+qtyAssign%percentage) || 0,
                     price: parseFloat(price) || 0,
-                    totalPrice: parseFloat(qtyAssign*price) || 0,
+                    totalPrice: parseFloat(qtyAssign+qtyAssign%percentage*price) || 0,
                     assignPercentage: [{
                         month: month?.toString() || "",
                         percentage: parseFloat(percentage) || 0
