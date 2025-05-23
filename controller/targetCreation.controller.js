@@ -10,6 +10,7 @@ import { Role } from "../model/role.model.js";
 import xlsx from "xlsx";
 import ExcelJS from 'exceljs'
 import fs from 'fs/promises';
+import { populate } from "dotenv";
 const uniqueId = new Set();
 const uniqueUserId = new Set();
 const emptyObj = {};
@@ -1786,7 +1787,7 @@ export const ViewPartyTarget = async (req, res, next) => {
         const targets = await TargetCreation.find({
             database: req.params.database,
             partyId: { $ne: null }
-        }).lean();
+        }).populate({path:"created_by",model:"user"}).lean();
 
         if (targets.length === 0) {
             return res.status(404).json({ message: "Target not found", status: false });
