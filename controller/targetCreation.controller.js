@@ -1698,7 +1698,7 @@ export const SavePartyTarget = async (req, res) => {
                     salesPersonId,
                     partyId,
                     created_by,
-                    month: month?.toString() || "",
+                    date: month?.toString() || "",
                     products: []
                 };
             }
@@ -1714,7 +1714,6 @@ export const SavePartyTarget = async (req, res) => {
                     qtyAssign: adjustedQty,
                     price: parsedPrice,
                     totalPrice: adjustedQty * parsedPrice,
-                    date: month?.toString() || "",
                     assignPercentage: [{
                         month: month?.toString() || "",
                         percentage: parsedPercentage
