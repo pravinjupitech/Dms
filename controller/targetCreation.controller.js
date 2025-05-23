@@ -1739,7 +1739,7 @@ export const SavePartyTarget = async (req, res) => {
             entry.database = party.database;
 
             // Check if a TargetCreation document already exists for this partyId and month
-            console.log("entry.partyId",entry.partyId,entry.month)
+            console.log("entry.partyId",entry.partyId,entry.date)
             console.log("entry.month",entry.month)
             const existingTarget = await TargetCreation.findOne({
                 partyId: entry.partyId,
