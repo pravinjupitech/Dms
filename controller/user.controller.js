@@ -322,6 +322,19 @@ export const EditProfile = async (req, res, next) => {
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
+     if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+        let last4 = '';
+        let existName = req.body.firstName.split(" ");
+        let fname = existName[0];
+        if (req.body.Aadhar_No) {
+          const adhar = req.body.Aadhar_No.trim();
+          last4 = adhar.slice(-4);
+        } else if (req.body.Pan_No) {
+          const pan = req.body.Pan_No.trim();
+          last4 = pan.slice(-4);
+        }
+        req.body.sId = `${fname}${last4}`;
+      }
     // req.body.profileImage = req.file.filename || null
     const userDetail = req.body;
     const user_first = await User.findById(req.params.id);
