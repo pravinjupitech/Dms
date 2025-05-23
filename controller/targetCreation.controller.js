@@ -1703,17 +1703,23 @@ export const SavePartyTarget = async (req, res) => {
             }
 
             if (qtyAssign > 0) {
+                const parsedQty = parseFloat(qtyAssign) || 0;
+                const parsedPercentage = parseFloat(percentage) || 0;
+                const parsedPrice = parseFloat(price) || 0;
+                const adjustedQty = parsedQty + (parsedQty * parsedPercentage / 100);
+
                 groupedData[key].products.push({
                     productId,
-                    qtyAssign: parseFloat(qtyAssign+qtyAssign%percentage) || 0,
-                    price: parseFloat(price) || 0,
-                    totalPrice: parseFloat(qtyAssign+qtyAssign%percentage*price) || 0,
+                    qtyAssign: adjustedQty,
+                    price: parsedPrice,
+                    totalPrice: adjustedQty * parsedPrice,
                     assignPercentage: [{
                         month: month?.toString() || "",
-                        percentage: parseFloat(percentage) || 0
+                        percentage: parsedPercentage
                     }]
-                })
+                });
             }
+
         }
 
         const savedDocuments = [];
