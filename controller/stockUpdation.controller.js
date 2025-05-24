@@ -849,13 +849,211 @@ export const ClosingSales = async (orderItem, warehouse) => {
     }
 }
 
+// export const stockReport = async (req, res, next) => {
+//     try {
+//         const { database } = req.params;
+//         const purchaseOrders = await PurchaseOrder.find({ database, status: { $ne: "Deactive" } });
+//         const salesOrders = await CreateOrder.find({ database, status: { $ne: "Deactive" } });
+//        const productMap = {};
+//         const allProductIds = new Set();
+//         for (const po of purchaseOrders) {
+//             const status = po.status || 'pending';
+//             const totalTax = (status === 'completed')
+//                 ? (po.coolieAndCartage || 0) +
+//                   (po.labourCost || 0) +
+//                   (po.localFreight || 0) +
+//                   (po.miscellaneousCost || 0) +
+//                   (po.transportationCost || 0)+
+//                   (po.tax||0)
+//                 : 0;
+//             for (const item of po.orderItems) {
+//                 const productId = item.productId?.toString();
+//                 if (!productId) continue;
+
+//                 allProductIds.add(productId);
+//                 const qty = item.qty || 0;
+//                 const totalPrice = item.totalPrice || 0;
+
+//                 if (!productMap[productId]) {
+//                     productMap[productId] = {
+//                         productId,
+//                         pQty: 0,
+//                         purchasePendingQty: 0,
+//                         sQty: 0,
+//                         openingRate: 0,
+//                         oQty: 0,
+//                         Product_Title: "",
+//                         HSN_Code: "",
+//                         openingCombineTotal: 0,
+//                         pTotalPrice: 0,
+//                         avgPurchaseRate: 0,
+//                         totalPurchaseData: 0,
+//                         pendingStock: 0,
+//                         pendingRate: 0,
+//                         pendingStockTotal: 0,
+//                         sRate: 0,
+//                         sTotal: 0,
+//                         closingQty: 0,
+//                         closingAveRate: 0,
+//                         closingTotal: 0,
+//                         totalTax: 0
+//                     };
+//                 }
+
+//                 const entry = productMap[productId];
+//                 if (status === 'completed') {
+//                     entry.pQty += qty;
+//                     entry.pTotalPrice += totalPrice;
+//                     entry.totalTax += totalTax;
+//                     entry.totalPurchaseData += totalPrice + totalTax;
+//                     // console.log("totalPurchaseData",entry,entry.totalTax,totalTax)
+//                 } else {
+//                     entry.purchasePendingQty += qty;
+//                 }
+//             }
+//         }
+
+//         for (const so of salesOrders) {
+//             const status = so.status || 'pending';
+
+//             for (const item of so.orderItems) {
+//                 const productId = item.productId?.toString();
+//                 if (!productId) continue;
+
+//                 allProductIds.add(productId);
+//                 const qty = item.qty || 0;
+//                 const sTotal = item.totalPrice || 0;
+
+//                 if (!productMap[productId]) {
+//                     productMap[productId] = {
+//                         productId,
+//                         pQty: 0,
+//                         purchasePendingQty: 0,
+//                         sQty: 0,
+//                         openingRate: 0,
+//                         oQty: 0,
+//                         Product_Title: "",
+//                         HSN_Code: "",
+//                         openingCombineTotal: 0,
+//                         pTotalPrice: 0,
+//                         avgPurchaseRate: 0,
+//                         totalPurchaseData: 0,
+//                         pendingStock: 0,
+//                         pendingRate: 0,
+//                         pendingStockTotal: 0,
+//                         sRate: 0,
+//                         sTotal: 0,
+//                         closingQty: 0,
+//                         closingAveRate: 0,
+//                         closingTotal: 0,
+//                         totalTax: 0
+//                     };
+//                 }
+
+//                 const entry = productMap[productId];
+
+//                 if (status === 'completed') {
+//                     entry.sQty += qty;
+//                     entry.sTotal += sTotal;
+//                 } else {
+//                     entry.pendingStock += qty;
+//                     entry.pendingStockTotal += sTotal;
+//                 }
+//             }
+//         }
+//         const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
+//         for (const product of productList) {
+//             const id = product._id.toString();
+//             const entry = productMap[id];
+//             if (entry) {
+//                 entry.openingRate = product.openingRate || 0;
+//                 entry.oQty = product.Opening_Stock || 0;
+//                 entry.Product_Title = product.Product_Title || "";
+//                 entry.HSN_Code = product.HSN_Code || "";
+
+//                 entry.openingCombineTotal = entry.openingRate * entry.oQty;
+
+//                 entry.avgPurchaseRate = entry.pQty > 0
+//                     ? (entry.pTotalPrice + entry.totalTax) / entry.pQty
+//                     : 0;
+
+//                 entry.sRate = entry.sQty > 0
+//                     ? entry.sTotal / entry.sQty
+//                     : 0;
+
+//                 entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
+
+//                 entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
+//                 const totalQty = entry.oQty + entry.pQty;
+//                 entry.closingAveRate = totalQty > 0
+//                     ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
+//                     : 0;
+
+//                 entry.closingTotal = entry.closingQty * entry.closingAveRate;
+//             }
+//         }
+
+//         const stockReport = Object.values(productMap);
+//         const totalSummary = stockReport.reduce((acc, item) => {
+//             acc.Product_Title="Total";
+//             acc.pQty += item.pQty || 0;
+//             acc.purchasePendingQty += item.purchasePendingQty || 0;
+//             acc.sQty += item.sQty || 0;
+//             acc.oQty += item.oQty || 0;
+//             acc.openingCombineTotal += item.openingCombineTotal || 0;
+//             acc.pTotalPrice += item.pTotalPrice || 0;
+//             acc.totalPurchaseData += item.totalPurchaseData || 0;
+//             acc.pendingStock += item.pendingStock || 0;
+//             acc.pendingStockTotal += item.pendingStockTotal || 0;
+//             acc.pendingRate += item.pendingRate || 0;
+//             acc.sTotal += item.sTotal || 0;
+//             acc.closingQty += item.closingQty || 0;
+//             acc.closingTotal += item.closingTotal || 0;
+//             acc.totalTax += item.totalTax || 0;
+//             return acc;
+//         }, {
+//             pQty: 0,
+//             purchasePendingQty: 0,
+//             sQty: 0,
+//             oQty: 0,
+//             openingCombineTotal: 0,
+//             pTotalPrice: 0,
+//             totalPurchaseData: 0,
+//             pendingStock: 0,
+//             pendingStockTotal: 0,
+//             pendingRate: 0,
+//             sTotal: 0,
+//             closingQty: 0,
+//             closingTotal: 0,
+//             totalTax: 0
+//         });
+
+//         return res.status(200).json({
+//             message: "Stock report generated successfully",
+//             status: true,
+//             data: stockReport,
+//             totalSummary
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             message: "Internal Server Error",
+//             error: error.message,
+//             status: false
+//         });
+//     }
+// };
+
+
 export const stockReport = async (req, res, next) => {
     try {
         const { database } = req.params;
+
         const purchaseOrders = await PurchaseOrder.find({ database, status: { $ne: "Deactive" } });
         const salesOrders = await CreateOrder.find({ database, status: { $ne: "Deactive" } });
-       const productMap = {};
+        const productMap = {};
         const allProductIds = new Set();
+
         for (const po of purchaseOrders) {
             const status = po.status || 'pending';
             const totalTax = (status === 'completed')
@@ -863,9 +1061,10 @@ export const stockReport = async (req, res, next) => {
                   (po.labourCost || 0) +
                   (po.localFreight || 0) +
                   (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0)+
-                  (po.tax||0)
+                  (po.transportationCost || 0) +
+                  (po.tax || 0)
                 : 0;
+
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
@@ -901,18 +1100,17 @@ export const stockReport = async (req, res, next) => {
                 }
 
                 const entry = productMap[productId];
+
                 if (status === 'completed') {
                     entry.pQty += qty;
                     entry.pTotalPrice += totalPrice;
                     entry.totalTax += totalTax;
                     entry.totalPurchaseData += totalPrice + totalTax;
-                    // console.log("totalPurchaseData",entry,entry.totalTax,totalTax)
                 } else {
                     entry.purchasePendingQty += qty;
                 }
             }
         }
-
         for (const so of salesOrders) {
             const status = so.status || 'pending';
 
@@ -961,41 +1159,70 @@ export const stockReport = async (req, res, next) => {
                 }
             }
         }
-        const productList = await Product.find({ _id: { $in: Array.from(allProductIds) } });
+
+        const productList = await Product.find({ database }); 
+
         for (const product of productList) {
             const id = product._id.toString();
-            const entry = productMap[id];
-            if (entry) {
-                entry.openingRate = product.openingRate || 0;
-                entry.oQty = product.Opening_Stock || 0;
-                entry.Product_Title = product.Product_Title || "";
-                entry.HSN_Code = product.HSN_Code || "";
 
-                entry.openingCombineTotal = entry.openingRate * entry.oQty;
-
-                entry.avgPurchaseRate = entry.pQty > 0
-                    ? (entry.pTotalPrice + entry.totalTax) / entry.pQty
-                    : 0;
-
-                entry.sRate = entry.sQty > 0
-                    ? entry.sTotal / entry.sQty
-                    : 0;
-
-                entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
-
-                entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
-                const totalQty = entry.oQty + entry.pQty;
-                entry.closingAveRate = totalQty > 0
-                    ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
-                    : 0;
-
-                entry.closingTotal = entry.closingQty * entry.closingAveRate;
+            if (!productMap[id]) {
+                productMap[id] = {
+                    productId: id,
+                    pQty: 0,
+                    purchasePendingQty: 0,
+                    sQty: 0,
+                    openingRate: 0,
+                    oQty: 0,
+                    Product_Title: "",
+                    HSN_Code: "",
+                    openingCombineTotal: 0,
+                    pTotalPrice: 0,
+                    avgPurchaseRate: 0,
+                    totalPurchaseData: 0,
+                    pendingStock: 0,
+                    pendingRate: 0,
+                    pendingStockTotal: 0,
+                    sRate: 0,
+                    sTotal: 0,
+                    closingQty: 0,
+                    closingAveRate: 0,
+                    closingTotal: 0,
+                    totalTax: 0
+                };
             }
-        }
 
+            const entry = productMap[id];
+
+            entry.openingRate = product.openingRate || 0;
+            entry.oQty = product.Opening_Stock || 0;
+            entry.Product_Title = product.Product_Title || "";
+            entry.HSN_Code = product.HSN_Code || "";
+            entry.openingCombineTotal = entry.openingRate * entry.oQty;
+
+            const totalQty = entry.oQty + entry.pQty;
+
+            entry.avgPurchaseRate = entry.pQty > 0
+                ? (entry.pTotalPrice + entry.totalTax) / entry.pQty
+                : 0;
+
+            entry.sRate = entry.sQty > 0
+                ? entry.sTotal / entry.sQty
+                : 0;
+
+            entry.pendingRate = entry.pendingStockTotal + entry.pendingStock;
+
+            entry.closingQty = entry.oQty + entry.pQty - entry.pendingStock - entry.sQty;
+
+            entry.closingAveRate = totalQty > 0
+                ? (entry.openingCombineTotal + entry.totalPurchaseData) / totalQty
+                : 0;
+
+            entry.closingTotal = entry.closingQty * entry.closingAveRate;
+        }
         const stockReport = Object.values(productMap);
+
         const totalSummary = stockReport.reduce((acc, item) => {
-            acc.Product_Title="Total";
+            acc.Product_Title = "Total";
             acc.pQty += item.pQty || 0;
             acc.purchasePendingQty += item.purchasePendingQty || 0;
             acc.sQty += item.sQty || 0;
@@ -1034,6 +1261,7 @@ export const stockReport = async (req, res, next) => {
             data: stockReport,
             totalSummary
         });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -1043,8 +1271,6 @@ export const stockReport = async (req, res, next) => {
         });
     }
 };
-
-
 
 
 
