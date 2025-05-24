@@ -13,13 +13,14 @@ import { User } from "../model/user.model.js";
 import { Ledger } from "../model/ledger.model.js";
 import { CreateAccount } from "../model/createAccount.model.js";
 import { Transporter } from "../model/transporter.model.js";
+import { CompanyDetails } from "../model/companyDetails.model.js";
 
 
 export const saveReceipt = async (req, res, next) => {
     try {
         const partyReceipt = [];
         for (const item of req.body.Receipt) {
-            const isBankPayment = item.paymentMode !== "Cash"; 
+            const isBankPayment = item.paymentMode !== "Cash";
             const paymentMode = isBankPayment ? 'Bank' : 'Cash';
             const rece = await Receipt.find({ status: "Active", paymentMode, }).sort({ sortorder: -1 });
             if (rece.length > 0) {
@@ -769,10 +770,38 @@ export const transactionCalculate = async (req, res, next) => {
         let debitAmountBank = 0;
         let creditAmountCash = 0;
         let debitAmountCash = 0;
-        const receipts = await Receipt.find({ database: req.params.database, status: "Active", paymentMode: { $in: ["Bank", "Cash"] } }).sort({ sortorder: -1 });
+
+        const receipts = await Receipt.find({
+            database: req.params.database,
+            status: "Active",
+            paymentMode: { $in: ["Bank", "Cash"] }
+        }).sort({ sortorder: -1 });
+
         if (receipts.length === 0) {
             return res.status(404).json({ message: "Bank and Cash Balance Not Found", status: false });
         }
+
+        const CompanyAmount = await CompanyDetails.findOne({ database: req.params.database });
+        if (!CompanyAmount) {
+            return res.status(404).json({ message: "Company details not found", status: false });
+        }
+        transaction.CashAmount += parseInt(
+            CompanyAmount.openingType === "credit"
+                ? CompanyAmount.openingBalance
+                : -CompanyAmount.openingBalance
+        );
+
+        if (CompanyAmount.bankDetails&&CompanyAmount.bankDetails.length>0) {
+            CompanyAmount.bankDetails.forEach(item => {
+                if (!item.openingBalance || !item.openingType) return;
+                transaction.BankAmount += parseInt(
+                    item.openingType === "credit"
+                        ? item.openingBalance
+                        : -item.openingBalance
+                );
+            });
+        }
+
         receipts.forEach(item => {
             if (item.paymentMode === "Bank") {
                 if (item.type === "receipt") {
@@ -788,25 +817,28 @@ export const transactionCalculate = async (req, res, next) => {
                 }
             }
         });
-        transaction.BankAmount = creditAmountBank - debitAmountBank;
-        transaction.CashAmount = creditAmountCash - debitAmountCash;
+
+        transaction.BankAmount += (creditAmountBank - debitAmountBank);
+        transaction.CashAmount += (creditAmountCash - debitAmountCash);
 
         res.status(200).json({ transaction, status: true });
+
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Internal Server Error", status: false });
     }
-}
+};
+
 export const transactionCalculate2 = async (req, res, next) => {
     try {
         const { database } = req.params;
         const aggregationPipeline = [
-            { 
-                $match: { 
-                    database, 
-                    status: "Active", 
-                    paymentMode: { $in: ["Bank", "Cash"] } 
-                } 
+            {
+                $match: {
+                    database,
+                    status: "Active",
+                    paymentMode: { $in: ["Bank", "Cash"] }
+                }
             },
             {
                 $group: {
