@@ -1160,7 +1160,7 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        const productList = await Product.find({ database }); 
+        const productList = await Product.find({ database,status:"Active" }); 
 
         for (const product of productList) {
             const id = product._id.toString();
