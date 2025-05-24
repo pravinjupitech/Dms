@@ -1915,15 +1915,16 @@ export const SalesPersonAchievement = async (database) => {
         // const start = startDate ? new Date(startDate) : null;
         // const end = endDate ? new Date(endDate) : null;
         const salesPersonPromises = users.map(async (user) => {
+            console.log("user",user)
             const targetQuery = { salesPersonId: user.sId };
             // if (start && end) {
             //     targetQuery.createdAt = { $gte: start, $lte: end };
             // }
             const targetss = await TargetCreation.find(targetQuery).populate({ path: "userId", model: "user" }).sort({ sortorder: -1 });
             if (targetss.length === 0) return null;
-            const countMonth = await TargetCreation.find({ userId: user._id })
+            const countMonth = await TargetCreation.find({ salesPersonId: user.sId})
             const targets = targetss[targetss.length - 1];
-            const orders = await CreateOrder.find({ userId: targets.userId });
+            const orders = await CreateOrder.find({ salesPersonId: targets.sId });
             if (!orders || orders.length === 0) return null;
             const allOrderItems = orders.flatMap(order => order.orderItems);
             const aggregatedOrders = allOrderItems.reduce((acc, item) => {
