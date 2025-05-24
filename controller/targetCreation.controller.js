@@ -1915,7 +1915,7 @@ export const SalesPersonAchievement = async (database) => {
         // const start = startDate ? new Date(startDate) : null;
         // const end = endDate ? new Date(endDate) : null;
         const salesPersonPromises = users.map(async (user) => {
-            const targetQuery = { userId: user._id };
+            const targetQuery = { salesPersonId: user.sId };
             // if (start && end) {
             //     targetQuery.createdAt = { $gte: start, $lte: end };
             // }
