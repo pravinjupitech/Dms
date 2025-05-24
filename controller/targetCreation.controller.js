@@ -1898,6 +1898,7 @@ export const targetCalculation = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false })
     }
 }
+
 // For Dashboard
 export const SalesPersonAchievement = async (database) => {
     try {

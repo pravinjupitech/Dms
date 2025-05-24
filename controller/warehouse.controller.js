@@ -440,6 +440,7 @@ export const StockCalculate = async (req, res, next) => {
         products.forEach(product => {
             WarehouseStock.OpeningStock += product.Opening_Stock || 0;
         });
+
         WarehouseStock.DamageStock = isNaN(WarehouseStock.DamageStock) ? 0 : WarehouseStock.DamageStock;
         WarehouseStock.DeadStock = await ViewOverDueStock(req.params.database);
 
