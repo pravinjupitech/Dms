@@ -663,25 +663,37 @@ export const CashBookReport = async (req, res, next) => {
     const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
     const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
 
-    // 1. Fetch completed orders
     const salesOrders = await CreateOrder.find({ 
       database: req.params.database, 
       status: "completed" 
     }).populate({ path: "partyId", model: "customer" });
 
-    // 2. Filter for cash sales and extract required fields
     const salesData = salesOrders
       .filter(order => order?.partyId?.paymentTerm === "cash")
       .map(order => ({
-        party: order.partyId?.CompanyName || "Unknown",
-        amount: order.grandTotal
+        party: order.partyId?.CompanyName || "",
+        amount: order.grandTotal,
+        date:order.date,
+        type:"receipt"
       }));
 
-    // 3. Get cash account user ID
+      const purchaseOrders=await PurchaseOrderfind({ 
+      database: req.params.database, 
+      status: "completed" 
+    }).populate({ path: "partyId", model: "customer" });
+
+    const purchaseData = purchaseOrders
+      .filter(order => order?.partyId?.paymentTerm === "cash")
+      .map(order => ({
+        party: order.partyId?.CompanyName || "",
+        amount: order.grandTotal,
+        date:order.date,
+        type:"receipt"
+      }));
+
     const accountDetails = await User.findOne({ id: "CASH ACCOUNT-Cash-in-Hand" });
     const userId = accountDetails?._id;
 
-    // 4. Create queries for receipts
     const query1 = {
       database: req.params.database,
       paymentMode: "Cash",
@@ -698,7 +710,6 @@ export const CashBookReport = async (req, res, next) => {
       query2.createdAt = { $gte: startDate, $lte: endDate };
     }
 
-    // 5. Find receipt IDs from both queries and combine
     const receipts1 = await Receipt.find(query1).select('_id');
     const receipts2 = await Receipt.find(query2).select('_id');
 
@@ -706,7 +717,6 @@ export const CashBookReport = async (req, res, next) => {
     const ids2 = new Set(receipts2.map(r => r._id.toString()));
     const combinedIds = [...new Set([...ids1, ...ids2])];
 
-    // 6. Fetch all matching receipts
     const receipts = await Receipt.find({ _id: { $in: combinedIds } })
       .sort({ sortorder: -1 })
       .populate({ path: "partyId", model: "customer" })
@@ -718,10 +728,10 @@ export const CashBookReport = async (req, res, next) => {
       return res.status(404).json({ message: "No receipts found", status: false });
     }
 
-    // 7. Return response with only required fields
     return res.status(200).json({
       CashBook: {
         salesData,
+        purchaseData,
         receipts
       },
       status: true
