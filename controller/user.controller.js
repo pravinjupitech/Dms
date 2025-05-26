@@ -168,6 +168,7 @@ export const ViewUser = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 };
+
 export const DeleteUser = async (req, res, next) => {
   try {
     const user = await User.findById({ _id: req.params.id });
