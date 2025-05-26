@@ -672,21 +672,20 @@ export const CashBookReport = async (req, res, next) => {
       .filter(order => order?.partyId?.paymentTerm === "cash")
       .map(order => ({
         party: order.partyId?.CompanyName || "",
-        amount: order.grandTotal,
+        amount: order.grandTotal||0,
         date:order.date,
         type:"receipt"
       }));
 
-      const purchaseOrders=await PurchaseOrderfind({ 
+      const purchaseOrders=await PurchaseOrder.find({ 
       database: req.params.database, 
       status: "completed" 
     }).populate({ path: "partyId", model: "customer" });
-
     const purchaseData = purchaseOrders
       .filter(order => order?.partyId?.paymentTerm === "cash")
       .map(order => ({
         party: order.partyId?.CompanyName || "",
-        amount: order.grandTotal,
+        amount: order.grandTotal||0,
         date:order.date,
         type:"receipt"
       }));
