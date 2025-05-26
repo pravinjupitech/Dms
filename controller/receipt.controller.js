@@ -657,25 +657,56 @@ export const ProfitLossReport = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
 export const CashBookReport = async (req, res, next) => {
     try {
-        const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
-        const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
-        const targetQuery = { database: req.params.database, paymentMode: "Cash", status: "Active" };
-        if (startDate && endDate) {
-            targetQuery.createdAt = { $gte: startDate, $lte: endDate };
-        }
-        const receipts = await Receipt.find(targetQuery).sort({ sortorder: -1 }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).populate({ path: "expenseId", model: "createAccount" }).populate({ path: "transporterId", model: "transporter" });
-        if (receipts.length === 0) {
-            return res.status(404).json({ message: "Not Found", status: false });
-        }
-        return res.status(200).json({ CashBook: receipts, status: true });
+      const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
+const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
+
+const AccountDetails = await User.findOne({ id: "CASH ACCOUNT-Cash-in-Hand" });
+const userId = AccountDetails._id;
+const query1 = {
+    database: req.params.database,
+    paymentMode: "Cash",
+    status: "Active"
+};
+
+const query2 = {
+    status: "Active",
+    userId: userId
+};
+
+if (startDate && endDate) {
+    query1.createdAt = { $gte: startDate, $lte: endDate };
+    query2.createdAt = { $gte: startDate, $lte: endDate };
+}
+
+const receipts1 = await Receipt.find(query1).select('_id');
+const receipts2 = await Receipt.find(query2).select('_id');
+
+const ids1 = new Set(receipts1.map(r => r._id.toString()));
+const ids2 = new Set(receipts2.map(r => r._id.toString()));
+
+const intersectionIds = [...ids1,...ids2];
+const receipts = await Receipt.find({ _id: { $in: intersectionIds } })
+    .sort({ sortorder: -1 })
+    .populate({ path: "partyId", model: "customer" })
+    .populate({ path: "userId", model: "user" })
+    .populate({ path: "expenseId", model: "createAccount" })
+    .populate({ path: "transporterId", model: "transporter" });
+console.log("recietpts",receipts)
+if (receipts.length === 0) {
+    return res.status(404).json({ message: "Not Found", status: false });
+}
+
+return res.status(200).json({ CashBook: receipts, status: true });
 
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
 export const BankAccountReport = async (req, res, next) => {
     try {
         const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
