@@ -5,8 +5,8 @@ import { User } from "../model/user.model.js";
 
 export const CreatRole1 = async (req, res, next) => {
     try {
-        for(let item of req.body.Role){
-           await Role.create(item)
+        for (let item of req.body.Role) {
+            await Role.create(item)
         }
         return res.status(200).json({ message: "Role Creation successful", status: true });
     } catch (err) {
@@ -81,7 +81,7 @@ export const updatedRole = async (req, res, next) => {
 
 // export const saveRole = async (req, res, next) => {
 //     try {
-    
+
 //         for (let roleData of req.body.Roles) {
 //             console.log("roleData",roleData)
 //             const existingRole = await Role.findOne({ roleName: roleData?.role?.roleName, database: roleData?.role?.database });
@@ -101,37 +101,37 @@ export const updatedRole = async (req, res, next) => {
 
 export const saveRole = async (req, res, next) => {
     try {
-      if(req.body.Roles&&req.body.Roles.length>0){
-        req.body.Roles=JSON.parse(req.body.Roles)
-      }
-      
-      if (!req.body.Roles || !Array.isArray(req.body.Roles)) {
-        return res.status(400).json({ error: "Roles array is missing or invalid.", status: false });
-      }
-  
-      for (let roleData of req.body.Roles) {
-        if (!roleData.role || !roleData.role.roleName || !roleData.role.database) {
-          return res.status(400).json({ error: "Role data is missing required fields.", status: false });
+        if (req.body.Roles && req.body.Roles.length > 0) {
+            req.body.Roles = JSON.parse(req.body.Roles)
         }
-  
-        const existingRole = await Role.findOne({
-          roleName: roleData.role.roleName,
-          database: roleData.role.database,
-        });
-  
-        if (existingRole) {
-        //   console.log(`Role with name ${roleData.role.roleName} already exists.`);
-        } else {
-          const newRole = await Role.create(roleData.role);
+
+        if (!req.body.Roles || !Array.isArray(req.body.Roles)) {
+            return res.status(400).json({ error: "Roles array is missing or invalid.", status: false });
         }
-      }
-      return res.status(200).json({ message: "Role assignment successful!", status: true });
+
+        for (let roleData of req.body.Roles) {
+            if (!roleData.role || !roleData.role.roleName || !roleData.role.database) {
+                return res.status(400).json({ error: "Role data is missing required fields.", status: false });
+            }
+
+            const existingRole = await Role.findOne({
+                roleName: roleData.role.roleName,
+                database: roleData.role.database,
+            });
+
+            if (existingRole) {
+                //   console.log(`Role with name ${roleData.role.roleName} already exists.`);
+            } else {
+                const newRole = await Role.create(roleData.role);
+            }
+        }
+        return res.status(200).json({ message: "Role assignment successful!", status: true });
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Internal Server Error", status: false });
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
     }
-  };
-  
+};
+
 export const updatedRoleGloble = async (req, res, next) => {
     try {
         const roles = await Role.find({ roleName: req.body.roleName }).sort({ sortorder: -1 })
@@ -200,34 +200,44 @@ export const viewTab = async (req, res, next) => {
 }
 export const saveDashboardTabs = async (req, res, next) => {
     try {
-        console.log("req.body",req.body)
-        const user = await DashboardTab.findOne({ userId: req.body.userId.toString() })
+        const user = await DashboardTab.findOne({ userId: req.body.userId.toString() });
+
         if (user) {
-            console.log("user",user)
-          for (let item of req.body.tab) {
-    const existingId = user.tab.find((items) => items.key === item.key);
-    if (existingId) {
-        if (item.value !== undefined) existingId.value = item.value;
-        if (item.Name !== undefined) existingId.Name = item.Name;
-        if (item.show !== undefined) existingId.show = item.show;
-    } else {
-        user.tab.push(item);
-    }
-}
-await user.save();
+            for (let item of req.body.tab) {
+                const existingTab = user.tab.find(t => t.key === item.key);
+                if (existingTab) {
+                    if (item.Name !== undefined) existingTab.Name = item.Name;
+                    if (item.show !== undefined) existingTab.show = item.show;
+
+                    if (Array.isArray(item.value)) {
+                        for (let innerItem of item.value) {
+                            const existingValue = existingTab.value.find(v => v.key === innerItem.key);
+                            if (existingValue) {
+                                if (innerItem.Name !== undefined) existingValue.Name = innerItem.Name;
+                                if (innerItem.show !== undefined) existingValue.show = innerItem.show;
+                            } else {
+                                existingTab.value.push(innerItem);
+                            }
+                        }
+                    }
+                } else {
+                    user.tab.push(item);
+                }
+            }
 
             await user.save();
-            return res.status(200).json({ message: "data save successfull",tab:user, status: true })
+            return res.status(200).json({ message: "data save successful", tab: user, status: true });
+
         } else {
-            const tab = await DashboardTab.create(req.body)
-            return res.status(200).json({ message: "data save successfull", tab:tab,status: true })
+            const tab = await DashboardTab.create(req.body);
+            return res.status(200).json({ message: "data save successful", tab: tab, status: true });
         }
-    }
-    catch (err) {
-        console.log(err);
-        return res.status(500).json({ error: "Internal Server Error", status: false })
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
 export const viewDashboardTab = async (req, res, next) => {
     try {
         const tab = await DashboardTab.findOne({ userId: req.params.id }).sort({ sortorder: -1 })
