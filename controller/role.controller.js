@@ -200,10 +200,13 @@ export const viewTab = async (req, res, next) => {
 }
 export const saveDashboardTabs = async (req, res, next) => {
     try {
+        console.log("req.body",req.body)
         const user = await DashboardTab.findOne({ userId: req.body.userId.toString() })
         if (user) {
+            console.log("user",user)
             for (let item of req.body.tab) {
                 const existingId = await user.tab.find((items) => items.key === item.key)
+                console.log("existingId",existingId)
                 if (existingId) {
                     // existingId.key = item.key || existingId.key;
                     existingId.value = item.value || existingId.value;
