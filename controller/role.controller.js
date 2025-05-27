@@ -211,16 +211,18 @@ export const saveDashboardTabs = async (req, res, next) => {
                     // existingId.key = item.key || existingId.key;
                     existingId.value = item.value || existingId.value;
                     existingId.Name = item.Name || existingId.Name;
+                    console.log("show",item.show,existingId.show)
                     existingId.show = item.show || existingId.show;
+                    console.log("existingId.show",existingId.show)
                 } else {
                     user.tab.push(item)
                 }
             }
             await user.save();
-            return res.status(200).json({ message: "data save successfull", status: true })
+            return res.status(200).json({ message: "data save successfull",tab:user, status: true })
         } else {
             const tab = await DashboardTab.create(req.body)
-            return res.status(200).json({ message: "data save successfull", status: true })
+            return res.status(200).json({ message: "data save successfull", tab:tab,status: true })
         }
     }
     catch (err) {
