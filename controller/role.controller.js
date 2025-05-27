@@ -204,19 +204,18 @@ export const saveDashboardTabs = async (req, res, next) => {
         const user = await DashboardTab.findOne({ userId: req.body.userId.toString() })
         if (user) {
             console.log("user",user)
-            for (let item of req.body.tab) {
-                const existingId = await user.tab.filter((items) => items.key === item.key)
-                console.log("existingId",existingId)
-                if (existingId) {
-                    // existingId.key = item.key || existingId.key;
-                    existingId.value = item.value || existingId.value;
-                    existingId.Name = item.Name || existingId.Name;
-                    existingId.show = item.show || existingId.show;
-                    console.log("existingId.show",existingId.show)
-                } else {
-                    user.tab.push(item)
-                }
-            }
+          for (let item of req.body.tab) {
+    const existingId = user.tab.find((items) => items.key === item.key);
+    if (existingId) {
+        if (item.value !== undefined) existingId.value = item.value;
+        if (item.Name !== undefined) existingId.Name = item.Name;
+        if (item.show !== undefined) existingId.show = item.show;
+    } else {
+        user.tab.push(item);
+    }
+}
+await user.save();
+
             await user.save();
             return res.status(200).json({ message: "data save successfull",tab:user, status: true })
         } else {
