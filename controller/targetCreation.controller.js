@@ -143,7 +143,7 @@ export const SaveTargetCreation = async (req, res) => {
             products,
             grandTotal
         };
-        console.log("targetData", targetData)
+        // console.log("targetData", targetData)
         const target = await TargetCreation.create(targetData);
         // SuperAdmin logic
         const checkUser = await User.findById(user.created_by).populate("rolename");
@@ -176,7 +176,7 @@ export const SaveTargetCreation = async (req, res) => {
                 database: user.database
             };
             await TargetCreation.create(newPayload);
-            console.log("target", newPayload)
+            // console.log("target", newPayload)
             await TargetAssignUser(user.created_by, grandTotal);
         }
 
