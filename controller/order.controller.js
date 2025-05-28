@@ -24,6 +24,7 @@ import { Stock } from "../model/stock.js";
 import { CompanyDetails } from "../model/companyDetails.model.js";
 // import transporterss from "../service/email.js";
 import nodemailer from "nodemailer";
+import { Role } from "../model/role.model.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,16 +53,16 @@ export const createOrder = async (req, res, next) => {
             //         paymentStatus: false
             //     }).sort({ date: 1, sortorder: -1 });
 
-                // if (existOrders.length > 0) {
-                //     const due = existOrders[0];
-                //     const lastOrderDate = due?.date;
-                //     const currentDate = new Date();
-                //     const timeDifference = currentDate - lastOrderDate;
-                //     const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-                //     if (days >= party.lockInTime) {
-                //         return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
-                //     }
-                // }
+            // if (existOrders.length > 0) {
+            //     const due = existOrders[0];
+            //     const lastOrderDate = due?.date;
+            //     const currentDate = new Date();
+            //     const timeDifference = currentDate - lastOrderDate;
+            //     const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            //     if (days >= party.lockInTime) {
+            //         return res.status(400).json({ message: "First, you need to pay the previous payment", status: false });
+            //     }
+            // }
             // }
 
             const orderNo = await generateOrderNo(user.database);
@@ -953,6 +954,7 @@ export const SalesOrderCalculate111 = async (req, res, next) => {
 }
 export const SalesOrderCalculate = async (req, res, next) => {
     try {
+        const { id, database } = req.params;
         let salesOrders = {
             totalAmount: 0,
             lastMonthAmount: 0,
@@ -960,18 +962,60 @@ export const SalesOrderCalculate = async (req, res, next) => {
             totalPending: 0,
             totalDelivery: 0
         };
+
+        // Find user or customer
+        const user = await User.findById(id).populate({ path: "rolename", model: "role" });
+        const customer = await Customer.findById(id).populate({ path: "rolename", model: "role" });
+
+        if (!user && !customer) {
+            return res.status(404).json({ message: "User or Customer Not Found", status: false });
+        }
+
+        const existingUser = user || customer;
+        const roleName = existingUser?.rolename?.roleName;
+
+        // Time boundaries for the last month
         const previousMonthStart = moment().subtract(1, 'months').startOf('month').toDate();
         const previousMonthEnd = moment().subtract(1, 'months').endOf('month').toDate();
-        const orders = await CreateOrder.find({ database: req.params.database }).sort({ sortorder: -1 });
-        if (orders.length === 0) {
-            return res.status(404).json({ message: "Sales Order Not Found", status: false });
+
+        // Fetch all orders for the given database
+        let allOrders = await CreateOrder.find({ database }).sort({ sortorder: -1 });
+
+        // Filter orders based on role
+        let filteredOrders = [];
+
+        if (roleName === "SuperAdmin" || roleName === "Sales Manager") {
+            filteredOrders = allOrders;
+        } else if (roleName === "Sales Person") {
+            // Match orders by userId
+            filteredOrders = allOrders.filter(order => 
+                order.userId?.toString() === existingUser._id.toString()
+            );
+        } else if (roleName === "Customer") {
+            // Match orders by partyId
+            filteredOrders = allOrders.filter(order => 
+                order.partyId?.toString() === existingUser._id.toString()
+            );
+        } else {
+            return res.status(403).json({ message: "Unauthorized Role", status: false });
         }
+
+        if (filteredOrders.length === 0) {
+            return res.status(404).json({ message: "No orders found for the user", status: false });
+        }
+
+        // Calculation
         let completedOrdersLastMonth = [];
-        const lastMonth = orders[0].date.getMonth() + 1
-        orders.forEach(order => {
+        const distinctMonths = new Set();
+
+        for (let order of filteredOrders) {
+            const orderDate = moment(order.date);
+            distinctMonths.add(orderDate.format('YYYY-MM'));
+
             if (order.status.toLowerCase() === "completed") {
                 salesOrders.totalAmount += order.grandTotal;
-                if (moment(order.date).isBetween(previousMonthStart, previousMonthEnd, null, '[]')) {
+
+                if (orderDate.isBetween(previousMonthStart, previousMonthEnd, null, '[]')) {
                     completedOrdersLastMonth.push(order);
                 }
             } else if (order.status.toLowerCase() === "pending") {
@@ -979,17 +1023,23 @@ export const SalesOrderCalculate = async (req, res, next) => {
             } else if (order.status.toLowerCase() === "pending for delivery") {
                 salesOrders.totalDelivery++;
             }
-        });
+        }
+
         completedOrdersLastMonth.forEach(order => {
             salesOrders.lastMonthAmount += order.grandTotal;
         });
-        salesOrders.averageAmount = (salesOrders.totalAmount / lastMonth).toFixed(2);
+
+        // Avoid division by zero
+        const totalMonths = distinctMonths.size || 1;
+        salesOrders.averageAmount = (salesOrders.totalAmount / totalMonths).toFixed(2);
+
         return res.status(200).json({ SalesCalculation: salesOrders, status: true });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
 
 // For DashBoard
 export const DebitorCalculate = async (req, res, next) => {
@@ -1394,10 +1444,10 @@ export const updateCNDetails = async (req, res, next) => {
         if (req.file && req.file.filename) {
             order.CNImage = req.file.filename;
         }
-        const { CNNumber, CNDate,CNQty } = req.body;
+        const { CNNumber, CNDate, CNQty } = req.body;
         order.CNNumber = CNNumber;
         order.CNDate = CNDate;
-        order.CNQty=CNQty;
+        order.CNQty = CNQty;
         await order.save();
         res.status(200).json({ message: "Data Updated", status: true })
     } catch (error) {

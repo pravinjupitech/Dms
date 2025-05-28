@@ -39,7 +39,7 @@ router.delete("/delete-multiple",deletedSalesOrderMultiple)
 router.get("/party-qty/:partyId/:productId", PartyPurchaseqty)
 
 // --------------------------------------------------------------
-router.get("/sales-calculated/:database", SalesOrderCalculate)
+router.get("/sales-calculated/:database/:id", SalesOrderCalculate)
 router.get("/debitor-calculate/:database", DebitorCalculate)
 router.get("/testing/:database", CheckPartyPayment)
 router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
