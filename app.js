@@ -73,6 +73,7 @@ import RawProductTargetRouter from "./routes/rawProductTarget.route.js"
 import EmergencyInvoiceRouter from "./routes/emergencyInvoice.route.js"
 import DynamicUnitRouter from "./routes/dynamicUnit.route.js"
 import AccountRouter from "./routes/accounts.route.js"
+import PincodeRouter from "./routes/pincode.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -169,6 +170,7 @@ app.use("/product-target", RawProductTargetRouter)
 app.use("/emergency-invoice", EmergencyInvoiceRouter)
 app.use("/units", DynamicUnitRouter)
 app.use("/accounts", AccountRouter)
+app.use("/pincode",PincodeRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
