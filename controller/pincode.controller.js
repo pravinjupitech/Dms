@@ -79,3 +79,40 @@ export const updatePincode = async (req, res, next) => {
         });
     }
 }
+
+export const deletePindcode = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const pincode = await Pincode.findByIdAndDelete(id)
+        return pincode ? res.status(200).json({ message: "Data Deleted", status: true }) : res.status(404).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+}
+
+export const bulkDeletePincode = async (req, res, next) => {
+    try {
+        const { pinCodeList } = req.body;
+        if (pinCodeList.length > 0) {
+            for (let item of pinCodeList) {
+                await Pincode.findByIdAndDelete(item.id);
+
+            }
+            return res.status(200).json({ message: "Data Deleted", status: true })
+        } else {
+            return res.status(404).json({ message: "Invalid Data", status: false })
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+}
