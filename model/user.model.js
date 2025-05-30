@@ -240,6 +240,9 @@ const UserSchema = new mongoose.Schema({
   OpeningBalance: {
     type: String
   },
+  serviceArea: {
+    type: Array
+  },
   qr_code: {
     type: String
   },
