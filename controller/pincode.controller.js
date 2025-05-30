@@ -101,7 +101,6 @@ export const bulkDeletePincode = async (req, res, next) => {
         if (pinCodeList.length > 0) {
             for (let item of pinCodeList) {
                 await Pincode.findByIdAndDelete(item.id);
-
             }
             return res.status(200).json({ message: "Data Deleted", status: true })
         } else {

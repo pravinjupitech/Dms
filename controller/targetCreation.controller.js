@@ -111,7 +111,6 @@ export const SaveTargetCreation = async (req, res) => {
             return res.status(400).json({ message: "User Not Found" });
         }
 
-        // Filter rows with valid qtyAssign
         const products = rows
             .filter(row => row.qtyAssign != null && Number(row.qtyAssign) > 0)
             .map(row =>
@@ -145,13 +144,11 @@ export const SaveTargetCreation = async (req, res) => {
         };
         // console.log("targetData", targetData)
         const target = await TargetCreation.create(targetData);
-        // SuperAdmin logic
         const checkUser = await User.findById(user.created_by).populate("rolename");
         if (checkUser?.rolename?.roleName === "SuperAdmin") {
             return res.status(200).json({ message: "Target saved successfully", status: true });
         }
 
-        // Merge with last target if exists
         const existingTargets = await TargetCreation.find({ userId: user.created_by }).sort({ sortorder: -1 });
         const lastTarget = existingTargets[existingTargets.length - 1];
 
@@ -1864,7 +1861,7 @@ export const ViewPartyTarget = async (req, res, next) => {
 //     }
 // }
 
-// For Dashboar
+
 export const targetCalculation = async (req, res, next) => {
     try {
         let Target = {
@@ -1875,57 +1872,86 @@ export const targetCalculation = async (req, res, next) => {
             averageAchievement: 0,
             averagePending: 0
         };
-        let lastMonthCount
-        const startOfDay = moment().startOf('month').toDate();
-        const endOfDay = moment().endOf('month').toDate();
-        const Achievement = await SalesPersonAchievement(req.params.database)
-        if (Achievement.length === 0) {
-            return res.status(404).json({ message: "achievement not found", status: false })
+
+        const { id, database } = req.params;
+        let lastMonthCount = 1;
+
+        const startOfMonth = moment().startOf('month').toDate();
+        const endOfMonth = moment().endOf('month').toDate();
+
+        // Determine if ID belongs to User
+        const user = await User.findOne({ sId: id, database });
+        const customer = !user ? await Customer.findOne({ sId: id, database }) : null;
+        let Achievement = [];
+
+        if (user) {
+            const role = await Role.findOne({ _id: user.rolename });
+            if (!role) {
+                return res.status(404).json({ message: "Role not found", status: false });
+            }
+
+            const roleName = role.roleName;
+
+            if (roleName === "SuperAdmin" || roleName === "Sales Manager") {
+                Achievement = await SalesPersonAchievement(database);
+            }
+            else if (roleName === "Sales Person") {
+                Achievement = await SalesPersonAchievement(database, user.sId);
+            } else {
+                return res.status(403).json({ message: "Access denied for this role", status: false });
+            }
+
+        } else if (customer) {
+            Achievement = await CustomerTargetAchievement(database, customer.sId, customer._id);
+        } else {
+            return res.status(404).json({ message: "User or Customer not found", status: false });
         }
+
+        if (Achievement.length === 0) {
+            return res.status(404).json({ message: "Achievement not found", status: false });
+        }
+
         Achievement[0].achievements.forEach(item => {
-            Target.currentMonthAchieve += item.actualTotalPrice
-            Target.currentMonthTarget += item.targetTotalPrice
-            lastMonthCount = (1 < item.lastMonthCount) ? item.lastMonthCount : 1
-        })
+            Target.currentMonthAchieve += item.actualTotalPrice;
+            Target.currentMonthTarget += item.targetTotalPrice;
+            lastMonthCount = item.lastMonthCount > 1 ? item.lastMonthCount : 1;
+        });
+
         Target.targerPending = Target.currentMonthTarget - Target.currentMonthAchieve;
         Target.averageTarget = Target.currentMonthTarget / lastMonthCount;
         Target.averageAchievement = Target.currentMonthAchieve / lastMonthCount;
         Target.averagePending = Target.averageTarget - Target.averageAchievement;
-        res.status(200).json({ Target, status: true })
-    }
-    catch (err) {
-        console.log(err)
-        return res.status(500).json({ error: "Internal Server Error", status: false })
-    }
-}
 
-// For Dashboard
-export const SalesPersonAchievement = async (database) => {
+        res.status(200).json({ Target, status: true });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
+
+
+export const SalesPersonAchievement = async (database, salesPersonId = null) => {
     try {
-        // const { database } = req.params;
         const role = await Role.findOne({ database, roleName: "Sales Person" });
-        if (!role) {
-            // return res.status(404).json({ message: "Role Not Found", status: false });
-        }
-        const users = await User.find({ rolename: role._id, database, status: "Active" });
-        if (users.length === 0) {
-            // return res.status(404).json({ message: "No Active Sales Person Found", status: false });
-        }
-        // const { startDate, endDate } = req.body;
-        // const start = startDate ? new Date(startDate) : null;
-        // const end = endDate ? new Date(endDate) : null;
+        if (!role) return [];
+
+        const query = { rolename: role._id, database, status: "Active" };
+        if (salesPersonId) query.sId = salesPersonId;
+
+        const users = await User.find(query);
+        if (!users.length) return [];
+
         const salesPersonPromises = users.map(async (user) => {
-            console.log("user",user)
             const targetQuery = { salesPersonId: user.sId };
-            // if (start && end) {
-            //     targetQuery.createdAt = { $gte: start, $lte: end };
-            // }
-            const targetss = await TargetCreation.find(targetQuery).populate({ path: "userId", model: "user" }).sort({ sortorder: -1 });
-            if (targetss.length === 0) return null;
-            const countMonth = await TargetCreation.find({ salesPersonId: user.sId})
-            const targets = targetss[targetss.length - 1];
-            const orders = await CreateOrder.find({ salesPersonId: targets.sId });
-            if (!orders || orders.length === 0) return null;
+            const targetss = await TargetCreation.find(targetQuery).sort({ sortorder: -1 });
+            if (!targetss.length) return null;
+
+            const countMonth = await TargetCreation.find({ salesPersonId: user.sId });
+            const latestTarget = targetss[targetss.length - 1];
+
+            const orders = await CreateOrder.find({ salesPersonId: latestTarget.sId });
+            if (!orders.length) return null;
+
             const allOrderItems = orders.flatMap(order => order.orderItems);
             const aggregatedOrders = allOrderItems.reduce((acc, item) => {
                 const existingItem = acc.find(accItem => accItem.productId.toString() === item.productId._id.toString());
@@ -1941,51 +1967,219 @@ export const SalesPersonAchievement = async (database) => {
                 }
                 return acc;
             }, []);
-            const productIds = aggregatedOrders.map(order => order.productId);
+
+            const productIds = aggregatedOrders.map(o => o.productId);
             const products = await Product.find({ _id: { $in: productIds } });
-            const productDetailsMap = products.reduce((acc, product) => {
-                acc[product._id.toString()] = product;
-                return acc;
-            }, {});
-            const achievements = targets.products.map(targetProduct => {
-                const matchingOrders = aggregatedOrders.filter(order => order.productId === targetProduct.productId);
-                if (matchingOrders.length > 0) {
-                    const actualQuantity = matchingOrders.reduce((total, order) => total + order.qty, 0);
-                    const actualTotalPrice = matchingOrders.reduce((total, order) => total + order.qty * order.price, 0);
-                    const productDetails = productDetailsMap[targetProduct.productId.toString()] || {};
-                    return {
-                        User: user,
-                        productId: productDetails,
-                        targetQuantity: targetProduct.qtyAssign,
-                        actualQuantity: actualQuantity,
-                        achievementPercentage: (actualQuantity / targetProduct.qtyAssign) * 100,
-                        productPrice: targetProduct.price,
-                        targetTotalPrice: (targetProduct.qtyAssign * productDetails.Product_MRP),// targetProduct.totalPrice,
-                        actualTotalPrice: (actualQuantity * productDetails.Product_MRP),  //actualTotalPrice
-                        lastMonthCount: countMonth.length
-                    };
-                }
-                return null;
+            const productMap = Object.fromEntries(products.map(p => [p._id.toString(), p]));
+
+            const achievements = latestTarget.products.map(tp => {
+                const matchOrders = aggregatedOrders.filter(o => o.productId === tp.productId);
+                if (!matchOrders.length) return null;
+
+                const actualQty = matchOrders.reduce((sum, o) => sum + o.qty, 0);
+                const actualTotalPrice = matchOrders.reduce((sum, o) => sum + o.qty * o.price, 0);
+                const prod = productMap[tp.productId] || {};
+
+                return {
+                    User: user,
+                    productId: prod,
+                    targetQuantity: tp.qtyAssign,
+                    actualQuantity: actualQty,
+                    achievementPercentage: (actualQty / tp.qtyAssign) * 100,
+                    productPrice: tp.price,
+                    targetTotalPrice: tp.qtyAssign * (prod.Product_MRP || 0),
+                    actualTotalPrice: actualQty * (prod.Product_MRP || 0),
+                    lastMonthCount: countMonth.length
+                };
             }).filter(Boolean);
 
             return { achievements };
         });
-        const salesPerson = (await Promise.all(salesPersonPromises)).filter(Boolean);
-        // const salesTarget = salesPerson.map((salesPerson) => {
-        //     if (Array.isArray(salesPerson.achievements) && salesPerson.achievements.length === 1) {
-        //         salesPerson.achievements = salesPerson.achievements[0];
-        //     } else {
-        //         salesPerson.achievements = salesPerson.achievements[0];
 
-        //     }
-        //     return salesPerson;
-        // });
-        // return res.status(200).json({ salesTarget, status: true });
-        return salesPerson
-    } catch (error) {
-        console.error('Error calculating achievements:', error);
+        return (await Promise.all(salesPersonPromises)).filter(Boolean);
+
+    } catch (err) {
+        console.error("Error calculating SalesPersonAchievement:", err);
+        return [];
     }
 };
+
+export const CustomerTargetAchievement = async (database, partyId, customerId) => {
+    try {
+        const targets = await TargetCreation.find({ partyId, database });
+        if (!targets.length) return [];
+const latestTarget = targets[targets.length - 1];
+        const countMonth = targets.length;
+        const orders = await CreateOrder.find({ partyId:customerId });
+        if (!orders.length) return [];
+        const allOrderItems = orders.flatMap(o => o.orderItems);
+        const aggregatedOrders = allOrderItems.reduce((acc, item) => {
+            const existing = acc.find(p => p.productId.toString() === item.productId._id.toString());
+            if (existing) {
+                existing.qty += item.qty;
+                existing.price = item.price;
+            } else {
+                acc.push({ productId: item.productId._id.toString(), qty: item.qty, price: item.price });
+            }
+            return acc;
+        }, []);
+
+        const productIds = aggregatedOrders.map(o => o.productId);
+        const products = await Product.find({ _id: { $in: productIds } });
+        const productMap = Object.fromEntries(products.map(p => [p._id.toString(), p]));
+
+        const achievements = latestTarget.products.map(tp => {
+            const matchOrders = aggregatedOrders.filter(o => o.productId === tp.productId);
+            if (!matchOrders.length) return null;
+
+            const actualQty = matchOrders.reduce((sum, o) => sum + o.qty, 0);
+            const actualTotalPrice = matchOrders.reduce((sum, o) => sum + o.qty * o.price, 0);
+            const prod = productMap[tp.productId] || {};
+
+            return {
+                productId: prod,
+                targetQuantity: tp.qtyAssign,
+                actualQuantity: actualQty,
+                achievementPercentage: (actualQty / tp.qtyAssign) * 100,
+                productPrice: tp.price,
+                targetTotalPrice: tp.qtyAssign * (prod.Product_MRP || 0),
+                actualTotalPrice: actualQty * (prod.Product_MRP || 0),
+                lastMonthCount: countMonth
+            };
+        }).filter(Boolean);
+
+        return [{ achievements }];
+    } catch (err) {
+        console.error("CustomerTargetAchievement error:", err);
+        return [];
+    }
+};
+
+// For Dashboar
+// export const targetCalculation = async (req, res, next) => {
+//     try {
+//         let Target = {
+//             currentMonthTarget: 0,
+//             currentMonthAchieve: 0,
+//             targerPending: 0,
+//             averageTarget: 0,
+//             averageAchievement: 0,
+//             averagePending: 0
+//         };
+//         const {id,database}=req.params
+//         let lastMonthCount
+//         const startOfDay = moment().startOf('month').toDate();
+//         const endOfDay = moment().endOf('month').toDate();
+//         const Achievement = await SalesPersonAchievement(database,id)
+//         if (Achievement.length === 0) {
+//             return res.status(404).json({ message: "achievement not found", status: false })
+//         }
+//         Achievement[0].achievements.forEach(item => {
+//             Target.currentMonthAchieve += item.actualTotalPrice
+//             Target.currentMonthTarget += item.targetTotalPrice
+//             lastMonthCount = (1 < item.lastMonthCount) ? item.lastMonthCount : 1
+//         })
+//         Target.targerPending = Target.currentMonthTarget - Target.currentMonthAchieve;
+//         Target.averageTarget = Target.currentMonthTarget / lastMonthCount;
+//         Target.averageAchievement = Target.currentMonthAchieve / lastMonthCount;
+//         Target.averagePending = Target.averageTarget - Target.averageAchievement;
+//         res.status(200).json({ Target, status: true })
+//     }
+//     catch (err) {
+//         console.log(err)
+//         return res.status(500).json({ error: "Internal Server Error", status: false })
+//     }
+// }
+
+// // For Dashboard
+// export const SalesPersonAchievement = async (database,id) => {
+//     try {
+//         // const { database } = req.params;
+//         const role = await Role.findOne({ database, roleName: "Sales Person" });
+//         if (!role) {
+//             // return res.status(404).json({ message: "Role Not Found", status: false });
+//         }
+//         const users = await User.find({ rolename: role._id, database, status: "Active" });
+//         if (users.length === 0) {
+//             // return res.status(404).json({ message: "No Active Sales Person Found", status: false });
+//         }
+//         // const { startDate, endDate } = req.body;
+//         // const start = startDate ? new Date(startDate) : null;
+//         // const end = endDate ? new Date(endDate) : null;
+//         const salesPersonPromises = users.map(async (user) => {
+//             console.log("user",user )
+//             const targetQuery = { salesPersonId: user.sId };
+//             // if (start && end) {
+//             //     targetQuery.createdAt = { $gte: start, $lte: end };
+//             // }
+//             const targetss = await TargetCreation.find(targetQuery).populate({ path: "userId", model: "user" }).sort({ sortorder: -1 });
+//             if (targetss.length === 0) return null;
+//             const countMonth = await TargetCreation.find({ salesPersonId: user.sId})
+//             const targets = targetss[targetss.length - 1];
+//             console.log("taragerts",countMonth,targets)
+//             const orders = await CreateOrder.find({ salesPersonId: targets.sId });
+//             // console.log("order",orders)
+//             if (!orders || orders.length === 0) return null;
+//             const allOrderItems = orders.flatMap(order => order.orderItems);
+//             const aggregatedOrders = allOrderItems.reduce((acc, item) => {
+//                 const existingItem = acc.find(accItem => accItem.productId.toString() === item.productId._id.toString());
+//                 if (existingItem) {
+//                     existingItem.qty += item.qty;
+//                     existingItem.price = item.price;
+//                 } else {
+//                     acc.push({
+//                         productId: item.productId._id.toString(),
+//                         qty: item.qty,
+//                         price: item.price,
+//                     });
+//                 }
+//                 return acc;
+//             }, []);
+//             const productIds = aggregatedOrders.map(order => order.productId);
+//             const products = await Product.find({ _id: { $in: productIds } });
+//             const productDetailsMap = products.reduce((acc, product) => {
+//                 acc[product._id.toString()] = product;
+//                 return acc;
+//             }, {});
+//             const achievements = targets.products.map(targetProduct => {
+//                 const matchingOrders = aggregatedOrders.filter(order => order.productId === targetProduct.productId);
+//                 if (matchingOrders.length > 0) {
+//                     const actualQuantity = matchingOrders.reduce((total, order) => total + order.qty, 0);
+//                     const actualTotalPrice = matchingOrders.reduce((total, order) => total + order.qty * order.price, 0);
+//                     const productDetails = productDetailsMap[targetProduct.productId.toString()] || {};
+//                     return {
+//                         User: user,
+//                         productId: productDetails,
+//                         targetQuantity: targetProduct.qtyAssign,
+//                         actualQuantity: actualQuantity,
+//                         achievementPercentage: (actualQuantity / targetProduct.qtyAssign) * 100,
+//                         productPrice: targetProduct.price,
+//                         targetTotalPrice: (targetProduct.qtyAssign * productDetails.Product_MRP),// targetProduct.totalPrice,
+//                         actualTotalPrice: (actualQuantity * productDetails.Product_MRP),  //actualTotalPrice
+//                         lastMonthCount: countMonth.length
+//                     };
+//                 }
+//                 return null;
+//             }).filter(Boolean);
+
+//             return { achievements };
+//         });
+//         const salesPerson = (await Promise.all(salesPersonPromises)).filter(Boolean);
+//         // const salesTarget = salesPerson.map((salesPerson) => {
+//         //     if (Array.isArray(salesPerson.achievements) && salesPerson.achievements.length === 1) {
+//         //         salesPerson.achievements = salesPerson.achievements[0];
+//         //     } else {
+//         //         salesPerson.achievements = salesPerson.achievements[0];
+
+//         //     }
+//         //     return salesPerson;
+//         // });
+//         // return res.status(200).json({ salesTarget, status: true });
+//         return salesPerson
+//     } catch (error) {
+//         console.error('Error calculating achievements:', error);
+//     }
+// };
 
 // All SalesPerson Achievement
 export const AllSalesPersonAchievement111 = async (req, res) => {

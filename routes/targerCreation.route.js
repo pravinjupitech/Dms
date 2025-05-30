@@ -29,6 +29,6 @@ router.post("/check/:id/:database", checkTarget)
 router.post("/customer-target",uploads.single('file'), SavePartyTarget)
 router.get("/view-customer-target/:database", ViewPartyTarget)
 
-router.get("/target-calculate/:database", targetCalculation)
+router.get("/target-calculate/:database/:id", targetCalculation)
 router.get("/all-salesperson-achievement/:database", AllSalesPersonAchievement)
 export default router;
