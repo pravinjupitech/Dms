@@ -241,7 +241,18 @@ const UserSchema = new mongoose.Schema({
     type: String
   },
   serviceArea: {
-    type: Array
+    state: {
+      type: String
+    },
+    district: {
+      type: String
+    },
+    city: {
+      type: String
+    },
+    pincode: {
+      type: String
+    },
   },
   qr_code: {
     type: String

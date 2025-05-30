@@ -55,6 +55,9 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.reference && req.body.reference.length > 0) {
       req.body.reference = await JSON.parse(req.body.reference);
     }
+    if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
+        req.body.serviceArea = await JSON.parse(req.body.serviceArea)
+      }
     if (req.body.subscriptionPlan) {
       const sub = await Subscription.findById(req.body.subscriptionPlan);
       if (sub) {
@@ -244,6 +247,9 @@ export const UpdateUser = async (req, res, next) => {
       }
       if (req.body.reference && req.body.reference?.length > 0) {
         req.body.reference = await JSON.parse(req.body.reference)
+      }
+      if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
+        req.body.serviceArea = await JSON.parse(req.body.serviceArea)
       }
       const updatedUser = req.body;
       const user = await User.findByIdAndUpdate(userId, updatedUser, { new: true });
