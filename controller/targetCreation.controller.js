@@ -1912,6 +1912,8 @@ export const targetCalculation = async (req, res, next) => {
         Achievement[0].achievements.forEach(item => {
             Target.currentMonthTarget += item.totalTarget;
             Target.currentMonthAchieve += item.totalAchieve;
+            Target.averageTarget += item.averageTarget;
+            Target.averageAchievement += item.averageAchieve;
             totalSalesPersons += 1;
         });
 
@@ -1919,8 +1921,8 @@ export const targetCalculation = async (req, res, next) => {
 
         lastMonthCount = totalSalesPersons || 1;
 
-        Target.averageTarget = Target.currentMonthTarget / lastMonthCount;
-        Target.averageAchievement = Target.currentMonthAchieve / lastMonthCount;
+        // Target.averageTarget = Target.currentMonthTarget / lastMonthCount;
+        // Target.averageAchievement = Target.currentMonthAchieve / lastMonthCount;
         Target.averagePending = Target.averageTarget - Target.averageAchievement>0?Target.averageTarget - Target.averageAchievement:0;
 
         res.status(200).json({ Target, status: true });
@@ -1929,6 +1931,8 @@ export const targetCalculation = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
+
 export const SalesPersonAchievement = async (database, salesPersonId = null, userId = null) => {
   try {
     const role = await Role.findOne({ database, roleName: "Sales Person" });
@@ -1944,56 +1948,97 @@ export const SalesPersonAchievement = async (database, salesPersonId = null, use
     const endOfMonth = moment().endOf('month').toDate();
     const currentMonthLabel = moment().format("MMM-YYYY");
 
-    const salesPersonPromises = users.map(async (user) => {
-      const targetQuery = { salesPersonId: user.sId, date: currentMonthLabel };
-      const targetss = await TargetCreation.find(targetQuery).sort({ sortorder: -1 });
-      if (!targetss.length) return null;
+ const salesPersonPromises = users.map(async (user) => {
+  const targetQuery = { salesPersonId: user.sId, date: currentMonthLabel };
+  const targetQuery1 = { salesPersonId: user.sId};
+  const currentMonthTargetss = await TargetCreation.find(targetQuery).sort({ sortorder: -1 });
+ const totalMonthsTargets = await TargetCreation.find(targetQuery1).sort({ sortorder: -1 });
+  const uniqueMonths = new Set(totalMonthsTargets.map(t => t.date));
+  const totalMonths = uniqueMonths.size;
+  const allTotalTarget=totalMonthsTargets.flatMap((item)=>item.products||[]);
+  const allTotalTargetss=allTotalTarget.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const allTarget = currentMonthTargetss.flatMap((item) => item.products || []);
+  const totalTarget = allTarget.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+const averageTarget=allTotalTargetss/totalMonths;
+  const CurrentMothOrders = await CreateOrder.find({
+    userId: user._id,
+    date: { $gte: startOfMonth, $lte: endOfMonth },
+    status: "completed"
+  });
 
-      const allTarget = targetss.flatMap((item) => item.products);
-      const totalTarget = allTarget.reduce((sum, o) => sum + o.totalPrice, 0);
+  const allOrderItems = CurrentMothOrders.flatMap(order => order.orderItems || []);
+  const aggregatedOrders = [];
 
-      const orders = await CreateOrder.find({
-        userId: user._id,
-        date: { $gte: startOfMonth, $lte: endOfMonth },
-        status: "completed"
-      });
+  for (const item of allOrderItems) {
+    const existingItem = aggregatedOrders.find(accItem =>
+      accItem.originalProductId === item.productId.toString()
+    );
 
-      if (!orders.length) return null;
-
-      const allOrderItems = orders.flatMap(order => order.orderItems);
-      const aggregatedOrders = [];
-
-      for (const item of allOrderItems) {
-        const existingItem = aggregatedOrders.find(accItem =>
-          accItem.originalProductId === item.productId.toString()
-        );
-
-        if (existingItem) {
-          existingItem.qty += item.qty;
-          existingItem.price = item.price;
-          existingItem.grandTotal += item.grandTotal;
-        } else {
-          const findProduct = await Product.findById(item.productId);
-          if (findProduct) {
-            const pId = `${findProduct.category}-${findProduct.SubCategory}-${findProduct.Product_Title}`;
-            aggregatedOrders.push({
-              productId: pId,
-              originalProductId: item.productId.toString(),
-              qty: item.qty,
-              price: item.price,
-              grandTotal: item.grandTotal
-            });
-          }
-        }
+    if (existingItem) {
+      existingItem.qty += item.qty;
+      existingItem.price = item.price;
+      existingItem.grandTotal += item.grandTotal;
+    } else {
+      const findProduct = await Product.findById(item.productId);
+      if (findProduct) {
+        const pId = `${findProduct.category}-${findProduct.SubCategory}-${findProduct.Product_Title}`;
+        aggregatedOrders.push({
+          productId: pId,
+          originalProductId: item.productId.toString(),
+          qty: item.qty,
+          price: item.price,
+          grandTotal: item.grandTotal
+        });
       }
+    }
+  }
 
-      const totalAchieve = aggregatedOrders.reduce((sum, o) => sum + o.grandTotal, 0);
+    const TotalMothOrders = await CreateOrder.find({
+    userId: user._id,
+    status: "completed"
+  });
+  const orderMonths = new Set(
+  TotalMothOrders.map(order => moment(order.date).format("MMM-YYYY"))
+);
 
-      return {
-        totalTarget,
-        totalAchieve,
-      };
-    });
+const totalOrderMonths = orderMonths.size;
+  const allTotalOrderItems = TotalMothOrders.flatMap(order => order.orderItems || []);
+  const aggregatedOrderss = [];
+
+  for (const item of allTotalOrderItems) {
+    const existingItem = aggregatedOrderss.find(accItem =>
+      accItem.originalProductId === item.productId.toString()
+    );
+
+    if (existingItem) {
+      existingItem.qty += item.qty;
+      existingItem.price = item.price;
+      existingItem.grandTotal += item.grandTotal;
+    } else {
+      const findProduct = await Product.findById(item.productId);
+      if (findProduct) {
+        const pId = `${findProduct.category}-${findProduct.SubCategory}-${findProduct.Product_Title}`;
+        aggregatedOrderss.push({
+          productId: pId,
+          originalProductId: item.productId.toString(),
+          qty: item.qty,
+          price: item.price,
+          grandTotal: item.grandTotal
+        });
+      }
+    }
+  }
+ const totalsAchieve = aggregatedOrderss.reduce((sum, o) => sum + o.grandTotal, 0);
+ const averageAchieve=totalsAchieve/(totalOrderMonths||1);
+  const totalAchieve = aggregatedOrders.reduce((sum, o) => sum + o.grandTotal, 0);
+  return {
+    totalTarget: totalTarget || 0,
+    totalAchieve: totalAchieve || 0,
+    averageTarget:averageTarget||0,
+    averageAchieve:averageAchieve||0,
+  };
+});
+
 
     const results = (await Promise.all(salesPersonPromises)).filter(Boolean);
 
@@ -2091,66 +2136,62 @@ export const SalesPersonAchievement = async (database, salesPersonId = null, use
 
 export const CustomerTargetAchievement = async (database, partyId, customerId) => {
   try {
-    const targets = await TargetCreation.find({ partyId, database });
+    const currentMonthLabel = moment().format("MMM-YYYY");
+    const startOfMonth = moment().startOf("month").toDate();
+    const endOfMonth = moment().endOf("month").toDate();
 
-    if (!targets.length) return [];
+    const allTargets = await TargetCreation.find({ partyId, database });
 
-    const uniqueMonths = [...new Set(targets.map(t => t.date))]; 
-    const countMonth = uniqueMonths.length;
+    const uniqueTargetMonths = new Set(allTargets.map(t => t.date));
+    const countTargetMonths = uniqueTargetMonths.size || 1;
 
-    let totalTarget = 0;
+    const allProducts = allTargets.flatMap(t => t.products || []);
+    const totalAllTargets = allProducts.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
+    const averageTarget = totalAllTargets / countTargetMonths;
 
-    targets.forEach(targetDoc => {
-      const productTargets = targetDoc.products || [];
-      totalTarget += productTargets.reduce((sum, prod) => sum + prod.totalPrice, 0);
-    });
+    const currentMonthTargets = allTargets.filter(t => t.date === currentMonthLabel);
+    const currentMonthProducts = currentMonthTargets.flatMap(t => t.products || []);
+    const totalTarget = currentMonthProducts.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
 
-    const orders = await CreateOrder.find({ partyId: customerId, status: "completed" });
-    if (!orders.length) return [];
+    const allOrders = await CreateOrder.find({ partyId: customerId, status: "completed", database });
 
-    const allOrderItems = orders.flatMap(o => o.orderItems);
+    const orderMonths = new Set(allOrders.map(o => moment(o.date).format("MMM-YYYY")));
+    const countOrderMonths = orderMonths.size || 1;
 
-    // Aggregate order items
-    const aggregatedOrders = allOrderItems.reduce((acc, item) => {
-      const existing = acc.find(p => p.productId.toString() === item.productId._id.toString());
-      if (existing) {
-        existing.qty += item.qty;
-        existing.price = item.price;
-        existing.total += item.qty * item.price;
-      } else {
-        acc.push({
-          productId: item.productId._id.toString(),
-          qty: item.qty,
-          price: item.price,
-          total: item.qty * item.price
-        });
-      }
-      return acc;
-    }, []);
+    const allOrderItems = allOrders.flatMap(o => o.orderItems || []);
+    const totalAllAchieve = allOrderItems.reduce((sum, i) => sum + (i.qty * i.price || 0), 0);
+    const averageAchieve = totalAllAchieve / countOrderMonths;
 
-    const totalAchieve = aggregatedOrders.reduce((sum, item) => sum + item.total, 0);
-    const targetPending = totalTarget - totalAchieve > 0 ? totalTarget - totalAchieve : 0;
-
-    const averageTarget = totalTarget / countMonth;
-    const averageAchieve = totalAchieve / countMonth;
-    const averagePending = averageTarget - averageAchieve > 0 ? averageTarget - averageAchieve : 0;
+    const currentMonthOrders = allOrders.filter(order =>
+      order.date >= startOfMonth && order.date <= endOfMonth
+    );
+    const currentOrderItems = currentMonthOrders.flatMap(o => o.orderItems || []);
+    const totalAchieve = currentOrderItems.reduce((sum, i) => sum + (i.qty * i.price || 0), 0);
 
     return [{
       achievements: [{
-        totalTarget,
-        totalAchieve,
-        targetPending,
-        averageTarget,
-        averageAchieve,
-        averagePending,
-        monthCount: countMonth
+        totalTarget: totalTarget || 0,
+        totalAchieve: totalAchieve || 0,
+        averageTarget: averageTarget || 0,
+        averageAchieve: averageAchieve || 0,
+        monthCount: countTargetMonths
       }]
     }];
   } catch (err) {
     console.error("CustomerTargetAchievement error:", err);
-    return [];
+    return [{
+      achievements: [{
+        totalTarget: 0,
+        totalAchieve: 0,
+        averageTarget: 0,
+        averageAchieve: 0,
+        monthCount: 0
+      }]
+    }];
   }
 };
+
+
 
 
 // For Dashboar
