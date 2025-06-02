@@ -201,6 +201,9 @@ type:String
     type: String,
     default: "false"
   },
+  group:{
+    type:String
+  },
   remark: [{
     remark:{
       type:String
