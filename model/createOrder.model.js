@@ -154,6 +154,24 @@ const createOrderSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    coolieAndCartage: {
+        type: Number
+    },
+    transportationCost: {
+        type: Number
+    },
+    labourCost: {
+        type: Number
+    },
+    localFreight: {
+        type: Number
+    },
+    miscellaneousCost: {
+        type: Number
+    },
+    tax: {
+        type: Number
+    },
     taxAmount: {
         type: Number,
         default: 0
