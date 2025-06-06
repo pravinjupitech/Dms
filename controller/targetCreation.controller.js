@@ -229,7 +229,6 @@ export const SaveTargetCreation = async (req, res) => {
 //     }
 // };
 
-
 export const DeleteTargetCreation = async (req, res, next) => {
     try {
         const target = await TargetCreation.findByIdAndDelete({ _id: req.params.id })
@@ -240,6 +239,8 @@ export const DeleteTargetCreation = async (req, res, next) => {
         return res.status(500).json({ error: "Internal server error", status: false });
     }
 }
+
+
 export const UpdateTargetCreation = async (req, res, next) => {
     try {
         const targetId = req.params.id;
@@ -257,6 +258,8 @@ export const UpdateTargetCreation = async (req, res, next) => {
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 };
+
+
 export const ViewTargetCreation = async (req, res, next) => {
     try {
         // const userId = req.params.id;
