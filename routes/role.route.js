@@ -1,9 +1,10 @@
 import express from "express";
-import { CreatRole, deleteRole, getRole, getRoleById, saveDashboardTabs, saveRole, saveTabs, updatedRole, updatedRoleGloble, viewDashboardTab, viewTab } from "../controller/role.controller.js";
+import { CreatRole, CreatRole1, deleteRole, getRole, getRoleById, saveDashboardTabs, saveRole, saveTabs, updatedRole, updatedRoleGloble, viewDashboardTab, viewTab } from "../controller/role.controller.js";
 
 const router = express.Router();
 
-router.post("/create-role", CreatRole);
+// router.post("/create-role", CreatRole);
+router.post("/create-role", CreatRole1);
 router.get("/get-role/:database", getRole);
 router.get("/get-role-by-id/:id", getRoleById)
 router.put("/update-role/:id", updatedRole)
