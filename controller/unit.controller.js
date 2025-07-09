@@ -34,6 +34,7 @@ export const ViewUnit = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
 export const ViewUnitById = async (req, res, next) => {
     try {
         let unit = await Unit.findById({ _id: req.params.id }).sort({ sortorder: -1 })
@@ -44,6 +45,7 @@ export const ViewUnitById = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
 export const DeleteUnit = async (req, res, next) => {
     try {
         const unit = await Unit.findById({ _id: req.params.id })

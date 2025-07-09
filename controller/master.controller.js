@@ -54,7 +54,7 @@ export const CreateSuperAdminRole = async (req, res, next) => {
 }
 export const getRole = async (req, res, next) => {
     try {
-        const roles = await Role.find({ createdBy: req.params.id, database: "" }).populate({ path: "createdBy", model: "user" });
+        const roles = await Role.find({ createdBy: req.params.id, database: "" })
         return res.status(200).json({ Role: roles, status: true });
     } catch (err) {
         console.error(err);

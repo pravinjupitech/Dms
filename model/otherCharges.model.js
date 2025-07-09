@@ -19,6 +19,9 @@ const OtherChargesSchema = new mongoose.Schema({
     value: {
         type: String
     },
+    discounttype: {
+        type: String
+    },
     status: {
         type: String,
         default: "Active"

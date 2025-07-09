@@ -304,6 +304,7 @@ export const SignIn = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 };
+
 export const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
   try {
@@ -727,7 +728,7 @@ export const assignUser = async (req, res, next) => {
         customer.database = manager.database;
         await customer.save();
       }
-    }
+    } 
     return res.status(200).json({ message: "Users assigned successfully", status: true });
   } catch (err) {
     console.log(err);
