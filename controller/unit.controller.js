@@ -77,5 +77,4 @@ export const UpdateUnit = async (req, res, next) => {
         console.error(err);
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
-    
 };
