@@ -222,6 +222,9 @@ const createOrderSchema = new mongoose.Schema({
     igstTaxType: {
         type: Number
     },
+    basicPrice:{
+        type:Number
+    },
     orderItems: [orderItemsSchema],
     gstDetails: [{
         hsn: {
@@ -312,6 +315,12 @@ const createOrderSchema = new mongoose.Schema({
             },
             disType: {
                 type: String
+            },
+            type:{
+                type:String
+            },
+            amount:{
+                type:String
             }
         }
     ],
