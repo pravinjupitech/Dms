@@ -29,6 +29,7 @@ export const ledgerSalesForDebit = async function ledger(body, particular) {
                 particular: part,
                 voucherType: part,
                 voucherNo: first.voucherNo + 1,
+                  invoiceId:body.invoiceId,
                 debit: debit,
                 ledgerType: "user",
                 date: body.date
@@ -44,6 +45,7 @@ export const ledgerSalesForDebit = async function ledger(body, particular) {
             reason: body.invoiceId || body.type,
             particular: part,
             voucherType: part,
+              invoiceId:body.invoiceId,
             voucherNo: 1,
             debit: debit,
             ledgerType: "user",
@@ -83,6 +85,7 @@ export const ledgerPartyForCredit = async function
                 particular: part,
                 voucherNo: first.voucherNo + 1,
                 voucherType: part,
+                  invoiceId:body.invoiceId,
                 credit: credit,
                 ledgerType: "party",
                 date: body.date
@@ -98,6 +101,7 @@ export const ledgerPartyForCredit = async function
             particular: part,
             voucherType: part,
             voucherNo: 1,
+              invoiceId:body.invoiceId,
             credit: credit,
             ledgerType: "party",
             date: body.date
@@ -124,6 +128,7 @@ export const ledgerPartyForDebit = async function ledger(body, particular) {
                 particular: part,
                 voucherType: part,
                 voucherNo: first.voucherNo + 1,
+                invoiceId:body.invoiceId,
                 debit: debit,
                 ledgerType: "party",
                 date: body.date
@@ -139,6 +144,7 @@ export const ledgerPartyForDebit = async function ledger(body, particular) {
             particular: part,
             voucherType: part,
             voucherNo: 1,
+            invoiceId:body.invoiceId,
             debit: debit,
             ledgerType: "party",
             date: body.date
@@ -181,6 +187,7 @@ export const ledgerSalesForCredit = async function ledger(body, particular) {
                 reason: body.type || body.invoiceId,
                 particular: part,
                 voucherType: part,
+                  invoiceId:body.invoiceId,
                 voucherNo: first.voucherNo + 1,
                 credit: credit,
                 ledgerType: "user",
@@ -196,6 +203,7 @@ export const ledgerSalesForCredit = async function ledger(body, particular) {
             reason: body.type || body.invoiceId,
             particular: part,
             voucherType: part,
+            invoiceId:body.invoiceId,
             voucherNo: 1,
             credit: credit,
             ledgerType: "user",
@@ -223,6 +231,7 @@ export const ledgerUserForCredit = async function ledger(body, particular) {
                 reason: body.invoiceId || body.type,
                 particular: part,
                 voucherNo: first.voucherNo + 1,
+                  invoiceId:body.invoiceId,
                 voucherType: part,
                 credit: credit,
                 ledgerType: "user",
@@ -238,6 +247,7 @@ export const ledgerUserForCredit = async function ledger(body, particular) {
             reason: body.invoiceId || body.type,
             particular: part,
             voucherType: part,
+              invoiceId:body.invoiceId,
             voucherNo: 1,
             credit: credit,
             ledgerType: "user",
@@ -264,6 +274,7 @@ export const ledgerUserForDebit = async function ledger(body, particular) {
                 reason: body.type || body.invoiceId,
                 particular: part,
                 voucherType: part,
+                  invoiceId:body.invoiceId,
                 voucherNo: first.voucherNo + 1,
                 debit: debit,
                 ledgerType: "user",
@@ -278,6 +289,7 @@ export const ledgerUserForDebit = async function ledger(body, particular) {
             userId: body.userId,
             reason: body.type || body.invoiceId,
             particular: part,
+              invoiceId:body.invoiceId,
             voucherType: part,
             voucherNo: 1,
             debit: debit,
@@ -306,6 +318,7 @@ export const ledgerExpensesForCredit = async function ledger(body, particular) {
                 particular: part,
                 voucherNo: first.voucherNo + 1,
                 voucherType: part,
+                  invoiceId:body.invoiceId,
                 credit: credit,
                 ledgerType: "expenses",
                 date: body.date
@@ -321,6 +334,7 @@ export const ledgerExpensesForCredit = async function ledger(body, particular) {
             particular: part,
             voucherType: part,
             voucherNo: 1,
+              invoiceId:body.invoiceId,
             credit: credit,
             ledgerType: "expenses",
             date: body.date
@@ -348,6 +362,7 @@ export const ledgerExpensesForDebit = async function ledger(body, particular) {
                 voucherType: part,
                 voucherNo: first.voucherNo + 1,
                 debit: debit,
+                  invoiceId:body.invoiceId,
                 ledgerType: "expenses",
                 date: body.date
             }
@@ -362,6 +377,7 @@ export const ledgerExpensesForDebit = async function ledger(body, particular) {
             particular: part,
             voucherType: part,
             voucherNo: 1,
+              invoiceId:body.invoiceId,
             debit: debit,
             ledgerType: "expenses",
             date: body.date
@@ -387,6 +403,7 @@ export const ledgerTransporterForCredit = async function ledger(body, particular
                 orderId: body._id.toString(),
                 reason: body.invoiceId || body.type,
                 particular: part,
+                  invoiceId:body.invoiceId,
                 voucherNo: first.voucherNo + 1,
                 voucherType: part,
                 credit: credit,
@@ -404,6 +421,7 @@ export const ledgerTransporterForCredit = async function ledger(body, particular
             particular: part,
             voucherType: part,
             voucherNo: 1,
+              invoiceId:body.invoiceId,
             credit: credit,
             ledgerType: "transporter",
             date: body.date
@@ -429,6 +447,7 @@ export const ledgerTransporterForDebit = async function ledger(body, particular)
                 reason: body.type || body.invoiceId,
                 particular: part,
                 voucherType: part,
+                  invoiceId:body.invoiceId,
                 voucherNo: first.voucherNo + 1,
                 debit: debit,
                 ledgerType: "transporter",
@@ -445,6 +464,7 @@ export const ledgerTransporterForDebit = async function ledger(body, particular)
             particular: part,
             voucherType: part,
             voucherNo: 1,
+              invoiceId:body.invoiceId,
             debit: debit,
             ledgerType: "transporter",
             date: body.date
