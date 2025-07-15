@@ -65,6 +65,9 @@ const LedgerSchema = new mongoose.Schema({
     ledgerType: {
         type: String
     },
+    invoiceId:{
+type:String
+    },
     particular: {
         type: String
     },
