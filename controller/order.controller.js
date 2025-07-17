@@ -988,12 +988,12 @@ export const SalesOrderCalculate = async (req, res, next) => {
             filteredOrders = allOrders;
         } else if (roleName === "Sales Person") {
             // Match orders by userId
-            filteredOrders = allOrders.filter(order => 
+            filteredOrders = allOrders.filter(order =>
                 order.userId?.toString() === existingUser._id.toString()
             );
         } else if (roleName === "Customer") {
             // Match orders by partyId
-            filteredOrders = allOrders.filter(order => 
+            filteredOrders = allOrders.filter(order =>
                 order.partyId?.toString() === existingUser._id.toString()
             );
         } else {
@@ -1460,3 +1460,13 @@ export const updateCNDetails = async (req, res, next) => {
     }
 }
 
+export const InvoiceIdFrom = async (req, res, next) => {
+    try {
+        const { database, invoiceId } = req.params;
+        const invoice = await CreateOrder.findOne({ database: database, invoiceId: invoiceId, status: "completed" })
+        return invoice ? res.status(200).json({ message: "Data Found", printData: invoice, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal Server Error", status: false })
+    }
+}

@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, invoicePartySend, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, invoicePartySend, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -45,4 +45,5 @@ router.get("/testing/:database", CheckPartyPayment)
 router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
 router.put("/update-arn/:id",updateOrderArn)
 router.put("/update-cndetails/:id",upload.single("CNImage"),updateCNDetails)
+router.get("/view-invoice-data/:database/:invoiceId",InvoiceIdFrom)
 export default router;
