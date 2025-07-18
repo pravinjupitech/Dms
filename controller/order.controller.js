@@ -1333,7 +1333,8 @@ export const invoicePartySend = async (req, res, next) => {
             appPassword,
             email
         } = req.body;
-
+        console.log("req.body",req.body)
+        console.log(email + "email ", appPassword + "  apppassword")
         const dynamicTransporter = nodemailer.createTransport({
             service: "gmail",
             host: "smtp.gmail.com",
@@ -1463,7 +1464,10 @@ export const updateCNDetails = async (req, res, next) => {
 export const InvoiceIdFrom = async (req, res, next) => {
     try {
         const { database, invoiceId } = req.params;
-        const invoice = await CreateOrder.findOne({ database: database, invoiceId: invoiceId, status: "completed" })
+        const invoice = await CreateOrder.findOne({ database: database, invoiceId: invoiceId, status: "completed" }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).populate({ path: "warehouseId", model: "warehouse" }).exec();
         return invoice ? res.status(200).json({ message: "Data Found", printData: invoice, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error);
