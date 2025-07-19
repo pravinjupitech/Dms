@@ -1307,7 +1307,7 @@ export const revertOutWordStock = async (orderItem, date) => {
         //       await stock.save();
         //       break;
         //     }
-        //   }      
+        //   }
     } catch (error) {
         console.log(error);
     }
@@ -1354,47 +1354,6 @@ export const invoicePartySend = async (req, res, next) => {
             },
             to: customer,
             subject: "Sales Invoice",
-            //     html: `
-            //   <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
-            //     <div style="margin:50px auto;width:70%;padding:20px 0">
-            //       <p style="font-size:1.5em; font-weight:500;">Hi ${partyName || "Customer"},</p>
-            //       <p>${title || "Thank you for your purchase. Please find your invoice details below."}</p>
-
-            //       <table style="width:100%;margin-top:20px;border-collapse:collapse">
-            //         <tr>
-            //           <td style="padding:8px;border:1px solid #eee;"><strong>Invoice ID:</strong></td>
-            //           <td style="padding:8px;border:1px solid #eee;">${invoiceId}</td>
-            //         </tr>
-            //         <tr>
-            //           <td style="padding:8px;border:1px solid #eee;"><strong>Date:</strong></td>
-            //           <td style="padding:8px;border:1px solid #eee;">${date}</td>
-            //         </tr>
-            //         <tr>
-            //           <td style="padding:8px;border:1px solid #eee;"><strong>Party Name:</strong></td>
-            //           <td style="padding:8px;border:1px solid #eee;">${partyName}</td>
-            //         </tr>
-            //         <tr>
-            //           <td style="padding:8px;border:1px solid #eee;"><strong>Address:</strong></td>
-            //           <td style="padding:8px;border:1px solid #eee;">${address}</td>
-            //         </tr>
-            //         <tr>
-            //           <td style="padding:8px;border:1px solid #eee;"><strong>Total Amount:</strong></td>
-            //           <td style="padding:8px;border:1px solid #eee;">₹ ${total}</td>
-            //         </tr>
-
-            //       </table>
-
-            //       <p style="margin-top:20px;">Please find your invoice also attached as a PDF document.</p>
-
-            //       <p style="font-size:0.9em;">Regards,<br />${superAdminName}</p>
-            //       <hr style="border:none;border-top:1px solid #eee" />
-            //       <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
-            //         <p>Your Brand Inc</p>
-            //         <p>1600 Amphitheatre Parkway</p>
-            //         <p>California</p>
-            //       </div>
-            //     </div>
-            //   </div>`,
             html: `
 <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
   <div style="margin:50px auto;width:70%;padding:20px 0">
