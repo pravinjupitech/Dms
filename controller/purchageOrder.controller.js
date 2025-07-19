@@ -289,7 +289,6 @@ export const updatePurchaseOrder = async (req, res, next) => {
         if (!order) {
             return res.status(404).json({ message: "Order not found", status: false });
         }
-
         const oldItems = order.orderItems || [];
         const newItems = updatedFields.orderItems || [];
         const oldMap = new Map(oldItems.map(item => [item.productId.toString(), item]));

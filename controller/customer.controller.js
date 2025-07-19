@@ -287,8 +287,8 @@ export const SignInWithMobile = async (req, res, next) => {
             $or: [
                 { mobileNumber: mobileNo },
                 { email: email }
-            ],
-            password: password
+            ]
+            // , password: password
         }).populate({ path: "rolename", model: "role" });
         if (!existingAccount) {
             return res.status(400).json({ message: "Incorrect mobile No.", status: false });
