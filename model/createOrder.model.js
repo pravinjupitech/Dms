@@ -23,6 +23,9 @@ const orderItemsSchema = new mongoose.Schema({
     totalPrice: {
         type: Number
     },
+    salePrice: {
+        type: Number
+    },
     sgstRate: {
         type: Number
     },
