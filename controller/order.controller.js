@@ -303,6 +303,7 @@ export const deleteSalesOrder = async (req, res, next) => {
 export const createOrderHistoryByPartyId = async (req, res, next) => {
     try {
         const orders = await CreateOrder.findById(req.params.id).populate({ path: 'orderItems.productId', model: 'product' }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).exec();
+        console.log("orderhistory",orders)
         if (!orders) {
             return res.status(404).json({ message: "No orders found for the user", status: false });
         }
