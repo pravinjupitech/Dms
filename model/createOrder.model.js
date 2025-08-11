@@ -225,8 +225,8 @@ const createOrderSchema = new mongoose.Schema({
     igstTaxType: {
         type: Number
     },
-    basicPrice:{
-        type:Number
+    basicPrice: {
+        type: Number
     },
     orderItems: [orderItemsSchema],
     gstDetails: [{
@@ -266,6 +266,7 @@ const createOrderSchema = new mongoose.Schema({
         withoutDiscountAmount: {
             type: Number,
         },
+        grandTotal: { type: Number },
         withDiscountAmount: {
             type: Number
         },
@@ -319,11 +320,11 @@ const createOrderSchema = new mongoose.Schema({
             disType: {
                 type: String
             },
-            type:{
-                type:String
+            type: {
+                type: String
             },
-            amount:{
-                type:String
+            amount: {
+                type: String
             }
         }
     ],
