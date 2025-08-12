@@ -266,7 +266,18 @@ const createOrderSchema = new mongoose.Schema({
         withoutDiscountAmount: {
             type: Number,
         },
-        grandTotal: { type: Number },
+        ChargesIgst: {
+            type: Number
+        },
+        ChargesSgst: {
+            type: Number
+        },
+        ChargesCgst: {
+            type: Number
+        },
+        grandTotal: {
+            type: Number
+        },
         withDiscountAmount: {
             type: Number
         },
