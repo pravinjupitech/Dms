@@ -219,6 +219,15 @@ const createOrderSchema = new mongoose.Schema({
     igstTotal: {
         type: Number
     },
+    ChargesIgst: {
+        type: Number
+    },
+    ChargesSgst: {
+        type: Number
+    },
+    ChargesCgst: {
+        type: Number
+    },
     discountAmount: {
         type: Number
     },
@@ -265,14 +274,6 @@ const createOrderSchema = new mongoose.Schema({
         },
         withoutDiscountAmount: {
             type: Number,
-        },
-        ChargesIgst: {
-            type: Number
-        },
-        ChargesSgst: {type: Number
-        },
-        ChargesCgst: {
-            type: Number
         },
         grandTotal: {
             type: Number
