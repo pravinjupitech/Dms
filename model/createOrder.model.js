@@ -269,8 +269,7 @@ const createOrderSchema = new mongoose.Schema({
         ChargesIgst: {
             type: Number
         },
-        ChargesSgst: {
-            type: Number
+        ChargesSgst: {type: Number
         },
         ChargesCgst: {
             type: Number
