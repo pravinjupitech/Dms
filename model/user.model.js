@@ -240,8 +240,8 @@ const UserSchema = new mongoose.Schema({
   OpeningBalance: {
     type: String
   },
-  service: {
-    state: {
+  service: [
+   { state: {
       type: String
     },
     district: {
@@ -252,8 +252,8 @@ const UserSchema = new mongoose.Schema({
     },
     pincode: {
       type: String
-    },
-  },
+    },}
+  ],
   qr_code: {
     type: String
   },
