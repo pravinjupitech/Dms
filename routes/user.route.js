@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, updatePassword, updatePlan, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
+import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, signInWithMob, updatePassword, updatePlan, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
 
 const router = express.Router();
 // const upload = multer({ dest: "public/Images" })
@@ -32,6 +32,7 @@ router.get("/delete-user/:id", DeleteUser);
 router.post("/update-user/:id", upload.any("files"), UpdateUser);
 
 router.post("/signin", SignIn);
+router.post("/sign-in-mob",signInWithMob)
 router.post("/verify-otp", verifyOTP)
 router.post("/edit-profile/:id", upload.single("file"), EditProfile);
 
