@@ -57,6 +57,7 @@ export const SaveUser = async (req, res, next) => {
     }
    if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
   req.body.service = await JSON.parse(req.body.serviceArea);
+  console.log("req.body.service",req.body.service,"   hy   ",req.body.serviceArea)
   delete req.body.serviceArea;
 }
 
@@ -106,6 +107,7 @@ export const SaveUser = async (req, res, next) => {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
     }
+    console.log("req.body",req.body)
     const user = await User.create(req.body);
     if (req.body.warehouse) {
       await assingWarehouse(user.warehouse, user._id);
