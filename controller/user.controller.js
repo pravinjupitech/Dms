@@ -55,11 +55,11 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.reference && req.body.reference.length > 0) {
       req.body.reference = await JSON.parse(req.body.reference);
     }
-   if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
-  req.body.service = await JSON.parse(req.body.serviceArea);
-  console.log("req.body.service",req.body.service,"   hy   ",req.body.serviceArea)
-  delete req.body.serviceArea;
-}
+    if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
+      req.body.service = await JSON.parse(req.body.serviceArea);
+      console.log("req.body.service", req.body.service, "   hy   ", req.body.serviceArea)
+      delete req.body.serviceArea;
+    }
 
     if (req.body.subscriptionPlan) {
       const sub = await Subscription.findById(req.body.subscriptionPlan);
@@ -107,7 +107,7 @@ export const SaveUser = async (req, res, next) => {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
     }
-    console.log("req.body",req.body)
+    console.log("req.body", req.body)
     const user = await User.create(req.body);
     if (req.body.warehouse) {
       await assingWarehouse(user.warehouse, user._id);
@@ -277,7 +277,7 @@ export const SignIn = async (req, res, next) => {
   try {
     const otp = Math.floor(1000 + Math.random() * 9000);
     const { email, password, latitude, longitude, currentAddress } = req.body;
-    let existingAccount = await User.findOne({ email }).populate({ path: "rolename", model: "role" }).populate({ path: "branch", model: "userBranch" }).populate({path:"created_by",model:"user"});
+    let existingAccount = await User.findOne({ email }).populate({ path: "rolename", model: "role" }).populate({ path: "branch", model: "userBranch" }).populate({ path: "created_by", model: "user" });
     let existingCustomer = await Customer.findOne({ email }).populate({ path: "rolename", model: "role" })
     if (!existingAccount && !existingCustomer) {
       return res.status(400).json({ message: "Incorrect email", status: false });
@@ -309,6 +309,22 @@ export const SignIn = async (req, res, next) => {
   }
 };
 
+export const signInWithMob = async (req, res, next) => {
+  try {
+    const { mobileNumber, password } = req.body;
+    const user = await User.findOne({ mobileNumber: mobileNumber, password: password, status: "Active" });
+    if (user) {
+      res.status(200).json({ message: "User Logged In ", user: { ...user.toObject(), password: undefined }, status: true })
+    } else {
+      return res.status(404).json({ message: "UnAuthorized User", status: false })
+    }
+
+  } catch (error) {
+    console.error("err", error);
+    return res.status(500).json({ message: "Internal server error", status: false });
+  }
+}
+
 export const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
   try {
@@ -334,19 +350,19 @@ export const EditProfile = async (req, res, next) => {
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
-     if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
-        let last4 = '';
-        let existName = req.body.firstName.split(" ");
-        let fname = existName[0];
-        if (req.body.Aadhar_No) {
-          const adhar = req.body.Aadhar_No.trim();
-          last4 = adhar.slice(-4);
-        } else if (req.body.Pan_No) {
-          const pan = req.body.Pan_No.trim();
-          last4 = pan.slice(-4);
-        }
-        req.body.sId = `${fname}${last4}`;
+    if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
+      let last4 = '';
+      let existName = req.body.firstName.split(" ");
+      let fname = existName[0];
+      if (req.body.Aadhar_No) {
+        const adhar = req.body.Aadhar_No.trim();
+        last4 = adhar.slice(-4);
+      } else if (req.body.Pan_No) {
+        const pan = req.body.Pan_No.trim();
+        last4 = pan.slice(-4);
       }
+      req.body.sId = `${fname}${last4}`;
+    }
     // req.body.profileImage = req.file.filename || null
     const userDetail = req.body;
     const user_first = await User.findById(req.params.id);
@@ -483,19 +499,19 @@ export const saveUserWithExcel = async (req, res) => {
         // document[heading] = cellValue;
       }
       document[database] = req.params.database
-       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
-      let last4 = '';
-      let existName = document.firstName.split(" ");
-      let fname = existName[0];
-      if (document.Aadhar_No) {
-        const adhar =document.Aadhar_No.trim();
-        last4 = adhar.slice(-4);
-      } else if (document.Pan_No) {
-        const pan =document.Pan_No.trim();
-        last4 = pan.slice(-4);
+      if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
+        let last4 = '';
+        let existName = document.firstName.split(" ");
+        let fname = existName[0];
+        if (document.Aadhar_No) {
+          const adhar = document.Aadhar_No.trim();
+          last4 = adhar.slice(-4);
+        } else if (document.Pan_No) {
+          const pan = document.Pan_No.trim();
+          last4 = pan.slice(-4);
+        }
+        document['sId'] = `${fname}${last4}`;
       }
-     document['sId'] = `${fname}${last4}`;
-    }
 
       if (document.database) {
         const role = await Role.findOne({ id: document.rolename, database: document.database })
@@ -627,19 +643,19 @@ export const updateUserWithExcel = async (req, res) => {
         // document[heading] = cellValue;
       }
       document[database] = req.params.database
-       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
-      let last4 = '';
-      let existName = document.firstName.split(" ");
-      let fname = existName[0];
-      if (document.Aadhar_No) {
-        const adhar =document.Aadhar_No.trim();
-        last4 = adhar.slice(-4);
-      } else if (document.Pan_No) {
-        const pan =document.Pan_No.trim();
-        last4 = pan.slice(-4);
+      if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
+        let last4 = '';
+        let existName = document.firstName.split(" ");
+        let fname = existName[0];
+        if (document.Aadhar_No) {
+          const adhar = document.Aadhar_No.trim();
+          last4 = adhar.slice(-4);
+        } else if (document.Pan_No) {
+          const pan = document.Pan_No.trim();
+          last4 = pan.slice(-4);
+        }
+        document['sId'] = `${fname}${last4}`;
       }
-     document['sId'] = `${fname}${last4}`;
-    }
       // if (document.database) {
       const role = await Role.findOne({ id: document.rolename, database: document.database })
       console.log("role", role)
@@ -715,27 +731,25 @@ export const UserList = async (req, res, next) => {
 export const assignUser = async (req, res, next) => {
   try {
     const { childs } = req.body;
-    console.log("req",req.body)
+    console.log("req", req.body)
     const manager = await User.findById({ _id: req.body.parentId })
     if (!manager) {
       return res.status(404).json({ message: "User Not Found", status: false })
     }
     for (let id of childs) {
       const person = await User.findById({ _id: id.id });
-      console.log("Person",person)
       if (person) {
         person.created_by = manager._id;
         person.database = manager.database;
         await person.save();
       }
       const customer = await Customer.findById({ _id: id.id })
-      console.log("customer",customer)
       if (customer) {
         customer.created_by = manager._id;
         customer.database = manager.database;
         await customer.save();
       }
-    } 
+    }
     return res.status(200).json({ message: "Users assigned successfully", status: true });
   } catch (err) {
     console.log(err);
