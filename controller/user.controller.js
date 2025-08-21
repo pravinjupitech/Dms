@@ -312,8 +312,9 @@ export const SignIn = async (req, res, next) => {
 export const signInWithMob = async (req, res, next) => {
   try {
     const { mobileNumber, password } = req.body;
-    const user = await User.findOne({ mobileNumber: mobileNumber, password: password, status: "Active" });
-    if (user) {
+    const user = await User.findOne({ mobileNumber: mobileNumber, password: password, status: "Active" }).populate({ path: "rolename", model: "role" });
+    const result=user.rolename.roleName==="Sales Person"
+    if (result) {
       res.status(200).json({ message: "User Logged In ", user: { ...user.toObject(), password: undefined }, status: true })
     } else {
       return res.status(404).json({ message: "UnAuthorized User", status: false })
