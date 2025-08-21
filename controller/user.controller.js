@@ -715,18 +715,21 @@ export const UserList = async (req, res, next) => {
 export const assignUser = async (req, res, next) => {
   try {
     const { childs } = req.body;
+    console.log("req",req.body)
     const manager = await User.findById({ _id: req.body.parentId })
     if (!manager) {
       return res.status(404).json({ message: "User Not Found", status: false })
     }
     for (let id of childs) {
       const person = await User.findById({ _id: id.id });
+      console.log("Person",person)
       if (person) {
         person.created_by = manager._id;
         person.database = manager.database;
         await person.save();
       }
       const customer = await Customer.findById({ _id: id.id })
+      console.log("customer",customer)
       if (customer) {
         customer.created_by = manager._id;
         customer.database = manager.database;
