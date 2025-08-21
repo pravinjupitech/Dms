@@ -23,7 +23,6 @@ dotenv.config();
 
 export const SaveUser = async (req, res, next) => {
   try {
-    console.log("request body",req.body)
     if (req.body.id) {
       const existing = await User.findOne({ status: "Active", database: req.body.database, id: req.body.id })
       if (existing) {
@@ -56,9 +55,11 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.reference && req.body.reference.length > 0) {
       req.body.reference = await JSON.parse(req.body.reference);
     }
-    if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
-        req.body.serviceArea = await JSON.parse(req.body.serviceArea)
-      }
+   if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
+  req.body.service = await JSON.parse(req.body.serviceArea);
+  delete req.body.serviceArea;
+}
+
     if (req.body.subscriptionPlan) {
       const sub = await Subscription.findById(req.body.subscriptionPlan);
       if (sub) {

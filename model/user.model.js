@@ -240,7 +240,7 @@ const UserSchema = new mongoose.Schema({
   OpeningBalance: {
     type: String
   },
-  serviceArea: {
+  service: {
     state: {
       type: String
     },
