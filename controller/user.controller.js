@@ -23,6 +23,7 @@ dotenv.config();
 
 export const SaveUser = async (req, res, next) => {
   try {
+    console.log("request body",req.body)
     if (req.body.id) {
       const existing = await User.findOne({ status: "Active", database: req.body.database, id: req.body.id })
       if (existing) {
