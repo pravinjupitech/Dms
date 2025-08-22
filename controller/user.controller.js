@@ -31,6 +31,15 @@ export const SaveUser = async (req, res, next) => {
     } else {
       return res.status(400).json({ message: "user id required", status: false })
     }
+    if (req.body.email) {
+      const { email } = req.body;
+      const findUser = await User.findOne({ email });
+      const findCustomer = await Customer.findOne({ email });
+      let findData = findUser || findCustomer;
+      if (findData) {
+        return res.status(404).json({ message: "Email Already Exist", status: false })
+      }
+    }
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
@@ -57,7 +66,6 @@ export const SaveUser = async (req, res, next) => {
     }
     if (req.body.serviceArea && req.body.serviceArea?.length > 0) {
       req.body.service = await JSON.parse(req.body.serviceArea);
-      console.log("req.body.service", req.body.service, "   hy   ", req.body.serviceArea)
       delete req.body.serviceArea;
     }
 
@@ -277,6 +285,7 @@ export const SignIn = async (req, res, next) => {
   try {
     const otp = Math.floor(1000 + Math.random() * 9000);
     const { email, password, latitude, longitude, currentAddress } = req.body;
+
     let existingAccount = await User.findOne({ email }).populate({ path: "rolename", model: "role" }).populate({ path: "branch", model: "userBranch" }).populate({ path: "created_by", model: "user" });
     let existingCustomer = await Customer.findOne({ email }).populate({ path: "rolename", model: "role" })
     if (!existingAccount && !existingCustomer) {
@@ -313,7 +322,9 @@ export const signInWithMob = async (req, res, next) => {
   try {
     const { mobileNumber, password } = req.body;
     const user = await User.findOne({ mobileNumber: mobileNumber, password: password, status: "Active" }).populate({ path: "rolename", model: "role" });
-    const result=user.rolename.roleName==="Sales Person"
+    console.log("user", user)
+    const result = user.rolename.roleName === "Sales Person"
+    console.log("req", result)
     if (result) {
       res.status(200).json({ message: "User Logged In ", user: { ...user.toObject(), password: undefined }, status: true })
     } else {
