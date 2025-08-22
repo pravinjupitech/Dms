@@ -32,14 +32,18 @@ export const SaveUser = async (req, res, next) => {
       return res.status(400).json({ message: "user id required", status: false })
     }
     if (req.body.email) {
-      const { email } = req.body;
-      const findUser = await User.findOne({ email });
-      const findCustomer = await Customer.findOne({ email });
-      let findData = findUser || findCustomer;
-      if (findData) {
-        return res.status(404).json({ message: "Email Already Exist", status: false })
-      }
-    }
+  const { email } = req.body;
+
+  const [findUser, findCustomer] = await Promise.all([
+    User.findOne({ email }),
+    Customer.findOne({ email })
+  ]);
+
+  if (findUser || findCustomer) {
+    return res.status(409).json({ message: "Email already exists", status: false });
+  }
+}
+
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
