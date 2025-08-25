@@ -33,6 +33,7 @@ const __dirname = dirname(__filename);
 
 export const createOrder = async (req, res, next) => {
     try {
+        console.log("req.body",req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
