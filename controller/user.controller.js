@@ -1115,7 +1115,7 @@ export const updateServiceArea = async (req, res, next) => {
   try {
     const { id, service } = req.body;
     const existingUser = await User.findById(id);
-    if (existingUser) {
+    if (!existingUser) {
       return res.status(404).json({ message: "Not Found", status: false })
     }
     existingUser.service = service;
