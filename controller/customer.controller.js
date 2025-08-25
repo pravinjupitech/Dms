@@ -857,6 +857,7 @@ export const paymentDueReport = async (req, res) => {
 
 // ------------------------------------------------------------
 
+
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const leadStatusCheck = "leadStatusCheck";
@@ -869,9 +870,10 @@ export const SaveLeadPartyExcel = async (req, res) => {
         const fileMime = req?.file?.mimetype;
         const fileExt = path.extname(filePath).toLowerCase();
 
-        if (!fs.existsSync(filePath)) {
+        if (!filePath || !fs.existsSync(filePath)) {
             return res.status(400).json({ error: 'Uploaded file not found', status: false });
         }
+
         const stats = fs.statSync(filePath);
         if (stats.size === 0) {
             return res.status(400).json({ error: 'Uploaded file is empty', status: false });
@@ -895,7 +897,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell((cell) => {
-            headings.push(cell?.text?.trim() || cell?.value?.toString().trim());
+            headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
         });
 
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
@@ -905,44 +907,53 @@ export const SaveLeadPartyExcel = async (req, res) => {
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-                if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
-                    document[heading] = cellValue.text;
+                const value = typeof cellValue === 'object' && 'text' in cellValue ? cellValue.text : cellValue;
+
+                if (heading === 'remark') {
+                    const now = new Date();
+                    const date = now.toISOString().split('T')[0];
+                    const time = now.toTimeString().split(' ')[0];
+
+                    document.remark = [{
+                        remark: value,
+                        date,
+                        time
+                    }];
                 } else {
-                    document[heading] = cellValue;
+                    document[heading] = value;
                 }
             }
-            console.log("document",document)
 
             document[databaseKey] = req.params.database;
 
             if (document.database) {
-                console.log("document.database",document.database,document.mobileNumber)
                 const existingId = await Customer.findOne({
-                    mobileNumber: document.mobileNumber,
+                    mobileNumber: document.mobileno || document.contactnumber || document.mobile || document.contact,
                     database: document.database,
-                    status:"Active"
+                    status: "Active"
                 });
-console.log("existingId",existingId)
+
                 if (existingId) {
-                    existingMobileNo.push(document.mobileNumber);
+                    existingMobileNo.push(document.mobileno || document.contactnumber);
                 } else {
                     document[leadStatusCheck] = "true";
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
             } else {
-                dataNotExist.push(document.ownerName);
+                dataNotExist.push(document.ownername || document.companyname);
             }
         }
 
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
-            message = `This customer database not exist: ${dataNotExist.join(', ')}`;
+            message = `These customers have no database: ${dataNotExist.join(', ')}`;
         } else if (existingMobileNo.length > 0) {
             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
         }
 
         return res.status(200).json({ message, status: true });
+
     } catch (err) {
         console.error("Error processing file:", err);
         return res.status(500).json({ error: 'Internal Server Error', status: false });
