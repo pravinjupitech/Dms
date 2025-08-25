@@ -905,7 +905,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
-
+console.log("headling",heading)
                 if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
@@ -916,7 +916,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
             document[databaseKey] = req.params.database;
 
             if (document.database) {
-                console.log("document.database",document.database)
+                console.log("document.database",document.database,document.mobileNumber)
                 const existingId = await Customer.findOne({
                     mobileNumber: document.mobileNumber,
                     database: document.database,
