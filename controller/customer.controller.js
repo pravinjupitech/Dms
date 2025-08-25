@@ -869,7 +869,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
         const fileMime = req?.file?.mimetype;
         const fileExt = path.extname(filePath).toLowerCase();
 
-        // 🔍 Check file exists and is not empty
         if (!fs.existsSync(filePath)) {
             return res.status(400).json({ error: 'Uploaded file not found', status: false });
         }
@@ -881,7 +880,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         let worksheet;
 
-        // ✅ Read file based on extension or mimetype
         if (fileMime === 'text/csv' || fileExt === '.csv') {
             worksheet = await workbook.csv.readFile(filePath);
         } else if (
@@ -894,14 +892,12 @@ export const SaveLeadPartyExcel = async (req, res) => {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
         }
 
-        // ✅ Get headings from the first row
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell((cell) => {
             headings.push(cell?.text?.trim() || cell?.value?.toString().trim());
         });
 
-        // ✅ Process each row starting from 2nd
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
@@ -910,7 +906,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
 
-                // Handle rich-text (for Excel)
                 if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
@@ -923,7 +918,8 @@ export const SaveLeadPartyExcel = async (req, res) => {
             if (document.database) {
                 const existingId = await Customer.findOne({
                     mobileNumber: document.mobileNumber,
-                    database: document.database
+                    database: document.database,
+                    status:"Active"
                 });
 
                 if (existingId) {
@@ -938,7 +934,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
             }
         }
 
-        // 📨 Final response message
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
             message = `This customer database not exist: ${dataNotExist.join(', ')}`;
