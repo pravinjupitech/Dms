@@ -29,18 +29,18 @@ export const SaveCustomer = async (req, res, next) => {
         } else {
             return res.status(400).json({ message: "customer id required", status: false })
         }
-            if (req.body.email) {
-  const { email } = req.body;
+        if (req.body.email) {
+            const { email } = req.body;
 
-  const [findUser, findCustomer] = await Promise.all([
-    User.findOne({ email }),
-    Customer.findOne({ email })
-  ]);
+            const [findUser, findCustomer] = await Promise.all([
+                User.findOne({ email }),
+                Customer.findOne({ email })
+            ]);
 
-  if (findUser || findCustomer) {
-    return res.status(409).json({ message: "Email already exists", status: false });
-  }
-}
+            if (findUser || findCustomer) {
+                return res.status(409).json({ message: "Email already exists", status: false });
+            }
+        }
 
         if (req.files) {
             let images = [];
@@ -554,13 +554,13 @@ export const saveExcelFile = async (req, res) => {
                             document[City] = data.city;
                             document[District] = data.district
                         }
-                        if (document.CompanyName &&document.aadharNo) {
+                        if (document.CompanyName && document.aadharNo) {
                             let last4 = '';
                             let existName = document.CompanyName.split(" ");
                             let fname = existName[0];
                             const adhar = document.aadharNo.trim();
                             last4 = adhar.slice(-4);
-                           document['sId'] = `${fname}${last4}`;
+                            document['sId'] = `${fname}${last4}`;
                         }
                         if (document.gstNumber) {
                             if (document.gstNumber.length !== 15) {
@@ -695,13 +695,13 @@ export const updateExcelFile = async (req, res) => {
                             document['City'] = data.city;
                             document['District'] = data.district;
                         }
-                         if (document.CompanyName &&document.aadharNo) {
+                        if (document.CompanyName && document.aadharNo) {
                             let last4 = '';
                             let existName = document.CompanyName.split(" ");
                             let fname = existName[0];
                             const adhar = document.aadharNo.trim();
                             last4 = adhar.slice(-4);
-                           document['sId'] = `${fname}${last4}`;
+                            document['sId'] = `${fname}${last4}`;
                         }
                         const filter = { id: document.id, database: req.params.database };
                         const options = { new: true, upsert: true };
