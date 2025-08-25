@@ -855,44 +855,52 @@ export const paymentDueReport = async (req, res) => {
 }
 
 // ------------------------------------------------------------
+
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
-        const filePath = req?.file?.path;
-        if (!filePath) {
-            return res.status(400).json({ error: 'No file uploaded', status: false });
-        }
+        const leadStatusCheck = "leadStatusCheck";
+        const databaseKey = "database";
+        const existingMobileNo = [];
+        const insertedDocuments = [];
+        const dataNotExist = [];
 
-        // Check if file exists and is not empty
+        const filePath = req?.file?.path;
+        const fileMime = req?.file?.mimetype;
+        const fileExt = path.extname(filePath).toLowerCase();
+
+        // 🔍 Check file exists and is not empty
         if (!fs.existsSync(filePath)) {
             return res.status(400).json({ error: 'Uploaded file not found', status: false });
         }
-
         const stats = fs.statSync(filePath);
         if (stats.size === 0) {
             return res.status(400).json({ error: 'Uploaded file is empty', status: false });
         }
 
         const workbook = new ExcelJS.Workbook();
-        try {
+        let worksheet;
+
+        // ✅ Read file based on extension or mimetype
+        if (fileMime === 'text/csv' || fileExt === '.csv') {
+            worksheet = await workbook.csv.readFile(filePath);
+        } else if (
+            fileMime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+            fileExt === '.xlsx'
+        ) {
             await workbook.xlsx.readFile(filePath);
-        } catch (readError) {
-            console.error("Excel read error:", readError.message);
-            return res.status(400).json({
-                error: 'Invalid or corrupt Excel file. Please upload a valid .xlsx file.',
-                status: false
-            });
+            worksheet = workbook.getWorksheet(1);
+        } else {
+            return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
         }
 
-        const worksheet = workbook.getWorksheet(1);
+        // ✅ Get headings from the first row
         const headerRow = worksheet.getRow(1);
         const headings = [];
+        headerRow.eachCell((cell) => {
+            headings.push(cell?.text?.trim() || cell?.value?.toString().trim());
+        });
 
-        headerRow.eachCell(cell => headings.push(cell.value));
-
-        const insertedDocuments = [];
-        const dataNotExist = [];
-        const existingMobileNo = [];
-
+        // ✅ Process each row starting from 2nd
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
@@ -901,6 +909,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
 
+                // Handle rich-text (for Excel)
                 if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
@@ -908,7 +917,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 }
             }
 
-            document["database"] = req.params.database;
+            document[databaseKey] = req.params.database;
 
             if (document.database) {
                 const existingId = await Customer.findOne({
@@ -919,29 +928,30 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 if (existingId) {
                     existingMobileNo.push(document.mobileNumber);
                 } else {
-                    document["leadStatusCheck"] = "true";
+                    document[leadStatusCheck] = "true";
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
             } else {
-                dataNotExist.push(document.ownerName || "unknown");
+                dataNotExist.push(document.ownerName);
             }
         }
 
+        // 📨 Final response message
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
-            message = `These customers have no database specified: ${dataNotExist.join(', ')}`;
+            message = `This customer database not exist: ${dataNotExist.join(', ')}`;
         } else if (existingMobileNo.length > 0) {
             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
         }
 
         return res.status(200).json({ message, status: true });
-
     } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Error processing file:", err);
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 };
+
 export const LeadPartyList = async (req, res, next) => {
     try {
         const party = await Customer.find({ database: req.params.database, leadStatusCheck: "true" }).populate({ path: "created_by", model: "user" });
