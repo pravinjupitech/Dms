@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, signInWithMob, updatePassword, updatePlan, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
+import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, signInWithMob, updatePassword, updatePlan, updateServiceArea, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
 
 const router = express.Router();
 // const upload = multer({ dest: "public/Images" })
@@ -39,7 +39,7 @@ router.post("/edit-profile/:id", upload.single("file"), EditProfile);
 router.post("/forget-password", forgetPassword)
 router.post("/otp-verify", otpVerify)
 router.post("/update-password/:id", updatePassword)
-
+router.put("/update-area",updateServiceArea)
 router.get("/user-list/:database", UserList)
 router.get("/view-warehouse/:id", ViewWarehouse);
 router.post("/assign-user", assignUser)

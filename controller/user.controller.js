@@ -32,17 +32,17 @@ export const SaveUser = async (req, res, next) => {
       return res.status(400).json({ message: "user id required", status: false })
     }
     if (req.body.email) {
-  const { email } = req.body;
+      const { email } = req.body;
 
-  const [findUser, findCustomer] = await Promise.all([
-    User.findOne({ email }),
-    Customer.findOne({ email })
-  ]);
+      const [findUser, findCustomer] = await Promise.all([
+        User.findOne({ email }),
+        Customer.findOne({ email })
+      ]);
 
-  if (findUser || findCustomer) {
-    return res.status(409).json({ message: "Email already exists", status: false });
-  }
-}
+      if (findUser || findCustomer) {
+        return res.status(409).json({ message: "Email already exists", status: false });
+      }
+    }
 
     if (req.file) {
       req.body.profileImage = req.file.filename;
@@ -1110,3 +1110,19 @@ const generateUniqueSixDigitNumber = () => {
   assignedNumbers.add(uniqueNumber);
   return uniqueNumber;
 };
+
+export const updateServiceArea = async (req, res, next) => {
+  try {
+    const { id, service } = req.body;
+    const existingUser = await User.findById(id);
+    if (existingUser) {
+      return res.status(404).json({ message: "Not Found", status: false })
+    }
+    existingUser.service = service;
+    await existingUser.save();
+    return res.status(200).json({ message: "Area Updated", status: true })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error", status: false })
+  }
+}
