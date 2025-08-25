@@ -41,14 +41,11 @@ export const generateInvoice = async (database) => {
 };
 export const generateOrderNo = async (database) => {
     const companyDetail = await CompanyDetails.findOne({ database: database });
-    console.log("companyDetails",companyDetail)
     const invoice = companyDetail.orderNo + 1;
     let orderNO = invoice.toString().padStart(3, '0')
-    console.log("orderNo",orderNO)
     const generatedOrderNo = `${"ORD"}${orderNO}`;
     companyDetail.orderNo = invoice;
     await companyDetail.save()
-console.log("generatedorderno",generatedOrderNo)
     return generatedOrderNo;
 };
 export const warehouseNo = async (database) => {
