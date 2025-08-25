@@ -916,12 +916,13 @@ export const SaveLeadPartyExcel = async (req, res) => {
             document[databaseKey] = req.params.database;
 
             if (document.database) {
+                console.log("document.database",document.database)
                 const existingId = await Customer.findOne({
                     mobileNumber: document.mobileNumber,
                     database: document.database,
                     status:"Active"
                 });
-
+console.log("existingId",existingId)
                 if (existingId) {
                     existingMobileNo.push(document.mobileNumber);
                 } else {
