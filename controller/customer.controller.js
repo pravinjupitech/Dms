@@ -856,59 +856,91 @@ export const paymentDueReport = async (req, res) => {
 // ------------------------------------------------------------
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
-        let leadStatusCheck = "leadStatusCheck";
-        let database = "database";
-        const existingMobileNo = [];
-        const filePath = await req.file.path;
+        const filePath = req?.file?.path;
+        if (!filePath) {
+            return res.status(400).json({ error: 'No file uploaded', status: false });
+        }
+
+        // Check if file exists and is not empty
+        if (!fs.existsSync(filePath)) {
+            return res.status(400).json({ error: 'Uploaded file not found', status: false });
+        }
+
+        const stats = fs.statSync(filePath);
+        if (stats.size === 0) {
+            return res.status(400).json({ error: 'Uploaded file is empty', status: false });
+        }
+
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(filePath);
+        try {
+            await workbook.xlsx.readFile(filePath);
+        } catch (readError) {
+            console.error("Excel read error:", readError.message);
+            return res.status(400).json({
+                error: 'Invalid or corrupt Excel file. Please upload a valid .xlsx file.',
+                status: false
+            });
+        }
+
         const worksheet = workbook.getWorksheet(1);
         const headerRow = worksheet.getRow(1);
         const headings = [];
-        headerRow.eachCell((cell) => {
-            headings.push(cell.value);
-        });
+
+        headerRow.eachCell(cell => headings.push(cell.value));
+
         const insertedDocuments = [];
         const dataNotExist = [];
+        const existingMobileNo = [];
+
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
+
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
+
                 if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
                     document[heading] = cellValue.text;
                 } else {
                     document[heading] = cellValue;
                 }
-                // document[heading] = cellValue;
             }
-            document[database] = req.params.database;
+
+            document["database"] = req.params.database;
+
             if (document.database) {
-                const existingId = await Customer.findOne({ mobileNumber: document.mobileNumber, database: document.database });
+                const existingId = await Customer.findOne({
+                    mobileNumber: document.mobileNumber,
+                    database: document.database
+                });
+
                 if (existingId) {
-                    existingMobileNo.push(document.mobileNumber)
+                    existingMobileNo.push(document.mobileNumber);
                 } else {
-                    document[leadStatusCheck] = "true";
+                    document["leadStatusCheck"] = "true";
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
             } else {
-                dataNotExist.push(document.ownerName)
+                dataNotExist.push(document.ownerName || "unknown");
             }
         }
+
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
-            message = `this customer database not exist: ${dataNotExist.join(', ')}`;
+            message = `These customers have no database specified: ${dataNotExist.join(', ')}`;
         } else if (existingMobileNo.length > 0) {
-            message = `this mobile no already exists: ${existingMobileNo.join(', ')}`;
+            message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
         }
+
         return res.status(200).json({ message, status: true });
+
     } catch (err) {
-        console.error(err);
+        console.error("Unexpected error:", err);
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
-}
+};
 export const LeadPartyList = async (req, res, next) => {
     try {
         const party = await Customer.find({ database: req.params.database, leadStatusCheck: "true" }).populate({ path: "created_by", model: "user" });
