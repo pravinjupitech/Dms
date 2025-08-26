@@ -858,15 +858,17 @@ export const paymentDueReport = async (req, res) => {
 // ------------------------------------------------------------
 
 
+
 // export const SaveLeadPartyExcel = async (req, res) => {
 //     try {
 //         const leadStatusCheck = "leadStatusCheck";
 //         const databaseKey = "database";
 //         const mobNo = "mobileNumber";
 //         const cityKey = "City";
-//         const statekey = "State";
-//         const companykey = "CompanyName";
-//         const createdbykey = "created_by";
+//         const stateKey = "State";
+//         const companyKey = "CompanyName";
+//         const createdByKey = "created_by";
+
 //         const existingMobileNo = [];
 //         const insertedDocuments = [];
 //         const dataNotExist = [];
@@ -932,41 +934,44 @@ export const paymentDueReport = async (req, res) => {
 //             document[databaseKey] = req.params.database;
 
 //             if (document.database) {
+//                 const phone = document.mobilenumber || document.contactnumber;
+
 //                 const existingId = await Customer.findOne({
-//                     mobileNumber: document.mobilenumber,
+//                     mobileNumber: phone,
 //                     database: document.database,
 //                     status: "Active"
 //                 });
 
 //                 if (existingId) {
-//                     existingMobileNo.push(document.mobileno || document.contactnumber);
+//                     existingMobileNo.push(phone);
 //                 } else {
 //                     document[leadStatusCheck] = "true";
 //                     document[cityKey] = document.city;
-//                     document[statekey] = document.state;
-//                     document[companykey] = document.companyname;
-//                     document[mobNo] = document.mobilenumber;
-//                     const exisitingUser = await User.find({ database: req.params.database }).populate({ path: "rolename", model: "role", })
-//                     const salesPerson = await exisitingUser.filter((ele) => ele?.rolename?.roleName === "Sales Person")
-//                     let matchedSalesPerson = null;
-//                     if (salesPerson && salesPerson.length > 0) {
-//                         for (let item of salesPerson) {
-//                             const services = item?.salesPerson?.service || [];
+//                     document[stateKey] = document.state;
+//                     document[companyKey] = document.companyname;
+//                     document[mobNo] = phone;
 
-//                             const matchedService = services.some(service => String(service.pincode) === String(document.pincode));
+//                     const existingUsers = await User.find({ database: req.params.database })
+//                         .populate({ path: "rolename", model: "role" });
 
-//                                 //   const filterSalesPerson = salesPerson.filter((data)=> data.service.some((data)=> data.pincode ===  document.pincode))
-//                             console.log("matchedService", matchedService)
-//                             if (matchedService) {
-//                                 matchedSalesPerson = item;
-//                                 break;
+//                     const salesPersons = existingUsers.filter(user =>
+//                         user?.rolename?.roleName === "Sales Person"
+//                     );
+//                     for (let user of salesPersons) {
+//                         const services = user?.service;
+
+//                         if (!Array.isArray(services)) {
+//                             continue;
+//                         }
+
+//                         for (let service of services) {
+//                             if (String(service.pincode).trim() === String(document.pincode).trim()) {
+//                                 document[createdByKey] = user?._id;
 //                             }
 //                         }
-//                         if (matchedSalesPerson) {
-//                             document[createdbykey] = matchedSalesPerson._id;
-//                         }
 //                     }
-//                     console.log("document ", document)
+
+
 //                     const insertedDocument = await Customer.create(document);
 //                     insertedDocuments.push(insertedDocument);
 //                 }
@@ -991,13 +996,15 @@ export const paymentDueReport = async (req, res) => {
 // };
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
-        const leadStatusCheck = "leadStatusCheck";
-        const databaseKey = "database";
-        const mobNo = "mobileNumber";
-        const cityKey = "City";
-        const stateKey = "State";
-        const companyKey = "CompanyName";
-        const createdByKey = "created_by";
+        const constants = {
+            leadStatusCheck: "leadStatusCheck",
+            databaseKey: "database",
+            mobNo: "mobileNumber",
+            cityKey: "City",
+            stateKey: "State",
+            companyKey: "CompanyName",
+            createdByKey: "created_by",
+        };
 
         const existingMobileNo = [];
         const insertedDocuments = [];
@@ -1031,16 +1038,26 @@ export const SaveLeadPartyExcel = async (req, res) => {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
         }
 
+        // Read and normalize headers
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell((cell) => {
             headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
         });
 
+        // 🧠 Fetch and cache all salespersons ONCE
+        const existingUsers = await User.find({ database: req.params.database })
+            .populate({ path: "rolename", model: "role" });
+
+        const salesPersons = existingUsers.filter(user =>
+            user?.rolename?.roleName === "Sales Person"
+        );
+
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
 
+            // Map cell data to document
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
@@ -1061,58 +1078,50 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 }
             }
 
-            document[databaseKey] = req.params.database;
+            document[constants.databaseKey] = req.params.database;
 
-            if (document.database) {
-                const phone = document.mobilenumber || document.contactnumber;
-
-                const existingId = await Customer.findOne({
-                    mobileNumber: phone,
-                    database: document.database,
-                    status: "Active"
-                });
-
-                if (existingId) {
-                    existingMobileNo.push(phone);
-                } else {
-                    document[leadStatusCheck] = "true";
-                    document[cityKey] = document.city;
-                    document[stateKey] = document.state;
-                    document[companyKey] = document.companyname;
-                    document[mobNo] = phone;
-
-                    const existingUsers = await User.find({ database: req.params.database })
-                        .populate({ path: "rolename", model: "role" });
-
-                    const salesPersons = existingUsers.filter(user =>
-                        user?.rolename?.roleName === "Sales Person"
-                    );
-                    for (let user of salesPersons) {
-                        const services = user?.service;
-
-                        if (!Array.isArray(services)) {
-                            console.log("❌ No service array for user:", user._id);
-                            continue;
-                        }
-
-                        for (let service of services) {
-
-                            if (String(service.pincode).trim() === String(document.pincode).trim()) {
-                                document[createdByKey] = user?._id;
-                            }
-                        }
-                    }
-
-
-                    console.log("document", document)
-                    const insertedDocument = await Customer.create(document);
-                    insertedDocuments.push(insertedDocument);
-                }
-            } else {
+            if (!document.database) {
                 dataNotExist.push(document.ownername || document.companyname);
+                continue;
             }
+
+            const phone = document.mobilenumber || document.contactnumber;
+            document[constants.mobNo] = phone;
+            document[constants.cityKey] = document.city;
+            document[constants.stateKey] = document.state;
+            document[constants.companyKey] = document.companyname;
+            document[constants.leadStatusCheck] = "true";
+
+            const existingId = await Customer.findOne({
+                mobileNumber: phone,
+                database: document.database,
+                status: "Active"
+            });
+
+            if (existingId) {
+                existingMobileNo.push(phone);
+                continue;
+            }
+
+            // ✅ Assign Sales Person by pincode match
+            const matchedSalesPerson = salesPersons.find(user => {
+                const services = user?.salesPerson?.service;
+                if (!Array.isArray(services)) return false;
+
+                return services.some(service =>
+                    String(service?.pincode).trim() === String(document.pincode).trim()
+                );
+            });
+
+            if (matchedSalesPerson) {
+                document[constants.createdByKey] = matchedSalesPerson._id;
+            }
+
+            const insertedDocument = await Customer.create(document);
+            insertedDocuments.push(insertedDocument);
         }
 
+        // ✅ Final message summary
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
             message = `These customers have no database: ${dataNotExist.join(', ')}`;
@@ -1127,6 +1136,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 };
+
 
 export const LeadPartyList = async (req, res, next) => {
     try {
