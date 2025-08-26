@@ -862,10 +862,10 @@ export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const leadStatusCheck = "leadStatusCheck";
         const databaseKey = "database";
-        const mobNo="mobilenumber";
-        const cityKey="city";
-        const statekey="state";
-        const companykey="companyname";
+        const mobNo="mobileNumber";
+        const cityKey="City";
+        const statekey="State";
+        const companykey="companyName";
         const existingMobileNo = [];
         const insertedDocuments = [];
         const dataNotExist = [];
