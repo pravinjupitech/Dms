@@ -862,6 +862,10 @@ export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const leadStatusCheck = "leadStatusCheck";
         const databaseKey = "database";
+        const mobNo="mobilenumber";
+        const cityKey="city";
+        const statekey="state";
+        const companykey="companyname";
         const existingMobileNo = [];
         const insertedDocuments = [];
         const dataNotExist = [];
@@ -937,7 +941,11 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     existingMobileNo.push(document.mobileno || document.contactnumber);
                 } else {
                     document[leadStatusCheck] = "true";
-                    console.log("document",document)
+                    document[cityKey]=document.city;
+                    document[statekey]=document.state;
+                    document[companykey]=document.companyname;
+                    document[mobNo]=document.mobilenumber;
+
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
