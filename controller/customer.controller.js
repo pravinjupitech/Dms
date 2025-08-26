@@ -865,7 +865,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
         const mobNo="mobileNumber";
         const cityKey="City";
         const statekey="State";
-        const companykey="companyName";
+        const companykey="CompanyName";
         const existingMobileNo = [];
         const insertedDocuments = [];
         const dataNotExist = [];
