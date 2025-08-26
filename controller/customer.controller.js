@@ -862,10 +862,11 @@ export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const leadStatusCheck = "leadStatusCheck";
         const databaseKey = "database";
-        const mobNo="mobileNumber";
-        const cityKey="City";
-        const statekey="State";
-        const companykey="CompanyName";
+        const mobNo = "mobileNumber";
+        const cityKey = "City";
+        const statekey = "State";
+        const companykey = "CompanyName";
+        const createdbykey = "created_by";
         const existingMobileNo = [];
         const insertedDocuments = [];
         const dataNotExist = [];
@@ -941,11 +942,25 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     existingMobileNo.push(document.mobileno || document.contactnumber);
                 } else {
                     document[leadStatusCheck] = "true";
-                    document[cityKey]=document.city;
-                    document[statekey]=document.state;
-                    document[companykey]=document.companyname;
-                    document[mobNo]=document.mobilenumber;
-
+                    document[cityKey] = document.city;
+                    document[statekey] = document.state;
+                    document[companykey] = document.companyname;
+                    document[mobNo] = document.mobilenumber;
+                    const exisitingUser = await User.find({ database: req.params.database }).populate({ path: "rolename", model: "role", })
+                    const salesPerson = await exisitingUser.filter((ele) => ele?.rolename?.roleName === "Sales Person")
+                    let matchedSalesPerson = null;
+                    if (salesPerson && salesPerson.length > 0) {
+                        for (let item of salesPerson) {
+                            const matchedService = item?.salesPerson?.service?.find((item) => item.pincode === document.pincode)
+                            if (matchedService) {
+                                matchedSalesPerson = item;
+                                break;
+                            }
+                        }
+                        if (matchedSalesPerson) {
+                            document[createdbykey] = matchedSalesPerson._id;
+                        }
+                    }
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
