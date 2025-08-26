@@ -947,11 +947,14 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     document[companykey] = document.companyname;
                     document[mobNo] = document.mobilenumber;
                     const exisitingUser = await User.find({ database: req.params.database }).populate({ path: "rolename", model: "role", })
+                    console.log("exisitingUser",exisitingUser)
                     const salesPerson = await exisitingUser.filter((ele) => ele?.rolename?.roleName === "Sales Person")
+                    console.log("salesPerson",salesPerson)
                     let matchedSalesPerson = null;
                     if (salesPerson && salesPerson.length > 0) {
                         for (let item of salesPerson) {
                             const matchedService = item?.salesPerson?.service?.find((item) => item.pincode === document.pincode)
+                            console.log("matchedService",matchedService)
                             if (matchedService) {
                                 matchedSalesPerson = item;
                                 break;
@@ -961,6 +964,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                             document[createdbykey] = matchedSalesPerson._id;
                         }
                     }
+                    console.log("document ",document)
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
