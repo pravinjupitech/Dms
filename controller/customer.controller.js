@@ -928,7 +928,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
 
             if (document.database) {
                 const existingId = await Customer.findOne({
-                    mobileNumber: document.mobileno || document.contactnumber || document.mobile || document.contact,
+                    mobileNumber: document.mobileNumber || document.contactnumber || document.mobile || document.contact,
                     database: document.database,
                     status: "Active"
                 });
@@ -937,6 +937,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     existingMobileNo.push(document.mobileno || document.contactnumber);
                 } else {
                     document[leadStatusCheck] = "true";
+                    console.log("document",document)
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
