@@ -1088,7 +1088,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                         user?.rolename?.roleName === "Sales Person"
                     );
 for (let user of salesPersons) {
-    const services = user?.salesPerson?.service;
+    const services = user?.service;
 
     if (!Array.isArray(services)) {
         console.log("❌ No service array for user:", user._id);
