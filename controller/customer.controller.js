@@ -1096,7 +1096,6 @@ for (let user of salesPersons) {
     }
 
     for (let service of services) {
-        console.log("🔍 Checking service:", service);
 
         if (String(service.pincode).trim() === String(document.pincode).trim()) {
             console.log(`✅ Match found for pincode ${document.pincode} in user ${user._id}`);
