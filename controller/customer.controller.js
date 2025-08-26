@@ -1098,7 +1098,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
                         for (let service of services) {
 
                             if (String(service.pincode).trim() === String(document.pincode).trim()) {
-                                document[createdByKey] = matchedSalesPersons[0]._id;
+                                document[createdByKey] = user[0]._id;
                             }
                         }
                     }
