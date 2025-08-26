@@ -1087,18 +1087,20 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     const salesPersons = existingUsers.filter(user =>
                         user?.rolename?.roleName === "Sales Person"
                     );
+console.log("salesPersons",salesPersons,"pincode",document.pincode);
 
                     const matchedSalesPersons = salesPersons.filter(user =>
                         (user?.salesPerson?.service || []).some(
                             service => String(service.pincode) === String(document.pincode)
                         )
                     );
+
 console.log("matchedSalesPersons",matchedSalesPersons)
                     if (matchedSalesPersons.length > 0) {
                         document[createdByKey] = matchedSalesPersons[0]._id;
                     
                     }
-
+console.log("document",document)
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
