@@ -1087,37 +1087,24 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     const salesPersons = existingUsers.filter(user =>
                         user?.rolename?.roleName === "Sales Person"
                     );
-for (let user of salesPersons) {
-    const services = user?.service;
+                    for (let user of salesPersons) {
+                        const services = user?.service;
 
-    if (!Array.isArray(services)) {
-        console.log("❌ No service array for user:", user._id);
-        continue;
-    }
+                        if (!Array.isArray(services)) {
+                            console.log("❌ No service array for user:", user._id);
+                            continue;
+                        }
 
-    for (let service of services) {
+                        for (let service of services) {
 
-        if (String(service.pincode).trim() === String(document.pincode).trim()) {
-            console.log(`✅ Match found for pincode ${document.pincode} in user ${user._id}`);
-        }
-    }
-}
-
-                   const matchedSalesPersons = salesPersons.filter(user => {
-  const services = user?.salesPerson?.service;
-  if (!Array.isArray(services)) return false;
-
-  return services.some(service =>
-    String(service?.pincode).trim() === String(document?.pincode).trim()
-  );
-});
-
-
-                    if (matchedSalesPersons.length > 0) {
-                        document[createdByKey] = matchedSalesPersons[0]._id;
-                    
+                            if (String(service.pincode).trim() === String(document.pincode).trim()) {
+                                document[createdByKey] = matchedSalesPersons[0]._id;
+                            }
+                        }
                     }
-console.log("document",document)
+
+
+                    console.log("document", document)
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
