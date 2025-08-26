@@ -858,15 +858,147 @@ export const paymentDueReport = async (req, res) => {
 // ------------------------------------------------------------
 
 
+// export const SaveLeadPartyExcel = async (req, res) => {
+//     try {
+//         const leadStatusCheck = "leadStatusCheck";
+//         const databaseKey = "database";
+//         const mobNo = "mobileNumber";
+//         const cityKey = "City";
+//         const statekey = "State";
+//         const companykey = "CompanyName";
+//         const createdbykey = "created_by";
+//         const existingMobileNo = [];
+//         const insertedDocuments = [];
+//         const dataNotExist = [];
+
+//         const filePath = req?.file?.path;
+//         const fileMime = req?.file?.mimetype;
+//         const fileExt = path.extname(filePath).toLowerCase();
+
+//         if (!filePath || !fs.existsSync(filePath)) {
+//             return res.status(400).json({ error: 'Uploaded file not found', status: false });
+//         }
+
+//         const stats = fs.statSync(filePath);
+//         if (stats.size === 0) {
+//             return res.status(400).json({ error: 'Uploaded file is empty', status: false });
+//         }
+
+//         const workbook = new ExcelJS.Workbook();
+//         let worksheet;
+
+//         if (fileMime === 'text/csv' || fileExt === '.csv') {
+//             worksheet = await workbook.csv.readFile(filePath);
+//         } else if (
+//             fileMime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+//             fileExt === '.xlsx'
+//         ) {
+//             await workbook.xlsx.readFile(filePath);
+//             worksheet = workbook.getWorksheet(1);
+//         } else {
+//             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
+//         }
+
+//         const headerRow = worksheet.getRow(1);
+//         const headings = [];
+//         headerRow.eachCell((cell) => {
+//             headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
+//         });
+
+//         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+//             const dataRow = worksheet.getRow(rowIndex);
+//             const document = {};
+
+//             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
+//                 const heading = headings[columnIndex - 1];
+//                 const cellValue = dataRow.getCell(columnIndex).value;
+//                 const value = typeof cellValue === 'object' && 'text' in cellValue ? cellValue.text : cellValue;
+
+//                 if (heading === 'remark') {
+//                     const now = new Date();
+//                     const date = now.toISOString().split('T')[0];
+//                     const time = now.toTimeString().split(' ')[0];
+
+//                     document.remark = [{
+//                         remark: value,
+//                         date,
+//                         time
+//                     }];
+//                 } else {
+//                     document[heading] = value;
+//                 }
+//             }
+
+//             document[databaseKey] = req.params.database;
+
+//             if (document.database) {
+//                 const existingId = await Customer.findOne({
+//                     mobileNumber: document.mobilenumber,
+//                     database: document.database,
+//                     status: "Active"
+//                 });
+
+//                 if (existingId) {
+//                     existingMobileNo.push(document.mobileno || document.contactnumber);
+//                 } else {
+//                     document[leadStatusCheck] = "true";
+//                     document[cityKey] = document.city;
+//                     document[statekey] = document.state;
+//                     document[companykey] = document.companyname;
+//                     document[mobNo] = document.mobilenumber;
+//                     const exisitingUser = await User.find({ database: req.params.database }).populate({ path: "rolename", model: "role", })
+//                     const salesPerson = await exisitingUser.filter((ele) => ele?.rolename?.roleName === "Sales Person")
+//                     let matchedSalesPerson = null;
+//                     if (salesPerson && salesPerson.length > 0) {
+//                         for (let item of salesPerson) {
+//                             const services = item?.salesPerson?.service || [];
+
+//                             const matchedService = services.some(service => String(service.pincode) === String(document.pincode));
+
+//                                 //   const filterSalesPerson = salesPerson.filter((data)=> data.service.some((data)=> data.pincode ===  document.pincode))
+//                             console.log("matchedService", matchedService)
+//                             if (matchedService) {
+//                                 matchedSalesPerson = item;
+//                                 break;
+//                             }
+//                         }
+//                         if (matchedSalesPerson) {
+//                             document[createdbykey] = matchedSalesPerson._id;
+//                         }
+//                     }
+//                     console.log("document ", document)
+//                     const insertedDocument = await Customer.create(document);
+//                     insertedDocuments.push(insertedDocument);
+//                 }
+//             } else {
+//                 dataNotExist.push(document.ownername || document.companyname);
+//             }
+//         }
+
+//         let message = 'Data Inserted Successfully';
+//         if (dataNotExist.length > 0) {
+//             message = `These customers have no database: ${dataNotExist.join(', ')}`;
+//         } else if (existingMobileNo.length > 0) {
+//             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
+//         }
+
+//         return res.status(200).json({ message, status: true });
+
+//     } catch (err) {
+//         console.error("Error processing file:", err);
+//         return res.status(500).json({ error: 'Internal Server Error', status: false });
+//     }
+// };
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const leadStatusCheck = "leadStatusCheck";
         const databaseKey = "database";
         const mobNo = "mobileNumber";
         const cityKey = "City";
-        const statekey = "State";
-        const companykey = "CompanyName";
-        const createdbykey = "created_by";
+        const stateKey = "State";
+        const companyKey = "CompanyName";
+        const createdByKey = "created_by";
+
         const existingMobileNo = [];
         const insertedDocuments = [];
         const dataNotExist = [];
@@ -932,39 +1064,41 @@ export const SaveLeadPartyExcel = async (req, res) => {
             document[databaseKey] = req.params.database;
 
             if (document.database) {
+                const phone = document.mobilenumber || document.contactnumber;
+
                 const existingId = await Customer.findOne({
-                    mobileNumber: document.mobilenumber,
+                    mobileNumber: phone,
                     database: document.database,
                     status: "Active"
                 });
 
                 if (existingId) {
-                    existingMobileNo.push(document.mobileno || document.contactnumber);
+                    existingMobileNo.push(phone);
                 } else {
                     document[leadStatusCheck] = "true";
                     document[cityKey] = document.city;
-                    document[statekey] = document.state;
-                    document[companykey] = document.companyname;
-                    document[mobNo] = document.mobilenumber;
-                    const exisitingUser = await User.find({ database: req.params.database }).populate({ path: "rolename", model: "role", })
-                    const salesPerson = await exisitingUser.filter((ele) => ele?.rolename?.roleName === "Sales Person")
-                    let matchedSalesPerson = null;
-                    if (salesPerson && salesPerson.length > 0) {
-                        for (let item of salesPerson) {
-                            const services = item?.salesPerson?.service || [];
+                    document[stateKey] = document.state;
+                    document[companyKey] = document.companyname;
+                    document[mobNo] = phone;
 
-                            const matchedService = services.some(service => String(service.pincode) === String(document.pincode));
-                            console.log("matchedService", matchedService)
-                            if (matchedService) {
-                                matchedSalesPerson = item;
-                                break;
-                            }
-                        }
-                        if (matchedSalesPerson) {
-                            document[createdbykey] = matchedSalesPerson._id;
-                        }
+                    const existingUsers = await User.find({ database: req.params.database })
+                        .populate({ path: "rolename", model: "role" });
+
+                    const salesPersons = existingUsers.filter(user =>
+                        user?.rolename?.roleName === "Sales Person"
+                    );
+
+                    const matchedSalesPersons = salesPersons.filter(user =>
+                        (user?.salesPerson?.service || []).some(
+                            service => String(service.pincode) === String(document.pincode)
+                        )
+                    );
+console.log("matchedSalesPersons",matchedSalesPersons)
+                    if (matchedSalesPersons.length > 0) {
+                        document[createdByKey] = matchedSalesPersons[0]._id;
+                    
                     }
-                    console.log("document ", document)
+
                     const insertedDocument = await Customer.create(document);
                     insertedDocuments.push(insertedDocument);
                 }
