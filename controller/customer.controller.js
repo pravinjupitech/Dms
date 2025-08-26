@@ -1087,22 +1087,11 @@ export const SaveLeadPartyExcel = async (req, res) => {
                     const salesPersons = existingUsers.filter(user =>
                         user?.rolename?.roleName === "Sales Person"
                     );
-const matchedSalesPersonss = salesPersons.filter(user => {
-  const services = user?.salesPerson?.service;
-
-  if (!Array.isArray(services)) return false;
-
-  const match = services.some(service =>
-    String(service?.pincode).trim() === String(document?.pincode).trim()
-  );
-
-  if (match) {
-    console.log(`✅ Matched pincode: ${document.pincode} with user: ${user._id}`);
-  }
-
-  return match;
-});
-
+for(let item of salesPersons){
+    item?.service.map((item)=>{
+        console.log("item",item)
+    })
+}
                    const matchedSalesPersons = salesPersons.filter(user => {
   const services = user?.salesPerson?.service;
   if (!Array.isArray(services)) return false;
