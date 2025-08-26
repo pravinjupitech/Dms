@@ -932,7 +932,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
 
             if (document.database) {
                 const existingId = await Customer.findOne({
-                    mobileNumber: document.mobileNumber || document.contactnumber || document.mobile || document.contact,
+                    mobileNumber: document.mobilenumber,
                     database: document.database,
                     status: "Active"
                 });
