@@ -510,6 +510,12 @@ export const saveExcelFile = async (req, res) => {
         const roles = []
         const IdNotExisting = []
         const GSTPercentage = []
+        const existingUsers = await User.find({ database: req.params.database, status: "Active" })
+            .populate({ path: "rolename", model: "role" });
+
+        const salesPersons = existingUsers.filter(user =>
+            user?.rolename?.roleName === "Sales Person"
+        );
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
@@ -521,6 +527,7 @@ export const saveExcelFile = async (req, res) => {
                 } else {
                     document[heading] = cellValue;
                 }
+
                 // document[heading] = cellValue;
             }
             document[database] = req.params.database
@@ -550,6 +557,7 @@ export const saveExcelFile = async (req, res) => {
                     if (existingId) {
                         existingIds.push(document.id)
                     } else {
+
                         if (document.pincode) {
                             const data = await GetCityByPincode(document.pincode)
                             document[State] = data.state;
@@ -564,6 +572,19 @@ export const saveExcelFile = async (req, res) => {
                             last4 = adhar.slice(-4);
                             document['sId'] = `${fname}${last4}`;
                         }
+                        const matchedSalesPerson = salesPersons.find(user => {
+                            const services = user?.salesPerson?.service;
+                            if (!Array.isArray(services)) return false;
+
+                            return services.some(service =>
+                                String(service?.pincode).trim() === String(document.pincode).trim()
+                            );
+                        });
+
+                        if (matchedSalesPerson && !document?.assignSalesPerson) {
+                            document[created_by] = matchedSalesPerson._id;
+                        }
+
                         if (document.gstNumber) {
                             if (document.gstNumber.length !== 15) {
                                 GSTPercentage.push(document.gstNumber)
@@ -994,6 +1015,8 @@ export const paymentDueReport = async (req, res) => {
 //         return res.status(500).json({ error: 'Internal Server Error', status: false });
 //     }
 // };
+
+
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const constants = {
@@ -1038,15 +1061,13 @@ export const SaveLeadPartyExcel = async (req, res) => {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
         }
 
-        // Read and normalize headers
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell((cell) => {
             headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
         });
 
-        // 🧠 Fetch and cache all salespersons ONCE
-        const existingUsers = await User.find({ database: req.params.database })
+        const existingUsers = await User.find({ database: req.params.database, status: "Active" })
             .populate({ path: "rolename", model: "role" });
 
         const salesPersons = existingUsers.filter(user =>
@@ -1057,7 +1078,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
 
-            // Map cell data to document
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
                 const cellValue = dataRow.getCell(columnIndex).value;
@@ -1103,7 +1123,6 @@ export const SaveLeadPartyExcel = async (req, res) => {
                 continue;
             }
 
-            // ✅ Assign Sales Person by pincode match
             const matchedSalesPerson = salesPersons.find(user => {
                 const services = user?.salesPerson?.service;
                 if (!Array.isArray(services)) return false;
@@ -1121,14 +1140,12 @@ export const SaveLeadPartyExcel = async (req, res) => {
             insertedDocuments.push(insertedDocument);
         }
 
-        // ✅ Final message summary
         let message = 'Data Inserted Successfully';
         if (dataNotExist.length > 0) {
             message = `These customers have no database: ${dataNotExist.join(', ')}`;
         } else if (existingMobileNo.length > 0) {
             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
         }
-
         return res.status(200).json({ message, status: true });
 
     } catch (err) {
