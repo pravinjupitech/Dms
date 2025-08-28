@@ -747,7 +747,7 @@ export const UserList = async (req, res, next) => {
 export const assignUser = async (req, res, next) => {
   try {
     const { childs } = req.body;
-    console.log("req", req.body)
+    // console.log("req", req.body)
     const manager = await User.findById({ _id: req.body.parentId })
     if (!manager) {
       return res.status(404).json({ message: "User Not Found", status: false })
