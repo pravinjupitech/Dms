@@ -568,7 +568,7 @@ export const saveExcelFile = async (req, res) => {
                             let last4 = '';
                             let existName = document.CompanyName.split(" ");
                             let fname = existName[0];
-                            const adhar = document.aadharNo.trim();
+                            const adhar = document.aadharNo;
                             last4 = adhar.slice(-4);
                             document['sId'] = `${fname}${last4}`;
                         }
