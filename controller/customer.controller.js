@@ -515,6 +515,7 @@ export const saveExcelFile = async (req, res) => {
         const salesPersons = existingUsers.filter(user =>
             user?.rolename?.roleName === "Sales Person"
         );
+        console.log("salesPersonslist ",salesPersons)
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
@@ -537,7 +538,6 @@ export const saveExcelFile = async (req, res) => {
                     document[remainingLimit] = document.limit
                 }
                 const role = await Role.findOne({ id: document.rolename, database: document.database })
-                console.log("role", role, "document role", document.rolename, "document.rolename", document.database)
                 if (document.gstNumber) {
                     document[id] = document.gstNumber.slice(2, -3);
                 } else {
@@ -572,7 +572,7 @@ export const saveExcelFile = async (req, res) => {
                             document['sId'] = `${fname}${last4}`;
                         }
                         const matchedSalesPerson = salesPersons.find(user => {
-                            const services = user?.salesPerson?.service;
+                            const services = user?.service;
                             if (!Array.isArray(services)) return false;
 
                             return services.some(service =>
