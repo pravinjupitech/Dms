@@ -32,11 +32,11 @@ export const SaveUser = async (req, res, next) => {
       return res.status(400).json({ message: "user id required", status: false })
     }
     if (req.body.email) {
-      const { email } = req.body;
+      const { email, database } = req.body;
 
       const [findUser, findCustomer] = await Promise.all([
-        User.findOne({ email,status:"Active" }),
-        Customer.findOne({ email,status:"Active" })
+        User.findOne({ email, status: "Active", database: database }),
+        Customer.findOne({ email, status: "Active", database: database })
       ]);
 
       if (findUser || findCustomer) {
@@ -44,11 +44,11 @@ export const SaveUser = async (req, res, next) => {
       }
     }
     if (req.body.mobileNumber) {
-      const { mobileNumber } = req.body;
+      const { mobileNumber, database } = req.body;
 
       const [findUsers, findCustomers] = await Promise.all([
-        User.findOne({ mobileNumber,status:"Active" }),
-        Customer.findOne({ mobileNumber,status:"Active" })
+        User.findOne({ mobileNumber, status: "Active", database: database }),
+        Customer.findOne({ mobileNumber, status: "Active", database: database })
       ]);
 
       if (findUsers || findCustomers) {
@@ -256,6 +256,30 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
+      if (req.body.email) {
+        const { email, database } = req.body;
+
+        const [findUser, findCustomer] = await Promise.all([
+          User.findOne({ email, status: "Active", database: database }),
+          Customer.findOne({ email, status: "Active", database: database })
+        ]);
+
+        if (findUser || findCustomer) {
+          return res.status(409).json({ message: "Email already exists", status: false });
+        }
+      }
+      if (req.body.mobileNumber) {
+        const { mobileNumber, database } = req.body;
+
+        const [findUsers, findCustomers] = await Promise.all([
+          User.findOne({ mobileNumber, status: "Active", database: database }),
+          Customer.findOne({ mobileNumber, status: "Active", database: database })
+        ]);
+
+        if (findUsers || findCustomers) {
+          return res.status(409).json({ message: "MobileNumber already exists", status: false });
+        }
+      }
       if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
         let last4 = '';
         let existName = req.body.firstName.split(" ");
@@ -389,6 +413,30 @@ export const EditProfile = async (req, res, next) => {
         last4 = pan.slice(-4);
       }
       req.body.sId = `${fname}${last4}`;
+    }
+    if (req.body.email) {
+      const { email, database } = req.body;
+
+      const [findUser, findCustomer] = await Promise.all([
+        User.findOne({ email, status: "Active", database: database }),
+        Customer.findOne({ email, status: "Active", database: database })
+      ]);
+
+      if (findUser || findCustomer) {
+        return res.status(409).json({ message: "Email already exists", status: false });
+      }
+    }
+    if (req.body.mobileNumber) {
+      const { mobileNumber, database } = req.body;
+
+      const [findUsers, findCustomers] = await Promise.all([
+        User.findOne({ mobileNumber, status: "Active", database: database }),
+        Customer.findOne({ mobileNumber, status: "Active", database: database })
+      ]);
+
+      if (findUsers || findCustomers) {
+        return res.status(409).json({ message: "MobileNumber already exists", status: false });
+      }
     }
     // req.body.profileImage = req.file.filename || null
     const userDetail = req.body;
