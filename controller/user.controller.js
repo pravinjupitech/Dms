@@ -35,8 +35,8 @@ export const SaveUser = async (req, res, next) => {
       const { email } = req.body;
 
       const [findUser, findCustomer] = await Promise.all([
-        User.findOne({ email }),
-        Customer.findOne({ email })
+        User.findOne({ email,status:"Active" }),
+        Customer.findOne({ email,status:"Active" })
       ]);
 
       if (findUser || findCustomer) {
@@ -47,8 +47,8 @@ export const SaveUser = async (req, res, next) => {
       const { mobileNumber } = req.body;
 
       const [findUsers, findCustomers] = await Promise.all([
-        User.findOne({ mobileNumber }),
-        Customer.findOne({ mobileNumber })
+        User.findOne({ mobileNumber,status:"Active" }),
+        Customer.findOne({ mobileNumber,status:"Active" })
       ]);
 
       if (findUsers || findCustomers) {
