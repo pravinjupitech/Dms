@@ -580,9 +580,11 @@ export const saveExcelFile = async (req, res) => {
                                 String(service?.pincode).trim() === String(document.pincode).trim()
                             );
                         });
+                        console.log("matchedSaleperson",matchedSalesPerson)
 
                         if (matchedSalesPerson && !document?.assignSalesPerson) {
                             document[created_by] = matchedSalesPerson._id;
+                            console.log("document ",document.created_by)
                         }
 
                         if (document.gstNumber) {
