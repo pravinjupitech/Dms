@@ -1122,7 +1122,7 @@ export const SaveLeadPartyExcel = async (req, res) => {
             }
 
             const matchedSalesPerson = salesPersons.find(user => {
-                const services = user?.salesPerson?.service;
+                const services = user?.service;
                 if (!Array.isArray(services)) return false;
 
                 return services.some(service =>
