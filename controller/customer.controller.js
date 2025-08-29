@@ -547,12 +547,11 @@ export const saveExcelFile = async (req, res) => {
                     roles.push(document.ownerName)
                 } else {
                     document[rolename] = role._id.toString()
-                    const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
-                    if (!existCustomerGroup) {
-                        group.push(document.id)
-                    } else {
-                    document[category] = await existCustomerGroup._id.toString()
-                }
+                    // const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
+                    // if (!existCustomerGroup) {
+                    //     group.push(document.id)
+                    // } else {
+                    // document[category] = await existCustomerGroup._id.toString()
                     const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
                     if (existingId) {
                         existingIds.push(document.id)
