@@ -515,7 +515,6 @@ export const saveExcelFile = async (req, res) => {
         const salesPersons = existingUsers.filter(user =>
             user?.rolename?.roleName === "Sales Person"
         );
-        console.log("salesPersonslist ",salesPersons)
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
@@ -548,11 +547,12 @@ export const saveExcelFile = async (req, res) => {
                     roles.push(document.ownerName)
                 } else {
                     document[rolename] = role._id.toString()
-                    // const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
-                    // if (!existCustomerGroup) {
-                    //     group.push(document.id)
-                    // } else {
-                    // document[category] = await existCustomerGroup._id.toString()
+                    const existCustomerGroup = await CustomerGroup.findOne({ id: document.category, database: document.database, status: "Active" })
+                    if (!existCustomerGroup) {
+                        group.push(document.id)
+                    } else {
+                    document[category] = await existCustomerGroup._id.toString()
+                }
                     const existingId = await Customer.findOne({ id: document.id, database: document.database, status: "Active" });
                     if (existingId) {
                         existingIds.push(document.id)
@@ -579,11 +579,9 @@ export const saveExcelFile = async (req, res) => {
                                 String(service?.pincode).trim() === String(document.pincode).trim()
                             );
                         });
-                        console.log("matchedSaleperson", matchedSalesPerson)
 
                         if (matchedSalesPerson && !document?.assignSalesPerson) {
                             document[created_by] = matchedSalesPerson._id;
-                            console.log("document ", document.created_by)
                         }
 
                         if (document.gstNumber) {
