@@ -537,7 +537,7 @@ export const saveExcelFile = async (req, res) => {
                     document[remainingLimit] = document.limit
                 }
                 const role = await Role.findOne({ id: document.rolename, database: document.database })
-                console.log("role",role,"document role",document.rolename,"document.rolename",document.database)
+                console.log("role", role, "document role", document.rolename, "document.rolename", document.database)
                 if (document.gstNumber) {
                     document[id] = document.gstNumber.slice(2, -3);
                 } else {
@@ -565,12 +565,10 @@ export const saveExcelFile = async (req, res) => {
                             document[District] = data.district
                         }
                         if (document.CompanyName && document.aadharNo) {
-                            let last4 = '';
                             let existName = document.CompanyName.split(" ");
                             let fname = existName[0];
-                            const adhar = document.aadharNo;
-                            console.log("adhar",adhar)
-                            last4 = adhar.slice(-4);
+                            const adhar = String(document.aadharNo);
+                           const last4 = adhar.slice(-4);
                             document['sId'] = `${fname}${last4}`;
                         }
                         const matchedSalesPerson = salesPersons.find(user => {
@@ -581,11 +579,11 @@ export const saveExcelFile = async (req, res) => {
                                 String(service?.pincode).trim() === String(document.pincode).trim()
                             );
                         });
-                        console.log("matchedSaleperson",matchedSalesPerson)
+                        console.log("matchedSaleperson", matchedSalesPerson)
 
                         if (matchedSalesPerson && !document?.assignSalesPerson) {
                             document[created_by] = matchedSalesPerson._id;
-                            console.log("document ",document.created_by)
+                            console.log("document ", document.created_by)
                         }
 
                         if (document.gstNumber) {
