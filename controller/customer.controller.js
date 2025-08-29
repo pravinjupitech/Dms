@@ -43,7 +43,18 @@ export const SaveCustomer = async (req, res, next) => {
                 return res.status(409).json({ message: "Email already exists", status: false });
             }
         }
+        if (req.body.mobileNumber) {
+            const { mobileNumber } = req.body;
 
+            const [findUsers, findCustomers] = await Promise.all([
+                User.findOne({ mobileNumber }),
+                Customer.findOne({ mobileNumber })
+            ]);
+
+            if (findUsers || findCustomers) {
+                return res.status(409).json({ message: "MobileNumber already exists", status: false });
+            }
+        }
         if (req.files) {
             let images = [];
             req.files.map(file => {
@@ -567,7 +578,7 @@ export const saveExcelFile = async (req, res) => {
                             let existName = document.CompanyName.split(" ");
                             let fname = existName[0];
                             const adhar = String(document.aadharNo);
-                           const last4 = adhar.slice(-4);
+                            const last4 = adhar.slice(-4);
                             document['sId'] = `${fname}${last4}`;
                         }
                         const matchedSalesPerson = salesPersons.find(user => {

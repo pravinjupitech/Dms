@@ -43,7 +43,18 @@ export const SaveUser = async (req, res, next) => {
         return res.status(409).json({ message: "Email already exists", status: false });
       }
     }
+    if (req.body.mobileNumber) {
+      const { mobileNumber } = req.body;
 
+      const [findUsers, findCustomers] = await Promise.all([
+        User.findOne({ mobileNumber }),
+        Customer.findOne({ mobileNumber })
+      ]);
+
+      if (findUsers || findCustomers) {
+        return res.status(409).json({ message: "MobileNumber already exists", status: false });
+      }
+    }
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
