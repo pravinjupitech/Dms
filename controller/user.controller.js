@@ -35,15 +35,26 @@ export const SaveUser = async (req, res, next) => {
       const { email } = req.body;
 
       const [findUser, findCustomer] = await Promise.all([
-        User.findOne({ email }),
-        Customer.findOne({ email })
+        User.findOne({ email,status:"Active" }),
+        Customer.findOne({ email,status:"Active" })
       ]);
 
       if (findUser || findCustomer) {
         return res.status(409).json({ message: "Email already exists", status: false });
       }
     }
+    if (req.body.mobileNumber) {
+      const { mobileNumber } = req.body;
 
+      const [findUsers, findCustomers] = await Promise.all([
+        User.findOne({ mobileNumber,status:"Active" }),
+        Customer.findOne({ mobileNumber,status:"Active" })
+      ]);
+
+      if (findUsers || findCustomers) {
+        return res.status(409).json({ message: "MobileNumber already exists", status: false });
+      }
+    }
     if (req.file) {
       req.body.profileImage = req.file.filename;
     }
