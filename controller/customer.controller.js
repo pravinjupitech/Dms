@@ -510,8 +510,7 @@ export const saveExcelFile = async (req, res) => {
         const roles = []
         const IdNotExisting = []
         const GSTPercentage = []
-        const existingUsers = await User.find({ database: req.params.database, status: "Active" })
-            .populate({ path: "rolename", model: "role" });
+        const existingUsers = await User.find({ database: req.params.database, status: "Active" }).populate({ path: "rolename", model: "role" });
 
         const salesPersons = existingUsers.filter(user =>
             user?.rolename?.roleName === "Sales Person"
