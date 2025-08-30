@@ -189,7 +189,7 @@ export const PromotionApply = async (req, res, next) => {
             const endOfDay = new Date(item.activityId.ToDate);
             startOfDay.setUTCHours(0, 0, 0, 0);
             endOfDay.setUTCHours(23, 59, 59, 999);
-            const customer = await Customer.find({ status: "Active" }).populate({ path: "created_by", model: "user" })
+            const customer = await Customer.find({ status: "Active",database: req.params.database }).populate({ path: "created_by", model: "user" })
             if (customer.length === 0) {
                 return res.status(404).json({ message: "Party Not Found", status: false })
             }
