@@ -237,7 +237,7 @@ export const PromotionApply = async (req, res, next) => {
                                 } else {
                                     offerQty = `₹${items.discountAmount*noToMultiple}`
                                 }
-                                status = "Completed"
+                                status =noToMultiple
                             } else {
                                 AchieveQty = totalProductQty
                                 remainingQty = items.targetQty - totalProductQty
@@ -266,7 +266,7 @@ export const PromotionApply = async (req, res, next) => {
                             const result = totalAmount/item.amountWise[0].totalAmount;
                             const noToMultiple = Math.floor(result);
                             remainingAmount = 0
-                            status = "Completed"
+                            status = noToMultiple;
                             offerAmount = `₹${item.amountWise[0].percentageAmount*noToMultiple}`
                         } else {
                             remainingAmount = item.amountWise[0].totalAmount - totalAmount;
