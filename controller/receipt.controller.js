@@ -1096,3 +1096,12 @@ export const ViewReceiptByPartyId = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+export const ViewReceiptBySalesPersonId = async (req, res, next) => {
+    try {
+        let receipt = await Receipt.find({ database: req.params.database, created_by: req.params.id }).sort({ sortorder: -1 }).populate({ path: "partyId", model: "customer" })
+        return (receipt.length > 0) ? res.status(200).json({ Receipts: receipt, status: true }) : res.status(404).json({ message: "Receipt Not Found", status: false });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
