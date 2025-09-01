@@ -27,7 +27,7 @@ router.get("/view-customer-by-id/:id", ViewCustomerById);
 router.get("/delete-customer/:id", DeleteCustomer);
 router.post("/delete-bulk-customer/:database", DeleteBulkCustomer);
 router.post("/update-customer/:id", upload.any("files"), UpdateCustomer);
-router.get("/view-gps-report/:database", GPSReport);
+router.get("/view-gps-report/:database/:id", GPSReport);
 
 router.post("/login", SignInWithMobile)
 router.post("/signIn", SignIn)
@@ -46,7 +46,7 @@ router.post("/save-lead-party-bulk/:database", uploads.single("file"), SaveLeadP
 router.get("/lead-party-list/:database", LeadPartyList)
 router.post("/assign-lead-party", AssignLeadParty)
 router.post("/unassign-party-lead", deleteAssignLeadParty)
-router.get("/lead-party-list/:id", PartyWithSalesPerson)
+router.get("/lead-party-lists/:id", PartyWithSalesPerson)
 router.delete("/delete-sales-lead/:id", DeleteSalesLead);
 router.post("/delete-multiple-sales-lead", DeleteSalesLeadMultiple)
 router.get("/sales-lead-by-id/:id", LeadPartyListById)
