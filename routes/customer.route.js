@@ -46,7 +46,7 @@ router.post("/save-lead-party-bulk/:database", uploads.single("file"), SaveLeadP
 router.get("/lead-party-list/:database", LeadPartyList)
 router.post("/assign-lead-party", AssignLeadParty)
 router.post("/unassign-party-lead", deleteAssignLeadParty)
-router.get("/lead-party-list/:id", PartyWithSalesPerson)
+router.get("/lead-party-lists/:id", PartyWithSalesPerson)
 router.delete("/delete-sales-lead/:id", DeleteSalesLead);
 router.post("/delete-multiple-sales-lead", DeleteSalesLeadMultiple)
 router.get("/sales-lead-by-id/:id", LeadPartyListById)
