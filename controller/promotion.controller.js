@@ -308,6 +308,7 @@ export const PromotionApply = async (req, res, next) => {
                 }
             }
         }
+        
         return res.status(200).json({ Promotion: customers, messge: "success", status: true })
     }
     catch (err) {
