@@ -27,7 +27,7 @@ router.get("/view-customer-by-id/:id", ViewCustomerById);
 router.get("/delete-customer/:id", DeleteCustomer);
 router.post("/delete-bulk-customer/:database", DeleteBulkCustomer);
 router.post("/update-customer/:id", upload.any("files"), UpdateCustomer);
-router.get("/view-gps-report/:database", GPSReport);
+router.get("/view-gps-report/:database/:id", GPSReport);
 
 router.post("/login", SignInWithMobile)
 router.post("/signIn", SignIn)

@@ -259,6 +259,7 @@ export const GPSReport = async (req, res, next) => {
     try {
         const customers = await Customer.find(
             { database: req.params.database },
+            { created_by: req.params.id },
             { createdAt: 1, CompanyName: 1, latitude: 1, longitude: 1 }
         ).sort({ sortorder: -1 });
 
