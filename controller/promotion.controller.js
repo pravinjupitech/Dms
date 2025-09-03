@@ -211,6 +211,7 @@ export const PromotionApply = async (req, res, next) => {
                         for (let item of existOrder) {
                             productItems = productItems.concat(item.orderItems)
                         }
+                        // console.log("productItems",productItems)
                         for (let items of item.productWise) {
                             let totalProductQty = 0;
                             let offerQty = 0;

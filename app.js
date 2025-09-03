@@ -75,6 +75,7 @@ import DynamicUnitRouter from "./routes/dynamicUnit.route.js"
 import AccountRouter from "./routes/accounts.route.js"
 import PincodeRouter from "./routes/pincode.route.js"
 import VisitRouter from "./routes/visit.route.js"
+import VisitPointRouter from "./routes/visitPoint.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -173,6 +174,7 @@ app.use("/units", DynamicUnitRouter)
 app.use("/accounts", AccountRouter)
 app.use("/pincode",PincodeRouter)
 app.use("/visit",VisitRouter)
+app.use("/visitpoint",VisitPointRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
