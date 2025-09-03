@@ -189,7 +189,7 @@ export const PromotionApply = async (req, res, next) => {
             const endOfDay = new Date(item.activityId.ToDate);
             startOfDay.setUTCHours(0, 0, 0, 0);
             endOfDay.setUTCHours(23, 59, 59, 999);
-            const customer = await Customer.find({ status: "Active",database: req.params.database }).populate({ path: "created_by", model: "user" })
+            const customer = await Customer.find({ status: "Active", database: req.params.database }).populate({ path: "created_by", model: "user" })
             if (customer.length === 0) {
                 return res.status(404).json({ message: "Party Not Found", status: false })
             }
@@ -227,17 +227,17 @@ export const PromotionApply = async (req, res, next) => {
                             })
                             if (items.targetQty <= totalProductQty) {
                                 AchieveQty = totalProductQty
-                                const result = totalProductQty/items.targetQty;
+                                const result = totalProductQty / items.targetQty;
                                 const noToMultiple = Math.floor(result);
                                 if (items.freeProductQty) {
-                                    offerQty = `${items.freeProductQty*noToMultiple} qty`;
+                                    offerQty = `${items.freeProductQty * noToMultiple} qty`;
                                     freeProductName = items.freeProduct.Product_Title
                                 } else if (items.discountPercentage) {
                                     offerQty = `${items.discountPercentage}%`
                                 } else {
-                                    offerQty = `₹${items.discountAmount*noToMultiple}`
+                                    offerQty = `₹${items.discountAmount * noToMultiple}`
                                 }
-                                status =noToMultiple
+                                status = noToMultiple
                             } else {
                                 AchieveQty = totalProductQty
                                 remainingQty = items.targetQty - totalProductQty
@@ -245,14 +245,14 @@ export const PromotionApply = async (req, res, next) => {
                             let Obj = {
                                 partyId: party,
                                 productName: productName,
-                                Target: items.targetQty+" qty",
+                                Target: items.targetQty + " qty",
                                 Achieved: AchieveQty,
                                 Balance: remainingQty,
                                 Status: status,
                                 OfferAmount: offerQty,
                                 FreeProduct: freeProductName,
                                 type: "ProductWise",
-                                ActivityType:item.activityId
+                                ActivityType: item.activityId
                             }
                             if (productName) {
                                 await customers.push(Obj)
@@ -263,23 +263,23 @@ export const PromotionApply = async (req, res, next) => {
                         let status = "Pending";
                         let offerAmount = 0;
                         if (item.amountWise[0].totalAmount <= totalAmount) {
-                            const result = totalAmount/item.amountWise[0].totalAmount;
+                            const result = totalAmount / item.amountWise[0].totalAmount;
                             const noToMultiple = Math.floor(result);
                             remainingAmount = 0
                             status = noToMultiple;
-                            offerAmount = `₹${item.amountWise[0].percentageAmount*noToMultiple}`
+                            offerAmount = `₹${item.amountWise[0].percentageAmount * noToMultiple}`
                         } else {
                             remainingAmount = item.amountWise[0].totalAmount - totalAmount;
                         }
                         let Obj = {
                             partyId: party,
-                            Target: "₹"+item.amountWise[0].totalAmount,
+                            Target: "₹" + item.amountWise[0].totalAmount,
                             Achieved: totalAmount,
                             Balance: remainingAmount,
                             Status: status,
                             OfferAmount: offerAmount,
                             type: "AmountWise",
-                            ActivityType:item.activityId
+                            ActivityType: item.activityId
                         }
                         await customers.push(Obj)
                     } else if (item.percentageWise.length > 0) {
@@ -287,28 +287,30 @@ export const PromotionApply = async (req, res, next) => {
                         let status = "Pending";
                         let offerPercentage = 0;
                         if (item.percentageWise[0].totalAmount <= totalAmount) {
+                            const result = totalAmount / item.percentageWise[0].totalAmount;
+                            const noToMultiple = Math.floor(result);
                             remainingAmount = 0
-                            status = "Completed"
+                            status = noToMultiple
                             offerPercentage = `${item.percentageWise[0].percentageDiscount}%`
                         } else {
                             remainingAmount = item.percentageWise[0].totalAmount - totalAmount;
                         }
                         let Obj = {
                             partyId: party,
-                            Target: "₹"+item.percentageWise[0].totalAmount,
+                            Target: "₹" + item.percentageWise[0].totalAmount,
                             Achieved: totalAmount,
                             Balance: remainingAmount,
                             Status: status,
                             OfferAmount: offerPercentage,
                             type: "PercentageWise",
-                            ActivityType:item.activityId
+                            ActivityType: item.activityId
                         }
                         await customers.push(Obj)
                     }
                 }
             }
         }
-        
+
         return res.status(200).json({ Promotion: customers, messge: "success", status: true })
     }
     catch (err) {
@@ -328,7 +330,7 @@ export const PromotionApplySalesApp = async (req, res, next) => {
             const endOfDay = new Date(item.activityId.ToDate);
             startOfDay.setUTCHours(0, 0, 0, 0);
             endOfDay.setUTCHours(23, 59, 59, 999);
-            const customer = await Customer.find({created_by:req.params.id, status: "Active" }).populate({ path: "created_by", model: "user" })
+            const customer = await Customer.find({ created_by: req.params.id, status: "Active" }).populate({ path: "created_by", model: "user" })
             if (customer.length === 0) {
                 return res.status(404).json({ message: "Party Not Found", status: false })
             }
@@ -382,14 +384,14 @@ export const PromotionApplySalesApp = async (req, res, next) => {
                             let Obj = {
                                 partyId: party,
                                 productName: productName,
-                                Target: items.targetQty+" qty",
+                                Target: items.targetQty + " qty",
                                 Achieved: AchieveQty,
                                 Balance: remainingQty,
                                 Status: status,
                                 OfferAmount: offerQty,
                                 FreeProduct: freeProductName,
                                 type: "ProductWise",
-                                ActivityType:item.activityId
+                                ActivityType: item.activityId
                             }
                             if (productName) {
                                 await customers.push(Obj)
@@ -408,13 +410,13 @@ export const PromotionApplySalesApp = async (req, res, next) => {
                         }
                         let Obj = {
                             partyId: party,
-                            Target: "₹"+item.amountWise[0].totalAmount,
+                            Target: "₹" + item.amountWise[0].totalAmount,
                             Achieved: totalAmount,
                             Balance: remainingAmount,
                             Status: status,
                             OfferAmount: offerAmount,
                             type: "AmountWise",
-                            ActivityType:item.activityId
+                            ActivityType: item.activityId
                         }
                         await customers.push(Obj)
                     } else if (item.percentageWise.length > 0) {
@@ -430,13 +432,13 @@ export const PromotionApplySalesApp = async (req, res, next) => {
                         }
                         let Obj = {
                             partyId: party,
-                            Target: "₹"+item.percentageWise[0].totalAmount,
+                            Target: "₹" + item.percentageWise[0].totalAmount,
                             Achieved: totalAmount,
                             Balance: remainingAmount,
                             Status: status,
                             OfferAmount: offerPercentage,
                             type: "PercentageWise",
-                            ActivityType:item.activityId
+                            ActivityType: item.activityId
                         }
                         await customers.push(Obj)
                     }
@@ -460,12 +462,12 @@ export const PromotionApply1 = async (req, res, next) => {
         for (let item of existPromotion) {
             let startOfDay;
             let endOfDay;
-            if(req.body.startDate && req.body.endDate){
+            if (req.body.startDate && req.body.endDate) {
                 startOfDay = new Date(req.body.startDate);
                 endOfDay = new Date(req.body.endDate);
                 startOfDay.setUTCHours(0, 0, 0, 0);
                 endOfDay.setUTCHours(23, 59, 59, 999);
-            } else{
+            } else {
                 startOfDay = new Date(item.activityId.FromDate);
                 endOfDay = new Date(item.activityId.ToDate);
                 startOfDay.setUTCHours(0, 0, 0, 0);
@@ -604,18 +606,18 @@ export const PromotionApplyForSalesPerson = async (req, res, next) => {
         for (let item of existPromotion) {
             let startOfDay;
             let endOfDay;
-            if(req.body.startDate && req.body.endDate){
+            if (req.body.startDate && req.body.endDate) {
                 startOfDay = new Date(req.body.startDate);
                 endOfDay = new Date(req.body.endDate);
                 startOfDay.setUTCHours(0, 0, 0, 0);
                 endOfDay.setUTCHours(23, 59, 59, 999);
-            } else{
+            } else {
                 startOfDay = new Date(item.activityId.FromDate);
                 endOfDay = new Date(item.activityId.ToDate);
                 startOfDay.setUTCHours(0, 0, 0, 0);
                 endOfDay.setUTCHours(23, 59, 59, 999);
             }
-            const customer = await Customer.find({ status: "Active",created_by:req.params.id }).populate({ path: "created_by", model: "user" })
+            const customer = await Customer.find({ status: "Active", created_by: req.params.id }).populate({ path: "created_by", model: "user" })
             if (customer.length === 0) {
                 return res.status(404).json({ message: "Party Not Found", status: false })
             }
@@ -676,7 +678,7 @@ export const PromotionApplyForSalesPerson = async (req, res, next) => {
                                 OfferAmount: offerQty,
                                 FreeProduct: freeProductName,
                                 type: "ProductWise",
-                                ActivityId:item.activityId
+                                ActivityId: item.activityId
                             }
                             if (productName) {
                                 await customers.push(Obj)
@@ -701,7 +703,7 @@ export const PromotionApplyForSalesPerson = async (req, res, next) => {
                             Status: status,
                             OfferAmount: offerAmount,
                             type: "AmountWise",
-                            ActivityId:item.activityId
+                            ActivityId: item.activityId
                         }
                         await customers.push(Obj)
                     } else if (item.percentageWise.length > 0) {
@@ -723,7 +725,7 @@ export const PromotionApplyForSalesPerson = async (req, res, next) => {
                             Status: status,
                             OfferAmount: offerPercentage,
                             type: "PercentageWise",
-                            ActivityId:item.activityId
+                            ActivityId: item.activityId
                         }
                         await customers.push(Obj)
                     }
