@@ -197,11 +197,12 @@ export const PromotionApply = async (req, res, next) => {
                 let totalAmount = 0;
                 let totalQty = 0;
                 let party = {};
-                const existOrder = await CreateOrder.find({ partyId: id._id.toString(),status:"completed", date: { $gte: startOfDay, $lte: endOfDay } }).populate({ path: "partyId", model: "customer" }).populate({ path: "orderItems.productId", model: "product" })
+                const existOrder = await CreateOrder.find({ partyId: id._id.toString(), status: "completed", date: { $gte: startOfDay, $lte: endOfDay } }).populate({ path: "partyId", model: "customer" }).populate({ path: "orderItems.productId", model: "product" })
                 if (existOrder.length === 0) {
                     continue
                 } else {
                     for (let item of existOrder) {
+                        console.log("item", item)
                         totalAmount += item.grandTotal
                         totalQty += item.qty
                         party = id
@@ -287,12 +288,16 @@ export const PromotionApply = async (req, res, next) => {
                         let remainingAmount = 0;
                         let status = "Pending";
                         let offerPercentage = 0;
-                        if (item.percentageWise[0].totalAmount <= totalAmount) {
+                        let offerPercentageAmount = 0;
+                        const discountSlab = item.percentageWise[0];
+                        if (discountSlab.totalAmount <= totalAmount) {
                             const result = totalAmount / item.percentageWise[0].totalAmount;
                             const noToMultiple = Math.floor(result);
                             remainingAmount = 0
                             status = noToMultiple
-                            offerPercentage = `${item.percentageWise[0].percentageDiscount}%`
+                            offerPercentage = `${discountSlab.percentageDiscount}%`
+                            const discountPerSlab = (discountSlab.totalAmount * discountSlab.percentageDiscount) / 100;
+                            offerPercentageAmount = discountPerSlab * noToMultiple;
                         } else {
                             remainingAmount = item.percentageWise[0].totalAmount - totalAmount;
                         }
