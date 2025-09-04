@@ -307,7 +307,7 @@ export const PromotionApply = async (req, res, next) => {
                             Achieved: totalAmount,
                             Balance: remainingAmount,
                             Status: status,
-                            OfferAmount: offerPercentage,
+                            OfferAmount: offerPercentageAmount,
                             type: "PercentageWise",
                             ActivityType: item.activityId
                         }
