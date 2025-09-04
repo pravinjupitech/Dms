@@ -197,7 +197,7 @@ export const PromotionApply = async (req, res, next) => {
                 let totalAmount = 0;
                 let totalQty = 0;
                 let party = {};
-                const existOrder = await CreateOrder.find({ partyId: id._id.toString(), date: { $gte: startOfDay, $lte: endOfDay } }).populate({ path: "partyId", model: "customer" }).populate({ path: "orderItems.productId", model: "product" })
+                const existOrder = await CreateOrder.find({ partyId: id._id.toString(),status:"completed", date: { $gte: startOfDay, $lte: endOfDay } }).populate({ path: "partyId", model: "customer" }).populate({ path: "orderItems.productId", model: "product" })
                 if (existOrder.length === 0) {
                     continue
                 } else {

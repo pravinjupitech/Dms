@@ -13,7 +13,8 @@ export const createVisit = async (req, res, next) => {
 export const viewVisit = async (req, res, next) => {
     try {
         const { id, database } = req.params;
-        const visit = await Visit.find({ created_by: id, database: database });
+        console.log(req.params)
+        const visit = await Visit.find({ created_by: id,database:database});
         return visit.length > 0 ? res.status(200).json({ message: "Data Found", visit, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error);
