@@ -202,8 +202,7 @@ export const PromotionApply = async (req, res, next) => {
                     continue
                 } else {
                     for (let item of existOrder) {
-                        console.log("item", item)
-                        totalAmount += item.grandTotal
+                        totalAmount += item.amount
                         totalQty += item.qty
                         party = id
                     }
