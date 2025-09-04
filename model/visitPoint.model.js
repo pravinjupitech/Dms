@@ -17,6 +17,12 @@ const visitPointSchema = new mongoose.Schema({
     },
     checkOut: {
         type: String
+    },
+    checkInLatLog:{
+        type:String
+    },
+    checkOutLatLog:{
+        type:String
     }
 }, { timestamps: true })
 export const VisitPoint = mongoose.model("visitpoint", visitPointSchema)
