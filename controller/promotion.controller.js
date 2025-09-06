@@ -96,7 +96,7 @@ export const SavePromotion = async (req, res, next) => {
 }
 export const ViewPromotion = async (req, res, next) => {
     try {
-        // const userId = req.params.id;
+        const userId = req.params.id;
         const database = req.params.database;
         // const adminDetail = await getUserHierarchyBottomToTop(userId, database)
         // if (!adminDetail.length > 0) {

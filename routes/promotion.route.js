@@ -10,7 +10,7 @@ router.delete("/delete-activity/:id", deleteActivity)
 router.put("/update-activity/:id", UpdatedActivity)
 
 router.post("/save-promotion", SavePromotion);
-router.get("/view-promotion/:database", ViewPromotion)
+router.get("/view-promotion/:id/:database", ViewPromotion)
 router.get("/view-promotion-by-id/:id", ViewPromotionById)
 router.put("/update-promotion/:id", UpdatedPromotion)
 router.put("/update-product-promotion/:id", UpdatedPromotionProductWise)
