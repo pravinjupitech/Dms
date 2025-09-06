@@ -231,6 +231,7 @@ export const UpdateCustomer = async (req, res, next) => {
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 };
+ 
 export const GPSReport = async (req, res, next) => {
     try {
         const customers = await Customer.find(
