@@ -130,13 +130,43 @@ export const SaveUser = async (req, res, next) => {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
     }
-    console.log("req.body", req.body)
+
     const user = await User.create(req.body);
     if (req.body.warehouse) {
       await assingWarehouse(user.warehouse, user._id);
     }
     if (user) {
       await setSalary(user);
+      if (user?.rolename) {
+        const findRoles = await Role.findById(user.rolename);
+
+     const BATCH_SIZE = 500; 
+
+if (findRoles?.roleName === "Sales Person" && Array.isArray(user.service) && user.service.length > 0) {
+  const pincodes = [...new Set(
+    user.service
+      .map(area => area.pincode)
+      .filter(pincode => pincode !== undefined && pincode !== null)
+  )];
+
+  for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
+    const chunk = pincodes.slice(i, i + BATCH_SIZE);
+
+    await Customer.updateMany(
+      {
+        $or: [
+          { created_by: "" },
+          { created_by: { $exists: false } },
+          { created_by: null }
+        ],
+        pincode: { $in: chunk }
+      },
+      { $set: { created_by: user._id } }
+    );
+  }
+}
+      }
+
     }
     return user ? res.status(200).json({ message: "Data Save Successfull", User: user, status: true }) : res.status(400).json({ message: "Something Went Wrong", status: false });
   } catch (err) {
@@ -201,9 +231,15 @@ export const ViewUser = async (req, res, next) => {
 
 export const DeleteUser = async (req, res, next) => {
   try {
-    const user = await User.findById({ _id: req.params.id });
+    const user = await User.findById({ _id: req.params.id }).populate({ path: "rolename", model: "role" });
     if (!user) {
       return res.status(404).json({ error: "Not Found", status: false });
+    }
+    if (user?.rolename?.roleName === "Sales Person") {
+      await Customer.updateMany(
+        { created_by: user._id },
+        { $unset: { created_by: "" } }
+      );
     }
     user.status = "Deactive";
     await user.save();
@@ -256,7 +292,7 @@ export const UpdateUser = async (req, res, next) => {
       //     req.body.userAllotted = sub.noOfUser
       //   }
       // }
-    
+
       if (req.body.firstName && (req.body.Aadhar_No || req.body.Pan_No)) {
         let last4 = '';
         let existName = req.body.firstName.split(" ");
@@ -391,7 +427,7 @@ export const EditProfile = async (req, res, next) => {
       }
       req.body.sId = `${fname}${last4}`;
     }
-    
+
     // req.body.profileImage = req.file.filename || null
     const userDetail = req.body;
     const user_first = await User.findById(req.params.id);
