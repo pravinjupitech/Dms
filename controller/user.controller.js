@@ -358,7 +358,7 @@ export const SignIn = async (req, res, next) => {
     const token = Jwt.sign({ subject: email }, process.env.TOKEN_SECRET_KEY);
     if (existingAccount) {
       await User.updateOne({ email }, { $set: { latitude, longitude, currentAddress } });
-      return res.json({ message: "Login successful", user: { ...existingAccount.toObject(), password: undefined, token }, status: true, });
+      return res.json({ message: "Login successful", user: { ...existingAccount.toObject(), password: undefined, token,otp: undefined, }, status: true, });
     }
     if (existingCustomer) {
       await Customer.updateOne({ email }, { $set: { latitude, longitude, currentAddress, loginDate: new Date() } });
