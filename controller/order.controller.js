@@ -353,6 +353,7 @@ export const OrdertoBilling = async (req, res) => {
         order.sgstTotal=req.body.sgstTotal;
         order.igstTotal=req.body.igstTotal;
         order.grandTotal=req.body.grandTotal;
+        order.roundOff=req.body.roundOff;
         order.status = "Billing";
         await order.save();
         return res.status(200).json({ message: "Order Billing Successfull!", Order: order, status: true });
