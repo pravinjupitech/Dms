@@ -174,6 +174,7 @@ if (findRoles?.roleName === "Sales Person" && Array.isArray(user.service) && use
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 };
+
 export const ViewRegisterUser = async (req, res, next) => {
   try {
     let user = await User.find({ database: req.params.database, status: "Active" }).populate({ path: "branch", model: "userBranch" }).populate({ path: "rolename", model: "role" })
@@ -374,9 +375,9 @@ export const signInWithMob = async (req, res, next) => {
   try {
     const { mobileNumber, password } = req.body;
     const user = await User.findOne({ mobileNumber: mobileNumber, password: password, status: "Active" }).populate({ path: "rolename", model: "role" });
-    console.log("user", user)
+    // console.log("user", user)
     const result = user.rolename.roleName === "Sales Person"
-    console.log("req", result)
+    // console.log("req", result)
     if (result) {
       res.status(200).json({ message: "User Logged In ", user: { ...user.toObject(), password: undefined }, status: true })
     } else {
