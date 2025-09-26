@@ -348,9 +348,14 @@ export const OrdertoBilling = async (req, res) => {
             }
         }
         order.orderItems = req.body.orderItems;
+        order.amount=req.body.amount;
+        order.cgstTotal=req.body.cgstTotal;
+        order.sgstTotal=req.body.sgstTotal;
+        order.igstTotal=req.body.igstTotal;
+        order.grandTotal=req.body.grandTotal;
         order.status = "Billing";
         await order.save();
-        return res.status(200).json({ message: "Order Billing Seccessfull!", Order: order, status: true });
+        return res.status(200).json({ message: "Order Billing Successfull!", Order: order, status: true });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
