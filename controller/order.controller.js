@@ -742,6 +742,11 @@ export const updateCreateOrder = async (req, res, next) => {
         //     party.remainingLimit -= priceChange;
         //     await product.save();
         // }
+        function safeNumber(val, fallback = 0) {
+    const num = Number(val);
+    return isNaN(num) ? fallback : num;
+}
+
         for (const newItem of updatedItems) {
             console.log("update same newItem", newItem);
 
