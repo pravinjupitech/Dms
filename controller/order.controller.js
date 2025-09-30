@@ -33,7 +33,7 @@ const __dirname = dirname(__filename);
 
 export const createOrder = async (req, res, next) => {
     try {
-        console.log("req.body",req.body)
+        console.log("req.body", req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -348,12 +348,12 @@ export const OrdertoBilling = async (req, res) => {
             }
         }
         order.orderItems = req.body.orderItems;
-        order.amount=req.body.amount;
-        order.cgstTotal=req.body.cgstTotal;
-        order.sgstTotal=req.body.sgstTotal;
-        order.igstTotal=req.body.igstTotal;
-        order.grandTotal=req.body.grandTotal;
-        order.roundOff=req.body.roundOff;
+        order.amount = req.body.amount;
+        order.cgstTotal = req.body.cgstTotal;
+        order.sgstTotal = req.body.sgstTotal;
+        order.igstTotal = req.body.igstTotal;
+        order.grandTotal = req.body.grandTotal;
+        order.roundOff = req.body.roundOff;
         order.status = "Billing";
         await order.save();
         return res.status(200).json({ message: "Order Billing Successfull!", Order: order, status: true });
@@ -678,12 +678,77 @@ export const updateCreateOrder = async (req, res, next) => {
             await product.save();
         }
 
+        // for (const newItem of updatedItems) {
+        //     console.log("update same newItem", newItem)
+
+        //     const oldItem = oldMap.get(newItem.productId.toString());
+        //     const qtyChange = newItem.qty - oldItem.qty;
+        //     const priceChange = newItem.totalPrice - oldItem.totalPrice;
+
+        //     if (qtyChange === 0 && priceChange === 0) continue;
+
+        //     const product = await Product.findById({ _id: newItem.productId });
+        //     if (!product) continue;
+
+        //     const warehouse = await Warehouse.findById({ _id: product.warehouse });
+        //     const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
+
+        //     if (isCompleted) {
+        //         product.qty -= qtyChange;
+
+        //         if (warehouse) {
+        //             const whItem = warehouse.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+        //             if (whItem) {
+        //                 whItem.currentStock -= qtyChange;
+        //                 whItem.totalPrice += priceChange;
+        //             }
+        //             await warehouse.save();
+        //         }
+
+        //         if (stock) {
+        //             const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+        //             if (sItem) {
+        //                 sItem.currentStock -= qtyChange;
+        //                 sItem.sQty += qtyChange;
+        //                 sItem.sTotal += priceChange;
+        //                 await stock.save();
+        //             }
+        //         }
+        //     } else {
+        //         product.qty -= qtyChange;
+        //         product.pendingQty += qtyChange;
+
+        //         if (warehouse) {
+        //             const whItem = warehouse.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+        //             if (whItem) {
+        //                 whItem.currentStock -= qtyChange;
+        //             }
+        //             await warehouse.save();
+        //         }
+
+        //         if (stock) {
+        //             // console.log("stock",stock)
+        //             const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
+        //             // console.log("sitem",sItem)
+        //             if (sItem) {
+        //                 sItem.currentStock -= qtyChange
+        //                 sItem.pendingStock += qtyChange;
+        //                 sItem.pendingStockTotal += priceChange;
+        //                 await stock.save();
+        //             }
+        //         }
+        //     }
+
+        //     party.remainingLimit -= priceChange;
+        //     await product.save();
+        // }
         for (const newItem of updatedItems) {
-            console.log("update same newItem", newItem)
+            console.log("update same newItem", newItem);
 
             const oldItem = oldMap.get(newItem.productId.toString());
-            const qtyChange = newItem.qty - oldItem.qty;
-            const priceChange = newItem.totalPrice - oldItem.totalPrice;
+
+            const qtyChange = safeNumber(newItem.qty) - safeNumber(oldItem.qty);
+            const priceChange = safeNumber(newItem.totalPrice) - safeNumber(oldItem.totalPrice);
 
             if (qtyChange === 0 && priceChange === 0) continue;
 
@@ -694,13 +759,13 @@ export const updateCreateOrder = async (req, res, next) => {
             const stock = await Stock.findOne({ warehouseId: product.warehouse.toString(), date: updatedFields.date });
 
             if (isCompleted) {
-                product.qty -= qtyChange;
+                product.qty = safeNumber(product.qty) - qtyChange;
 
                 if (warehouse) {
                     const whItem = warehouse.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     if (whItem) {
-                        whItem.currentStock -= qtyChange;
-                        whItem.totalPrice += priceChange;
+                        whItem.currentStock = safeNumber(whItem.currentStock) - qtyChange;
+                        whItem.totalPrice = safeNumber(whItem.totalPrice) + priceChange;
                     }
                     await warehouse.save();
                 }
@@ -708,38 +773,36 @@ export const updateCreateOrder = async (req, res, next) => {
                 if (stock) {
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     if (sItem) {
-                        sItem.currentStock -= qtyChange;
-                        sItem.sQty += qtyChange;
-                        sItem.sTotal += priceChange;
+                        sItem.currentStock = safeNumber(sItem.currentStock) - qtyChange;
+                        sItem.sQty = safeNumber(sItem.sQty) + qtyChange;
+                        sItem.sTotal = safeNumber(sItem.sTotal) + priceChange;
                         await stock.save();
                     }
                 }
             } else {
-                product.qty -= qtyChange;
-                product.pendingQty += qtyChange;
+                product.qty = safeNumber(product.qty) - qtyChange;
+                product.pendingQty = safeNumber(product.pendingQty) + qtyChange;
 
                 if (warehouse) {
                     const whItem = warehouse.productItems.find(p => p.productId.toString() === newItem.productId.toString());
                     if (whItem) {
-                        whItem.currentStock -= qtyChange;
+                        whItem.currentStock = safeNumber(whItem.currentStock) - qtyChange;
                     }
                     await warehouse.save();
                 }
 
                 if (stock) {
-                    // console.log("stock",stock)
                     const sItem = stock.productItems.find(p => p.productId.toString() === newItem.productId.toString());
-                    // console.log("sitem",sItem)
                     if (sItem) {
-                        sItem.currentStock -= qtyChange
-                        sItem.pendingStock += qtyChange;
-                        sItem.pendingStockTotal += priceChange;
+                        sItem.currentStock = safeNumber(sItem.currentStock) - qtyChange;
+                        sItem.pendingStock = safeNumber(sItem.pendingStock) + qtyChange;
+                        sItem.pendingStockTotal = safeNumber(sItem.pendingStockTotal) + priceChange;
                         await stock.save();
                     }
                 }
             }
 
-            party.remainingLimit -= priceChange;
+            party.remainingLimit = safeNumber(party.remainingLimit) - priceChange;
             await product.save();
         }
 
@@ -1496,11 +1559,11 @@ export const InvoiceIdFrom = async (req, res, next) => {
             path: 'orderItems.productId',
             model: 'product'
         }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).populate({ path: "warehouseId", model: "warehouse" }).exec();
-        if(!invoice){
+        if (!invoice) {
             invoice = await PurchaseOrder.findOne({ database: database, invoiceId: invoiceId, status: "completed" }).populate({
-            path: 'orderItems.productId',
-            model: 'product'
-        }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).exec();
+                path: 'orderItems.productId',
+                model: 'product'
+            }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).exec();
         }
         return invoice ? res.status(200).json({ message: "Data Found", printData: invoice, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {

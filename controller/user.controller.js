@@ -23,6 +23,13 @@ dotenv.config();
 
 export const SaveUser = async (req, res, next) => {
   try {
+    let findRole;
+     if (req.body.rolename) {
+       findRole = await Role.findById(req.body.rolename);
+       if(findRole.roleName==="SuperAdmin"){
+        req.body.database=req.body.id;
+       }
+    }
     if (req.body.id) {
       const existing = await User.findOne({ status: "Active", database: req.body.database, id: req.body.id })
       if (existing) {
@@ -119,13 +126,10 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
-    if (req.body.rolename) {
-      const findRole = await Role.findById(req.body.rolename);
-      if (findRole.roleName === "Labour" || findRole.roleName === "Packing And Labour") {
+      if (findRole?.roleName === "Labour" || findRole?.roleName === "Packing And Labour") {
         const pakerId = await generateUniqueSixDigitNumber();
         req.body.pakerId = pakerId;
       }
-    }
     if (req.body.warehouse) {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
