@@ -751,10 +751,10 @@ export const updateCreateOrder = async (req, res, next) => {
             console.log("update same newItem", newItem);
 
             const oldItem = oldMap.get(newItem.productId.toString());
-
+console.log("oldItem",oldItem)
             const qtyChange = safeNumber(newItem.qty) - safeNumber(oldItem.qty);
             const priceChange = safeNumber(newItem.totalPrice) - safeNumber(oldItem.totalPrice);
-
+console.log("get value",qtyChange,priceChange)
             if (qtyChange === 0 && priceChange === 0) continue;
 
             const product = await Product.findById({ _id: newItem.productId });
