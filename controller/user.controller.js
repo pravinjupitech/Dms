@@ -26,9 +26,9 @@ export const SaveUser = async (req, res, next) => {
     let findRole;
      if (req.body.rolename) {
        findRole = await Role.findById(req.body.rolename);
-       if(findRole.roleName==="SuperAdmin"){
-        req.body.database=req.body.id;
-       }
+      //  if(findRole.roleName==="SuperAdmin"){
+      //   req.body.database=req.body.id;
+      //  }
     }
     if (req.body.id) {
       const existing = await User.findOne({ status: "Active", database: req.body.database, id: req.body.id })
