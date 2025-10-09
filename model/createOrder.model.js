@@ -269,6 +269,9 @@ const createOrderSchema = new mongoose.Schema({
                 type: Number
             }
         }],
+        basicPrice:{
+            type:String
+        },
         discountPercentage: {
             type: Number
         },
