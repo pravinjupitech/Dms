@@ -7,5 +7,4 @@ router.get("/view-ledger-user/:id", viewLedgerByUser);
 router.get("/view-ledger-party/:id", viewLedgerByParty)
 router.get("/view-last-ledger/:id", ViewLastLedgerBalance)
 router.get("/view-party-ledger-salesapp/:id", viewLedgerByPartySalesApp)
-
 export default router;

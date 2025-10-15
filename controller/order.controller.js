@@ -537,7 +537,7 @@ export const updateCreateOrder = async (req, res, next) => {
     try {
         const orderId = req.params.id;
         const updatedFields = req.body;
-console.log("request body",updatedFields)
+        console.log("request body", updatedFields)
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }
@@ -743,18 +743,18 @@ console.log("request body",updatedFields)
         //     await product.save();
         // }
         function safeNumber(val, fallback = 0) {
-    const num = Number(val);
-    return isNaN(num) ? fallback : num;
-}
+            const num = Number(val);
+            return isNaN(num) ? fallback : num;
+        }
 
         for (const newItem of updatedItems) {
             console.log("update same newItem", newItem);
 
             const oldItem = oldMap.get(newItem.productId.toString());
-console.log("oldItem",oldItem)
+            console.log("oldItem", oldItem)
             const qtyChange = safeNumber(newItem.qty) - safeNumber(oldItem.qty);
             const priceChange = safeNumber(newItem.totalPrice) - safeNumber(oldItem.totalPrice);
-console.log("get value",qtyChange,priceChange)
+            console.log("get value", qtyChange, priceChange)
             if (qtyChange === 0 && priceChange === 0) continue;
 
             const product = await Product.findById({ _id: newItem.productId });
@@ -1571,6 +1571,168 @@ export const InvoiceIdFrom = async (req, res, next) => {
             }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).exec();
         }
         return invoice ? res.status(200).json({ message: "Data Found", printData: invoice, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal Server Error", status: false })
+    }
+}
+
+export const hsnWiseSaleReportB2B = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const { startDate, endDate } = req.body;
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const orders = await CreateOrder.find({
+            database: database,
+            status: "completed",
+            date: {
+                $gte: start,
+                $lte: end
+            },
+            igstTotal: { $ne: 0 }
+        }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        });
+        const hsnMap = new Map();
+        const totalIGST = orders.reduce((total, o) => total + (o.igstTotal || 0), 0);
+        orders?.forEach((invoice, invoiceIndex) => {
+            //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
+            invoice?.orderItems?.forEach((item) => {
+                const product = item?.productId || {};
+                const hsnCode = product?.HSN_Code || '';
+                const key = hsnCode;
+                const qty = item?.qty || 0;
+                const grandTotal = item?.grandTotal || 0;
+                const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+
+                const entry = {
+                    primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+                    secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+                    HSN_Code: hsnCode,
+                    Product_Desc: product?.Product_Desc || '',
+                    qty,
+                    grandTotal,
+                    gstPercentage,
+                    taxableAmount: item?.taxableAmount || 0,
+                    igstRate: item?.igstRate,
+                };
+                if (hsnMap.has(key)) {
+                    const existing = hsnMap.get(key);
+
+                    //   console.log(`HSN ${key} exists. Updating values...`);
+                    //   console.log('Before:', { ...existing });
+
+                    existing.qty += entry.qty;
+                    existing.grandTotal += entry.grandTotal;
+                    existing.taxableAmount += entry.taxableAmount;
+                    existing.igstRate += entry.igstRate;
+                    //   console.log('After:', { ...existing });
+                } else {
+                    //   console.log(`HSN ${key} not found. Adding new entry...`);
+                    //   console.log('Entry:', entry);
+                    hsnMap.set(key, { ...entry });
+                }
+            });
+        });
+
+        const result = Array.from(hsnMap.values());
+        const totals = result.reduce(
+            (acc, item) => {
+                acc.qty += item.qty;
+                acc.taxableAmount += item.taxableAmount;
+                acc.grandTotal += item.grandTotal;
+                acc.igstRate = totalIGST;
+                acc.gstPercentage+=item.gstPercentage;
+                return acc;
+            },
+            { qty: 0, taxableAmount: 0,gstPercentage:0 , igstRate: 0, grandTotal: 0}
+        );
+return res.status(200).json({ result, totals})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal Server Error", status: false })
+    }
+}
+export const hsnWiseSaleReportB2C = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const { startDate, endDate } = req.body;
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const orders = await CreateOrder.find({
+            database: database,
+            status: "completed",
+            date: {
+                $gte: start,
+                $lte: end
+            },
+            sgstTotal: { $ne: 0 }
+        }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        });
+        const hsnMap = new Map();
+        const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
+        orders?.forEach((invoice, invoiceIndex) => {
+            //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
+            invoice?.orderItems?.forEach((item) => {
+                const product = item?.productId || {};
+                const hsnCode = product?.HSN_Code || '';
+                const key = hsnCode;
+                const qty = item?.qty || 0;
+                const grandTotal = item?.grandTotal || 0;
+                const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+
+                const entry = {
+                    primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+                    secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+                    HSN_Code: hsnCode,
+                    Product_Desc: product?.Product_Desc || '',
+                    qty,
+                    grandTotal,
+                    gstPercentage,
+                    taxableAmount: item?.taxableAmount || 0,
+                    sgstRate: item?.sgstRate,
+                    cgstRate: item?.cgstRate,
+                };
+                if (hsnMap.has(key)) {
+                    const existing = hsnMap.get(key);
+
+                    //   console.log(`HSN ${key} exists. Updating values...`);
+                    //   console.log('Before:', { ...existing });
+
+                    existing.qty += entry.qty;
+                    existing.grandTotal += entry.grandTotal;
+                    existing.taxableAmount += entry.taxableAmount;
+                    existing.sgstRate += entry.sgstRate;
+                    existing.cgstRate += entry.cgstRate;
+                    //   console.log('After:', { ...existing });
+                } else {
+                    //   console.log(`HSN ${key} not found. Adding new entry...`);
+                    //   console.log('Entry:', entry);
+                    hsnMap.set(key, { ...entry });
+                }
+            });
+        });
+
+        const result = Array.from(hsnMap.values());
+        const totals = result.reduce(
+            (acc, item) => {
+                acc.qty += item.qty;
+                acc.taxableAmount += item.taxableAmount;
+                acc.grandTotal += item.grandTotal;
+                acc.cgstRate = totalSGST;
+                acc.sgstRate = totalSGST;
+                acc.gstPercentage+=item.gstPercentage;
+                return acc;
+            },
+            { qty: 0, taxableAmount: 0,gstPercentage:0 , sgstRate: 0,cgstRate:0,grandTotal: 0}
+        );
+return res.status(200).json({ result, totals})
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal Server Error", status: false })

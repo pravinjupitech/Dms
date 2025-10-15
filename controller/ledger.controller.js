@@ -48,36 +48,36 @@ export const ViewLastLedgerBalance = async (req, res, next) => {
 }
 export const viewLedgerByPartySalesApp = async (req, res, next) => {
     try {
-        const customer = await Customer.find({created_by:req.params.id})
+        const customer = await Customer.find({ created_by: req.params.id })
         if (customer.length === 0) {
             return res.status(404).json({ message: "Customer Not Found", status: false });
         }
         let ledgerData = [];
-        for(let items of customer){
+        for (let items of customer) {
             let totalBillAmount = 0;
             let totalReceipt = 0;
-            const ledger = await Ledger.find({partyId:items._id}).sort({ date: 1, sortorder: -1 }).populate({ path: "partyId", model: "customer" });
+            const ledger = await Ledger.find({ partyId: items._id }).sort({ date: 1, sortorder: -1 }).populate({ path: "partyId", model: "customer" });
             if (ledger.length === 0) {
                 continue;
             }
-            for(let item of ledger){
-                const existingLedger = await ledgerData.find((i)=>i.partyId._id.toString()===item.partyId._id.toString());
-                if(existingLedger){
-                    if(item.debit){
-                        existingLedger.totalBillAmount +=item.debit;
-                    }else{
-                        existingLedger.totalReceipt +=item.credit;
+            for (let item of ledger) {
+                const existingLedger = await ledgerData.find((i) => i.partyId._id.toString() === item.partyId._id.toString());
+                if (existingLedger) {
+                    if (item.debit) {
+                        existingLedger.totalBillAmount += item.debit;
+                    } else {
+                        existingLedger.totalReceipt += item.credit;
                     }
-                }else{
-                    if(item.debit){
+                } else {
+                    if (item.debit) {
                         totalBillAmount = item.debit;
-                    }else{
+                    } else {
                         totalReceipt = item.credit;
                     }
                     const obj = {
-                        partyId:items,
+                        partyId: items,
                         totalBillAmount: totalBillAmount,
-                        totalReceipt:totalReceipt
+                        totalReceipt: totalReceipt
                     }
                     ledgerData.push(obj)
                 }
