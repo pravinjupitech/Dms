@@ -1579,9 +1579,7 @@ export const InvoiceIdFrom = async (req, res, next) => {
 
 export const hsnWiseSaleReportB2B = async (req, res, next) => {
     try {
-        const { database } = req.params;
-        const { startDate, endDate } = req.body;
-
+        const { database,startDate, endDate } = req.body;
         const start = new Date(startDate);
         const end = new Date(endDate);
         const orders = await CreateOrder.find({
@@ -1658,8 +1656,7 @@ return res.status(200).json({ result, totals})
 }
 export const hsnWiseSaleReportB2C = async (req, res, next) => {
     try {
-        const { database } = req.params;
-        const { startDate, endDate } = req.body;
+        const {database, startDate, endDate } = req.body;
 
         const start = new Date(startDate);
         const end = new Date(endDate);
