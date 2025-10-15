@@ -1595,8 +1595,9 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
             model: 'product'
         });
         const hsnMap = new Map();
-        const totalIGST = orders.reduce((total, o) => total + (o.igstTotal || 0), 0);
+        // const totalIGST = orders.reduce((total, o) => total + (o.igstTotal || 0), 0);
         orders?.forEach((invoice, invoiceIndex) => {
+            console.log(invoice)
             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
             invoice?.orderItems?.forEach((item) => {
                 const product = item?.productId || {};
@@ -1642,7 +1643,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
                 acc.qty += item.qty;
                 acc.taxableAmount += item.taxableAmount;
                 acc.grandTotal += item.grandTotal;
-                acc.igstRate = totalIGST;
+                acc.igstRate += item.igstRate;
                 acc.gstPercentage+=item.gstPercentage;
                 return acc;
             },
@@ -1673,7 +1674,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
             model: 'product'
         });
         const hsnMap = new Map();
-        const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
+        // const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
         orders?.forEach((invoice, invoiceIndex) => {
             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
             invoice?.orderItems?.forEach((item) => {
@@ -1722,8 +1723,8 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                 acc.qty += item.qty;
                 acc.taxableAmount += item.taxableAmount;
                 acc.grandTotal += item.grandTotal;
-                acc.cgstRate = totalSGST;
-                acc.sgstRate = totalSGST;
+                acc.cgstRate = item.cgstRate;
+                acc.sgstRate = item.sgstRate;
                 acc.gstPercentage+=item.gstPercentage;
                 return acc;
             },
