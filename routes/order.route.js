@@ -46,6 +46,6 @@ router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
 router.put("/update-arn/:id",updateOrderArn)
 router.put("/update-cndetails/:id",upload.single("CNImage"),updateCNDetails)
 router.get("/view-invoice-data/:database/:invoiceId",InvoiceIdFrom)
-router.post("/hsn-wise-sale-reportb2b",hsnWiseSaleReportB2B)
-router.post("/hsn-wise-sale-reportb2c",hsnWiseSaleReportB2C)
+router.get("/hsn-wise-sale-reportb2b/:database",hsnWiseSaleReportB2B)
+router.get("/hsn-wise-sale-reportb2c/:database",hsnWiseSaleReportB2C)
 export default router;
