@@ -1579,16 +1579,10 @@ export const InvoiceIdFrom = async (req, res, next) => {
 
 export const hsnWiseSaleReportB2B = async (req, res, next) => {
     try {
-        const { database,startDate, endDate } = req.body;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+        const { database } = req.params;
         const orders = await CreateOrder.find({
             database: database,
             status: "completed",
-            date: {
-                $gte: start,
-                $lte: end
-            },
             igstTotal: { $ne: 0 }
         }).populate({
             path: 'orderItems.productId',
@@ -1657,17 +1651,11 @@ return res.status(200).json({ result, totals})
 }
 export const hsnWiseSaleReportB2C = async (req, res, next) => {
     try {
-        const {database, startDate, endDate } = req.body;
+        const {database } = req.params;
 
-        const start = new Date(startDate);
-        const end = new Date(endDate);
         const orders = await CreateOrder.find({
             database: database,
             status: "completed",
-            date: {
-                $gte: start,
-                $lte: end
-            },
             sgstTotal: { $ne: 0 }
         }).populate({
             path: 'orderItems.productId',
