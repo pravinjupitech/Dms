@@ -1649,7 +1649,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
             },
             { qty: 0, taxableAmount: 0,gstPercentage:0 , igstRate: 0, grandTotal: 0}
         );
-return res.status(200).json({ result, totals})
+return result.length>0? res.status(200).json({message:"Data Found", result, totals,status:true}):res.status(404).json({message:"Not Found",status:false})
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal Server Error", status: false })
