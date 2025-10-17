@@ -1674,7 +1674,8 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
             model: 'product'
         });
         const hsnMap = new Map();
-        // const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
+        
+        const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
         orders?.forEach((invoice, invoiceIndex) => {
             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
             invoice?.orderItems?.forEach((item) => {
@@ -1723,8 +1724,8 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                 acc.qty += item.qty;
                 acc.taxableAmount += item.taxableAmount;
                 acc.grandTotal += item.grandTotal;
-                acc.cgstRate += item.cgstRate;
-                acc.sgstRate += item.sgstRate;
+                acc.cgstRate=totalSGST;
+                acc.sgstRate =totalSGST;
                 acc.gstPercentage+=item.gstPercentage;
                 return acc;
             },
