@@ -269,8 +269,8 @@ const createOrderSchema = new mongoose.Schema({
                 type: Number
             }
         }],
-        basicPrice:{
-            type:Number
+        basicPrice: {
+            type: Number
         },
         discountPercentage: {
             type: Number
@@ -288,7 +288,47 @@ const createOrderSchema = new mongoose.Schema({
             type: Number
         }
     }],
-    hsnData:[],
+    hsnData: [{
+        hsn: {
+            type: String
+        },
+        taxable: {
+            type: Number
+        },
+        gstPercentage: {
+            type: Number
+        },
+        centralTax: [{
+            rate: {
+                type: Number
+            },
+            amount: {
+                type: Number
+            }
+        }],
+        stateTax: [{
+            rate: {
+                type: Number
+            },
+            amount: {
+                type: Number
+            }
+        }],
+        igstTax: [{
+            rate: {
+                type: Number
+            },
+            amount: {
+                type: Number
+            }
+        }],
+        basicPrice: {
+            type: Number
+        },
+        grandTotal: {
+            type: Number
+        }
+    }],
     transporter: {
         type: Object
     },
