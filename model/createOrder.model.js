@@ -288,6 +288,7 @@ const createOrderSchema = new mongoose.Schema({
             type: Number
         }
     }],
+    hsnData:[],
     transporter: {
         type: Object
     },
