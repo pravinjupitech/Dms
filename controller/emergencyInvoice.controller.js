@@ -32,7 +32,7 @@ export const updateEmergencyInvoice = async (req, res, next) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
-        if(!req.body.partyId){
+        if (!req.body.partyId) {
             return res.json({ message: "Party Id Is Required", status: false })
         }
         const emergencyInvoice = await EmergencyInvoice.findById(id)
@@ -41,6 +41,18 @@ export const updateEmergencyInvoice = async (req, res, next) => {
         }
         await EmergencyInvoice.findByIdAndUpdate(id, updatedData, { new: true })
         res.status(200).json({ message: "Status Updated", status: true })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
+    }
+}
+
+export const viewByIdEmergency = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const party = await EmergencyInvoice.find({ partyId: id,status:"Active" });
+        return party ? res.status(200).json({ message: "Data Found", party, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "Internal Server Error", error: error.message, status: false })
