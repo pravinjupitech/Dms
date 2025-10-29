@@ -51,7 +51,7 @@ export const viewByIdEmergency = async (req, res, next) => {
     try {
         const { id } = req.params;
         const party = await EmergencyInvoice.find({ partyId: id,status:"Active" });
-        return party ? res.status(200).json({ message: "Data Found", party, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+        return party.length>0 ? res.status(200).json({ message: "Data Found", party, status: true }) : res.status(404).json({ message: "Not Found", status: false })
 
     } catch (error) {
         console.log(error)
