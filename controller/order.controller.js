@@ -348,6 +348,8 @@ export const OrdertoBilling = async (req, res) => {
             }
         }
         order.orderItems = req.body.orderItems;
+        order.gstDetails=req.body.gstDetails;
+        order.hsnData=req.body.hsnData;
         order.amount = req.body.amount;
         order.cgstTotal = req.body.cgstTotal;
         order.sgstTotal = req.body.sgstTotal;
