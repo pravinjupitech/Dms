@@ -398,6 +398,8 @@ export const OrdertoDispatch = async (req, res) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
+
 // Order To Dispatch
 export const DispatchOrderCancelFromWarehouse = async (req, res) => {
     try {
@@ -415,6 +417,7 @@ export const DispatchOrderCancelFromWarehouse = async (req, res) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
 // export const updateCreateOrder = async (req, res, next) => {
 //     try {
 //         const orderId = req.params.id;
@@ -1605,7 +1608,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
                 const hsnCode = product?.HSN_Code || '';
                 const key = hsnCode;
                 const qty = item?.qty || 0;
-                const grandTotal = item?.grandTotal || 0;
+                const grandTotal = item?.totalPriceWithDiscount || 0;
                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
 
                 const entry = {
@@ -1686,7 +1689,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                 const hsnCode = product?.HSN_Code || '';
                 const key = hsnCode;
                 const qty = item?.qty || 0;
-                const grandTotal = item?.grandTotal || 0;
+                const grandTotal = item?.totalPriceWithDiscount || 0;
                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
 
                 const entry = {
