@@ -1582,276 +1582,367 @@ export const InvoiceIdFrom = async (req, res, next) => {
     }
 }
 
+// export const hsnWiseSaleReportB2B = async (req, res, next) => {
+//     try {
+//         const { database,startDate, endDate } = req.body;
+//         const start = new Date(startDate);
+//         const end = new Date(endDate);
+//         const orders = await CreateOrder.find({
+//             database: database,
+//             status: "completed",
+//             date: {
+//                 $gte: start,
+//                 $lte: end
+//             },
+//             igstTotal: { $ne: 0 }
+//         }).populate({
+//             path: 'orderItems.productId',
+//             model: 'product'
+//         });
+//         const hsnMap = new Map();
+//         // const totalIGST = orders.reduce((total, o) => total + (o.igstTotal || 0), 0);
+//         orders?.forEach((invoice, invoiceIndex) => {
+//             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
+//             invoice?.orderItems?.forEach((item) => {
+//                 const product = item?.productId || {};
+//                 const hsnCode = product?.HSN_Code || '';
+//                 const key = hsnCode;
+//                 const qty = item?.qty || 0;
+//                 const grandTotal = item?.totalPriceWithDiscount || 0;
+//                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+
+//                 const entry = {
+//                     primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+//                     secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+//                     HSN_Code: hsnCode,
+//                     Product_Desc: product?.Product_Desc || '',
+//                     qty,
+//                     grandTotal,
+//                     gstPercentage,
+//                     taxableAmount: item?.taxableAmount || 0,
+//                     igstRate: item?.igstRate||item?.igstAmount,
+//                 };
+//                 if (hsnMap.has(key)) {
+//                     const existing = hsnMap.get(key);
+
+//                     //   console.log(`HSN ${key} exists. Updating values...`);
+//                     //   console.log('Before:', { ...existing });
+
+//                     existing.qty += entry.qty;
+//                     existing.grandTotal += entry.grandTotal;
+//                     existing.taxableAmount += entry.taxableAmount;
+//                     existing.igstRate += entry.igstRate;
+//                     //   console.log('After:', { ...existing });
+//                 } else {
+//                     //   console.log(`HSN ${key} not found. Adding new entry...`);
+//                     //   console.log('Entry:', entry);
+//                     hsnMap.set(key, { ...entry });
+//                 }
+//             });
+//         });
+
+//         const result = Array.from(hsnMap.values());
+//         const totals = result.reduce(
+//             (acc, item) => {
+//                 acc.qty += item.qty;
+//                 acc.taxableAmount += item.taxableAmount;
+//                 acc.grandTotal += item.grandTotal;
+//                 acc.igstRate += item.igstRate;
+//                 acc.gstPercentage+=item.gstPercentage;
+//                 return acc;
+//             },
+//             { qty: 0, taxableAmount: 0,gstPercentage:0 , igstRate: 0, grandTotal: 0}
+//         );
+// return result.length>0? res.status(200).json({message:"Data Found", result, totals,status:true}):res.status(404).json({message:"Not Found",status:false})
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ message: "Internal Server Error", status: false })
+//     }
+// }
+
 export const hsnWiseSaleReportB2B = async (req, res, next) => {
-    try {
-        const { database,startDate, endDate } = req.body;
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const orders = await CreateOrder.find({
-            database: database,
-            status: "completed",
-            date: {
-                $gte: start,
-                $lte: end
-            },
-            igstTotal: { $ne: 0 }
-        }).populate({
-            path: 'orderItems.productId',
-            model: 'product'
-        });
-        const hsnMap = new Map();
-        // const totalIGST = orders.reduce((total, o) => total + (o.igstTotal || 0), 0);
-        orders?.forEach((invoice, invoiceIndex) => {
-            //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
-            invoice?.orderItems?.forEach((item) => {
-                const product = item?.productId || {};
-                const hsnCode = product?.HSN_Code || '';
-                const key = hsnCode;
-                const qty = item?.qty || 0;
-                const grandTotal = item?.totalPriceWithDiscount || 0;
-                const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+  try {
+    const { database, startDate, endDate } = req.body;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-                const entry = {
-                    primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
-                    secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
-                    HSN_Code: hsnCode,
-                    Product_Desc: product?.Product_Desc || '',
-                    qty,
-                    grandTotal,
-                    gstPercentage,
-                    taxableAmount: item?.taxableAmount || 0,
-                    igstRate: item?.igstRate||item?.igstAmount,
-                };
-                if (hsnMap.has(key)) {
-                    const existing = hsnMap.get(key);
+    const orders = await CreateOrder.find({
+      database,
+      status: "completed",
+      date: { $gte: start, $lte: end }    })
+      .populate({
+        path: 'orderItems.productId',
+        model: 'product',
+      })
+      .populate({
+        path: 'partyId',
+        model: 'customer', 
+        select: 'registrationType', 
+      });
 
-                    //   console.log(`HSN ${key} exists. Updating values...`);
-                    //   console.log('Before:', { ...existing });
+    const b2bOrders = orders.filter(order => {
+      const type =
+        order?.partyId?.registrationType;
+      return ["registered", "regular"].includes(type.toLowerCase());
+    });
 
-                    existing.qty += entry.qty;
-                    existing.grandTotal += entry.grandTotal;
-                    existing.taxableAmount += entry.taxableAmount;
-                    existing.igstRate += entry.igstRate;
-                    //   console.log('After:', { ...existing });
-                } else {
-                    //   console.log(`HSN ${key} not found. Adding new entry...`);
-                    //   console.log('Entry:', entry);
-                    hsnMap.set(key, { ...entry });
-                }
-            });
-        });
-
-        const result = Array.from(hsnMap.values());
-        const totals = result.reduce(
-            (acc, item) => {
-                acc.qty += item.qty;
-                acc.taxableAmount += item.taxableAmount;
-                acc.grandTotal += item.grandTotal;
-                acc.igstRate += item.igstRate;
-                acc.gstPercentage+=item.gstPercentage;
-                return acc;
-            },
-            { qty: 0, taxableAmount: 0,gstPercentage:0 , igstRate: 0, grandTotal: 0}
-        );
-return result.length>0? res.status(200).json({message:"Data Found", result, totals,status:true}):res.status(404).json({message:"Not Found",status:false})
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal Server Error", status: false })
+    if (b2bOrders.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No B2B Data Found", status: false });
     }
-}
-export const hsnWiseSaleReportB2C = async (req, res, next) => {
-    try {
-        const {database, startDate, endDate } = req.body;
 
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const orders = await CreateOrder.find({
-            database: database,
-            status: "completed",
-            date: {
-                $gte: start,
-                $lte: end
-            },
-            sgstTotal: { $ne: 0 },
-            cgstTotal:{$ne:0}
-        }).populate({
-            path: 'orderItems.productId',
-            model: 'product'
-        });
-        const hsnMap = new Map();
-        // orders.map((item)=>console.log("sgstTotal",item?.sgstTotal))
-        const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
+    const hsnMap = new Map();
 
-        orders?.forEach((invoice, invoiceIndex) => {
-            //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
-            invoice?.orderItems?.forEach((item) => {
-                const product = item?.productId || {};
-                const hsnCode = product?.HSN_Code || '';
-                const key = hsnCode;
-                const qty = item?.qty || 0;
-                const grandTotal = item?.totalPriceWithDiscount || 0;
-                const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+    b2bOrders.forEach((invoice) => {
+      invoice?.orderItems?.forEach((item) => {
+        const product = item?.productId || {};
+        const hsnCode = product?.HSN_Code || '';
+        const key = hsnCode;
+        const qty = item?.qty || 0;
+        const grandTotal = item?.totalPriceWithDiscount || 0;
+        const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
 
-                const entry = {
-                    primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
-                    secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
-                    HSN_Code: hsnCode,
-                    Product_Desc: product?.Product_Desc || '',
-                    qty,
-                    grandTotal,
-                    gstPercentage,
-                    taxableAmount: item?.taxableAmount || 0,
-                    sgstRate: item?.sgstRate||item?.sgstAmount,
-                    cgstRate: item?.cgstRate||item?.cgstAmount,
-                };
-                if (hsnMap.has(key)) {
-                    const existing = hsnMap.get(key);
+        const entry = {
+          primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+          secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+          HSN_Code: hsnCode,
+          Product_Desc: product?.Product_Desc || '',
+          qty,
+          grandTotal,
+          gstPercentage,
+          taxableAmount: item?.taxableAmount || 0,
+          igstRate: item?.igstRate || item?.igstAmount || 0,
+          cgstRate: item?.cgstRate || item?.cgstAmount || 0,
+          sgstRate: item?.sgstRate || item?.sgstAmount || 0,
+        };
 
-                    //   console.log(`HSN ${key} exists. Updating values...`);
-                    //   console.log('Before:', { ...existing });
+        if (hsnMap.has(key)) {
+          const existing = hsnMap.get(key);
+          existing.qty += entry.qty;
+          existing.grandTotal += entry.grandTotal;
+          existing.taxableAmount += entry.taxableAmount;
+          existing.igstRate += entry.igstRate;
+          existing.cgstRate += entry.cgstRate;
+          existing.sgstRate += entry.sgstRate;
+        } else {
+          hsnMap.set(key, { ...entry });
+        }
+      });
+    });
 
-                    existing.qty += entry.qty;
-                    existing.grandTotal += entry.grandTotal;
-                    existing.taxableAmount += entry.taxableAmount;
-                    existing.sgstRate += entry.sgstRate;
-                    existing.cgstRate += entry.cgstRate;
-                    //   console.log('After:', { ...existing });
-                } else {
-                    //   console.log(`HSN ${key} not found. Adding new entry...`);
-                    //   console.log('Entry:', entry);
-                    hsnMap.set(key, { ...entry });
-                }
-            });
-        });
+    const result = Array.from(hsnMap.values());
+    const totals = result.reduce(
+      (acc, item) => {
+        acc.qty += item.qty;
+        acc.taxableAmount += item.taxableAmount;
+        acc.grandTotal += item.grandTotal;
+        acc.igstRate += item.igstRate;
+        acc.cgstRate += item.cgstRate;
+        acc.sgstRate += item.sgstRate;
+        acc.gstPercentage += item.gstPercentage;
+        return acc;
+      },
+      { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0,sgstRate:0,cgstRate:0, grandTotal: 0 }
+    );
 
-        const result = Array.from(hsnMap.values());
-        const totals = result.reduce(
-            (acc, item) => {
-                acc.qty += item.qty;
-                acc.taxableAmount += item.taxableAmount;
-                acc.grandTotal += item.grandTotal;
-                acc.cgstRate+=item.cgstRate;
-                acc.sgstRate +=item.sgstRate;
-                acc.gstPercentage+=item.gstPercentage;
-                return acc;
-            },
-            { qty: 0, taxableAmount: 0,gstPercentage:0 , sgstRate: 0,cgstRate:0,grandTotal: 0}
-        );
-return res.status(200).json({ result, totals})
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal Server Error", status: false })
-    }
-}
+    return res.status(200).json({
+      message: "B2B Data Found",
+      result,
+      totals,
+      status: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
 
 
 
 // export const hsnWiseSaleReportB2C = async (req, res, next) => {
-//   try {
-//     const { database, startDate, endDate } = req.body;
+    //     try {
+    //         const {database, startDate, endDate } = req.body;
 
-//     const start = new Date(startDate);
-//     const end = new Date(endDate);
+//         const start = new Date(startDate);
+//         const end = new Date(endDate);
+//         const orders = await CreateOrder.find({
+//             database: database,
+//             status: "completed",
+//             date: {
+//                 $gte: start,
+//                 $lte: end
+//             },
+//             sgstTotal: { $ne: 0 },
+//             cgstTotal:{$ne:0}
+//         }).populate({
+//             path: 'orderItems.productId',
+//             model: 'product'
+//         });
+//         const hsnMap = new Map();
+//         // orders.map((item)=>console.log("sgstTotal",item?.sgstTotal))
+//         const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
 
-//     // 1️⃣ Fetch all completed orders in the date range
-//     const orders = await CreateOrder.find({
-//       database: database,
-//       status: "completed",
-//       date: { $gte: start, $lte: end },
-//       sgstTotal: { $ne: 0 },
-//       cgstTotal: { $ne: 0 },
-//     }).populate({
-//       path: "orderItems.productId",
-//       model: "product",
-//     });
+//         orders?.forEach((invoice, invoiceIndex) => {
+//             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
+//             invoice?.orderItems?.forEach((item) => {
+//                 const product = item?.productId || {};
+//                 const hsnCode = product?.HSN_Code || '';
+//                 const key = hsnCode;
+//                 const qty = item?.qty || 0;
+//                 const grandTotal = item?.totalPriceWithDiscount || 0;
+//                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
 
-//     // 2️⃣ If no orders found, return empty data
-//     if (!orders?.length) {
-//       return res.status(200).json({ result: [], totals: {} });
+//                 const entry = {
+//                     primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+//                     secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+//                     HSN_Code: hsnCode,
+//                     Product_Desc: product?.Product_Desc || '',
+//                     qty,
+//                     grandTotal,
+//                     gstPercentage,
+//                     taxableAmount: item?.taxableAmount || 0,
+//                     sgstRate: item?.sgstRate||item?.sgstAmount,
+//                     cgstRate: item?.cgstRate||item?.cgstAmount,
+//                 };
+//                 if (hsnMap.has(key)) {
+//                     const existing = hsnMap.get(key);
+
+//                     //   console.log(`HSN ${key} exists. Updating values...`);
+//                     //   console.log('Before:', { ...existing });
+
+//                     existing.qty += entry.qty;
+//                     existing.grandTotal += entry.grandTotal;
+//                     existing.taxableAmount += entry.taxableAmount;
+//                     existing.sgstRate += entry.sgstRate;
+//                     existing.cgstRate += entry.cgstRate;
+//                     //   console.log('After:', { ...existing });
+//                 } else {
+//                     //   console.log(`HSN ${key} not found. Adding new entry...`);
+//                     //   console.log('Entry:', entry);
+//                     hsnMap.set(key, { ...entry });
+//                 }
+//             });
+//         });
+
+//         const result = Array.from(hsnMap.values());
+//         const totals = result.reduce(
+//             (acc, item) => {
+//                 acc.qty += item.qty;
+//                 acc.taxableAmount += item.taxableAmount;
+//                 acc.grandTotal += item.grandTotal;
+//                 acc.cgstRate+=item.cgstRate;
+//                 acc.sgstRate +=item.sgstRate;
+//                 acc.gstPercentage+=item.gstPercentage;
+//                 return acc;
+//             },
+//             { qty: 0, taxableAmount: 0,gstPercentage:0 , sgstRate: 0,cgstRate:0,grandTotal: 0}
+//         );
+// return res.status(200).json({ result, totals})
+//     } catch (error) {
+//         console.log(error);
+//         res.status(500).json({ message: "Internal Server Error", status: false })
 //     }
+// }
 
-//     const hsnMap = new Map();
+        export const hsnWiseSaleReportB2C = async (req, res, next) => {
+          try {
+            const { database, startDate, endDate } = req.body;
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+        
+            const orders = await CreateOrder.find({
+              database,
+              status: "completed",
+              date: { $gte: start, $lte: end }    })
+              .populate({
+                path: 'orderItems.productId',
+                model: 'product',
+              })
+              .populate({
+                path: 'partyId',
+                model: 'customer', 
+                select: 'registrationType', 
+              });
+        
+           const b2cOrders = orders.filter((order) => {
+      const type =
+        order?.partyId?.registrationType ||
+        "";
+      return ["unregistered", "unknown"].includes(type.toLowerCase());
+    });
+        
+            if (b2cOrders.length === 0) {
+              return res
+                .status(404)
+                .json({ message: "No B2B Data Found", status: false });
+            }
+        
+            const hsnMap = new Map();
+        
+            b2cOrders.forEach((invoice) => {
+              invoice?.orderItems?.forEach((item) => {
+                const product = item?.productId || {};
+                const hsnCode = product?.HSN_Code || '';
+                const key = hsnCode;
+                const qty = item?.qty || 0;
+                const grandTotal = item?.totalPriceWithDiscount || 0;
+                const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
+        
+                const entry = {
+                  primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
+                  secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
+                  HSN_Code: hsnCode,
+                  Product_Desc: product?.Product_Desc || '',
+                  qty,
+                  grandTotal,
+                  gstPercentage,
+                  taxableAmount: item?.taxableAmount || 0,
+                  igstRate: item?.igstRate || item?.igstAmount || 0,
+                  cgstRate: item?.cgstRate || item?.cgstAmount || 0,
+                  sgstRate: item?.sgstRate || item?.sgstAmount || 0,
+                };
+        
+                if (hsnMap.has(key)) {
+                  const existing = hsnMap.get(key);
+                  existing.qty += entry.qty;
+                  existing.grandTotal += entry.grandTotal;
+                  existing.taxableAmount += entry.taxableAmount;
+                  existing.igstRate += entry.igstRate;
+                  existing.cgstRate += entry.cgstRate;
+                  existing.sgstRate += entry.sgstRate;
+                } else {
+                  hsnMap.set(key, { ...entry });
+                }
+              });
+            });
+        
+            const result = Array.from(hsnMap.values());
+            const totals = result.reduce(
+              (acc, item) => {
+                acc.qty += item.qty;
+                acc.taxableAmount += item.taxableAmount;
+                acc.grandTotal += item.grandTotal;
+                acc.igstRate += item.igstRate;
+                acc.cgstRate += item.cgstRate;
+                acc.sgstRate += item.sgstRate;
+                acc.gstPercentage += item.gstPercentage;
+                return acc;
+              },
+              { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0,sgstRate:0,cgstRate:0, grandTotal: 0 }
+            );
+        
+            return res.status(200).json({
+              message: "B2C Data Found",
+              result,
+              totals,
+              status: true,
+            });
+          } catch (error) {
+            console.log(error);
+            res.status(500).json({ message: "Internal Server Error", status: false });
+          }
+        };
 
-//     // 3️⃣ Debugging (optional)
-//     orders.forEach((item) => console.log("Order SGST Total:", item?.sgstTotal));
 
-//     // 4️⃣ Get SGST & CGST total from the database (invoice-level)
-//     const totalSGST = orders.reduce((total, o) => total + (o?.sgstTotal || 0), 0);
-//     const totalCGST = orders.reduce((total, o) => total + (o?.cgstTotal || 0), 0);
-
-//     // 5️⃣ Flatten all orderItems from all orders
-//     const AllOrders = orders?.flatMap((item) => item?.orderItems || []) || [];
-
-//     // 6️⃣ Process each order item and group by HSN code
-//     AllOrders.forEach((item) => {
-//       const product = item?.productId || {};
-//       const hsnCode = product?.HSN_Code || "";
-//       const key = hsnCode;
-
-//       const qty = Number(item?.qty) || 0;
-//       const grandTotal = Number(item?.grandTotal) || 0;
-//       const taxableAmount = Number(item?.taxableAmount) || 0;
-//       const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
-
-//       // ✅ In your DB, sgstRate and cgstRate are actually *amounts*, not *percentages*
-//       const sgstAmount = Number(item?.sgstRate) || 0;
-//       const cgstAmount = Number(item?.cgstRate) || 0;
-
-//       const entry = {
-//         primaryUnit: item?.primaryUnit || product?.primaryUnit || "",
-//         secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || "",
-//         HSN_Code: hsnCode,
-//         Product_Desc: product?.Product_Desc || "",
-//         qty,
-//         grandTotal,
-//         gstPercentage,
-//         taxableAmount,
-//         sgstAmount,
-//         cgstAmount,
-//       };
-
-//       if (hsnMap.has(key)) {
-//         const existing = hsnMap.get(key);
-//         existing.qty += entry.qty;
-//         existing.taxableAmount += entry.taxableAmount;
-//         existing.grandTotal += entry.grandTotal;
-//         existing.sgstAmount += entry.sgstAmount;
-//         existing.cgstAmount += entry.cgstAmount;
-//       } else {
-//         hsnMap.set(key, { ...entry });
-//       }
-//     });
-
-//     // 7️⃣ Convert Map to array
-//     const result = Array.from(hsnMap.values());
-
-//     // 8️⃣ Calculate overall totals
-//     const totals = result.reduce(
-//       (acc, item) => {
-//         acc.qty += item.qty;
-//         acc.taxableAmount += item.taxableAmount;
-//         acc.grandTotal += item.grandTotal;
-//         acc.sgstAmount += item.sgstAmount;
-//         acc.cgstAmount += item.cgstAmount;
-//         acc.gstPercentage += item.gstPercentage;
-//         return acc;
-//       },
-//       { qty: 0, taxableAmount: 0, gstPercentage: 0, sgstAmount: 0, cgstAmount: 0, grandTotal: 0 }
-//     );
-
-//     // 9️⃣ Also include DB-level totals (sanity check)
-//     totals.totalSGST_DB = totalSGST;
-//     totals.totalCGST_DB = totalCGST;
-
-//     // 10️⃣ Send response
-//     return res.status(200).json({ result, totals });
-//   } catch (error) {
-//     console.error("Error generating HSN report:", error);
-//     return res.status(500).json({
-//       message: "Internal Server Error",
-//       status: false,
-//       error: error.message,
-//     });
-//   }
-// };
 
