@@ -35,6 +35,15 @@ const orderItemsSchema = new mongoose.Schema({
     igstRate: {
         type: Number
     },
+    sgstAmount: {
+        type: Number
+    },
+    cgstAmount: {
+        type: Number
+    },
+    igstAmount: {
+        type: Number
+    },
     taxableAmount: {
         type: Number
     },

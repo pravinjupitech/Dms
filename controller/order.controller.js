@@ -1620,7 +1620,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-                    igstRate: item?.igstRate,
+                    igstRate: item?.igstRate||item?.igstAmount,
                 };
                 if (hsnMap.has(key)) {
                     const existing = hsnMap.get(key);
@@ -1701,8 +1701,8 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-                    sgstRate: item?.sgstRate,
-                    cgstRate: item?.cgstRate,
+                    sgstRate: item?.sgstRate||item?.sgstAmount,
+                    cgstRate: item?.cgstRate||item?.cgstAmount,
                 };
                 if (hsnMap.has(key)) {
                     const existing = hsnMap.get(key);
