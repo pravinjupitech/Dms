@@ -1700,7 +1700,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
         const hsnCode = product?.HSN_Code || '';
         const key = hsnCode;
         const qty = item?.qty || 0;
-        const grandTotal =  item?.newGrandTotal ||item?.totalPriceWithDiscount;
+        const grandTotal = item?.totalPriceWithDiscount||0;
         const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
 
         const entry = {
@@ -1802,7 +1802,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                 const hsnCode = product?.HSN_Code || '';
                 const key = hsnCode;
                 const qty = item?.qty || 0;
-                const grandTotal =item?.newGrandTotal||item?.totalPriceWithDiscount ;
+                const grandTotal = item?.totalPriceWithDiscount || 0;
                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
         
                 const entry = {
