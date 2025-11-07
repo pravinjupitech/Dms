@@ -1683,7 +1683,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
     const b2bOrders = orders.filter(order => {
       const type =
         order?.partyId?.registrationType;
-      return ["registered", "Regular"].includes(type);
+      return ["Register", "Regular"].includes(type);
     });
 
     if (b2bOrders.length === 0) {
@@ -1700,7 +1700,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
         const hsnCode = product?.HSN_Code || '';
         const key = hsnCode;
         const qty = item?.qty || 0;
-        const grandTotal = item?.totalPriceWithDiscount || item?.newGrandTotal;
+        const grandTotal =  item?.newGrandTotal ||item?.totalPriceWithDiscount;
         const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
 
         const entry = {
@@ -1785,7 +1785,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
       const type =
         order?.partyId?.registrationType ||
         "";
-      return ["unregistered", "UnKnown"].includes(type);
+      return ["UnRegister", "UnKnown"].includes(type);
     });
         
             if (b2cOrders.length === 0) {
@@ -1802,7 +1802,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                 const hsnCode = product?.HSN_Code || '';
                 const key = hsnCode;
                 const qty = item?.qty || 0;
-                const grandTotal = item?.totalPriceWithDiscount || item?.newGrandTotal;
+                const grandTotal =item?.newGrandTotal||item?.totalPriceWithDiscount ;
                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0);
         
                 const entry = {
