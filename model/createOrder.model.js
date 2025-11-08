@@ -53,6 +53,15 @@ const orderItemsSchema = new mongoose.Schema({
     newGrandTotal:{
 type:Number
     },
+    newIgstAmount:{
+        type:Number
+    },
+    newCgstAmount:{
+        type:Number
+    },
+    newSgstAmount:{
+        type:Number
+    },
     unitType: {
         type: String
     },
