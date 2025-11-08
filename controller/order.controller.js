@@ -1746,7 +1746,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
             },
             { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0, sgstRate: 0, cgstRate: 0, grandTotal: 0 }
         );
-
+totals.grandTotal = Math.round(totals.grandTotal);
         return res.status(200).json({
             message: "B2B Data Found",
             result,
@@ -1852,7 +1852,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
             },
             { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0, sgstRate: 0, cgstRate: 0, grandTotal: 0 }
         );
-
+totals.grandTotal = Math.round(totals.grandTotal);
         return res.status(200).json({
             message: "B2C Data Found",
             result,
