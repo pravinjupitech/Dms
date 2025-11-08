@@ -1713,9 +1713,9 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-                    igstRate: (item?.igstRate || 0) + (item?.newIgstAmount || 0),
-                    cgstRate: (item?.cgstRate || 0) + (item?.newCgstAmount || 0),
-                    sgstRate: (item?.sgstRate || 0) + (item?.newSgstAmount || 0),
+                    igstRate: (item?.igstRate || item?.igstAmount||0) + (item?.newIgstAmount || 0),
+                    cgstRate: (item?.cgstRate ||item?.cgstAmount|| 0) + (item?.newCgstAmount || 0),
+                    sgstRate: (item?.sgstRate ||item?.sgstAmount|| 0) + (item?.newSgstAmount || 0),
                 };
 
                 if (hsnMap.has(key)) {
@@ -1816,9 +1816,9 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-                    igstRate: (item?.igstRate || 0) + (item?.newIgstAmount || 0),
-                    cgstRate: (item?.cgstRate || 0) + (item?.newCgstAmount || 0),
-                    sgstRate: (item?.sgstRate || 0) + (item?.newSgstAmount || 0),
+           igstRate: (item?.igstRate || item?.igstAmount||0) + (item?.newIgstAmount || 0),
+                    cgstRate: (item?.cgstRate ||item?.cgstAmount|| 0) + (item?.newCgstAmount || 0),
+                    sgstRate: (item?.sgstRate ||item?.sgstAmount|| 0) + (item?.newSgstAmount || 0),
                 };
 
                 if (hsnMap.has(key)) {
