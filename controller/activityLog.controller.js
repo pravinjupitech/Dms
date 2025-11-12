@@ -30,7 +30,7 @@ export const viewLogs = async (req, res, next) => {
     try {
         const { database } = req.params;
         const logs = await ActivityLog.find({ database: database });
-        return logs.length > 0 ? res.status(200).json({ message: "Data Found", status: true }) : res.status(404).json({ message: "Not Found", status: false })
+        return logs.length > 0 ? res.status(200).json({ message: "Data Found",logs, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "Internal Server Error", status: false })
