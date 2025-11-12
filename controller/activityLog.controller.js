@@ -13,7 +13,7 @@ export const AddLog = async (req, res, next) => {
 export const updateLogTime = async (req, res, next) => {
     try {
         const { userId, logOutTime, date } = req.body;
-        const log = await ActivityLog.findOne({ userId: userId, date: date });
+        const log = await ActivityLog.findOne({ userId: userId, date: date ,logOutTime:""});
         if (!log) {
             return res.status(404).json({ message: "Not Found", status: false })
         }
