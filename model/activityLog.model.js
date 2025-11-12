@@ -6,6 +6,9 @@ const ActivityLogSchema = new mongoose.Schema({
     date: {
         type: String
     },
+    publicIP: {
+        type: String
+    },
     logInTime: {
         type: String
     },
@@ -17,6 +20,9 @@ const ActivityLogSchema = new mongoose.Schema({
     },
     userId: {
         type: String
+    },
+    database:{
+        type:String
     }
 }, { timestamps: true });
 export const ActivityLog = mongoose.model("ActivityLog", ActivityLogSchema)
