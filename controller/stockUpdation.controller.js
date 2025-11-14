@@ -11,6 +11,7 @@ import { warehouseNo } from "../service/invoice.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
 import { RawProduct } from "../model/rawProduct.model.js";
 import { otpVerify } from "./warehouse.controller.js";
+import { Order } from "../model/order.model.js";
 
 export const viewInWardStockToWarehouse = async (req, res, next) => {
     try {
@@ -1058,11 +1059,11 @@ export const stockReport = async (req, res, next) => {
             const status = po.status || 'pending';
             const totalTax = (status === 'completed')
                 ? (po.coolieAndCartage || 0) +
-                  (po.labourCost || 0) +
-                  (po.localFreight || 0) +
-                  (po.miscellaneousCost || 0) +
-                  (po.transportationCost || 0) +
-                  (po.tax || 0)
+                (po.labourCost || 0) +
+                (po.localFreight || 0) +
+                (po.miscellaneousCost || 0) +
+                (po.transportationCost || 0) +
+                (po.tax || 0)
                 : 0;
 
             for (const item of po.orderItems) {
@@ -1160,7 +1161,7 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        const productList = await Product.find({ database,status:"Active" }); 
+        const productList = await Product.find({ database, status: "Active" });
 
         for (const product of productList) {
             const id = product._id.toString();
@@ -1272,8 +1273,105 @@ export const stockReport = async (req, res, next) => {
     }
 };
 
+export const InvertReport = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const purchaseOrders = await PurchaseOrder.find({
+            database,
+            status: "completed"
+        })
+            .populate({ path: "partyId", model: "customer" })
+            .populate({ path: "orderItems.productId", model: "product" });
+
+        let result = [];
+        let sno = 1;
+
+        for (let item of purchaseOrders) {
+            for (let order of item.orderItems) {
+
+                const qty = order?.qty || 0;
+                const rate = order?.productId?.Purchase_Rate || 0;
+
+                result.push({
+                    sno: sno++,
+                    party: item?.partyId?.CompanyName,
+                    Product_Title: order?.productId?.Product_Title,
+                    HSN_Code: order?.productId?.HSN_Code,
+                    qty: qty,
+                    date: item?.date,
+                    Purchase_Rate: rate,
+                    GSTRate: order?.productId?.GSTRate,
+                    total: qty * rate
+                });
+            }
+        }
+
+        return res.status(200).json({
+            message: "Data fetched successfully",
+            status: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+};
 
 
+export const OutwordReport = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const salesOrders = await CreateOrder.find({
+            database,
+            status: "completed"
+        })
+            .populate({ path: "partyId", model: "customer" })
+            .populate({ path: "orderItems.productId", model: "product" });
+
+        let result = [];
+        let sno = 1;
+
+        for (let item of salesOrders) {
+            for (let order of item.orderItems) {
+
+                const qty = order?.qty || 0;
+                const rate = order?.productId?.SalesRate || 0;
+                result.push({
+                    sno: sno++,
+                    party: item?.partyId?.CompanyName,
+                    Product_Title: order?.productId?.Product_Title,
+                    HSN_Code: order?.productId?.HSN_Code,
+                    qty: qty,
+                    date: item?.date,
+                    SalesRate: rate,
+                    GSTRate: order?.productId?.GSTRate,
+                    total: qty * rate
+                });
+            }
+        }
+       
+        return res.status(200).json({
+            message: "Data fetched successfully",
+            status: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+};
 
 
 

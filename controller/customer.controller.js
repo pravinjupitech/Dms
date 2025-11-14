@@ -124,19 +124,19 @@ export const DeleteCustomer = async (req, res, next) => {
         if (!customer) {
             return res.status(404).json({ error: "Not Found", status: false });
         }
-        const purchageOrder = await PurchaseOrder.find({ partyId: req.params.id, status: { $in: ["pending", "completed"] } })
+        const purchaseOrder = await PurchaseOrder.find({ partyId: req.params.id, status: { $in: ["pending", "completed"] } })
         const salesOrder = await CreateOrder.find({
             partyId: req.params.id,
             status: { $in: ["pending", "completed"] }
         });
         const reciept = await Receipt.find({ partyId: req.params.id, status: "Active" })
-        if (reciept && reciept.length > 0) {
+        if (reciept.length > 0) {
             return res.json({ message: "Customer has used Receipt or Payment", status: false })
         }
-        if (purchageOrder && purchageOrder.length > 0) {
+        if ( purchaseOrder.length > 0) {
             return res.json({ message: "Customer is used in Purchase Order", status: false })
         }
-        if (salesOrder && salesOrder.length > 0) {
+        if (salesOrder.length > 0) {
             return res.json({ message: "Customer is used in Sales order", status: false })
         }
         customer.created_by = undefined;

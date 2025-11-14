@@ -237,6 +237,8 @@ export const DeleteUser = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ error: "Not Found", status: false });
     }
+
+
     if (user?.rolename?.roleName === "Sales Person") {
       await Customer.updateMany(
         { created_by: user._id },
@@ -251,6 +253,7 @@ export const DeleteUser = async (req, res, next) => {
     return res.status(500).json({ error: "Internal server error", status: false });
   }
 };
+
 export const UpdateUser = async (req, res, next) => {
   try {
     if (req.files) {
