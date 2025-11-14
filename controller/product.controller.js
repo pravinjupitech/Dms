@@ -91,15 +91,15 @@ export const DeleteProduct = async (req, res, next) => {
     if (!product) {
       return res.status(404).json({ error: "Not Found", status: false });
     }
-    const purchageOrder = await PurchaseOrder.find({ "orderItems.productId": req.params.id, status: { $in: ["pending", "completed"] } })
+    const purchaseOrder = await PurchaseOrder.find({ "orderItems.productId": req.params.id, status: { $in: ["pending", "completed"] } })
     const salesOrder = await CreateOrder.find({
       "orderItems.productId": req.params.id,
       status: { $in: ["pending", "completed"] }
     });
-    if (purchageOrder && purchageOrder.length > 0) {
+    if ( purchaseOrder.length > 0) {
       return res.json({ message: "Product is used in Purchase order", status: false })
     }
-    if (salesOrder && salesOrder.length > 0) {
+    if (salesOrder.length > 0) {
       return res.json({ message: "Product is used in Sales order", status: false })
     }
     product.status = "Deactive";
