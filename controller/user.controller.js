@@ -345,6 +345,10 @@ export const SignIn = async (req, res, next) => {
     if (!existingAccount && !existingCustomer) {
       return res.status(400).json({ message: "Incorrect email", status: false });
     }
+    if (existingAccount && existingAccount.password !== password ||
+      existingCustomer && existingCustomer.password !== password) {
+      return res.status(400).json({ message: "Incorrect password", status: false });
+    }
     if (existingAccount) {
       if (existingAccount.rolename.roleName === "MASTER") {
         existingAccount.otp = otp
@@ -353,10 +357,7 @@ export const SignIn = async (req, res, next) => {
         return res.status(200).json({ message: "otp send successfull!", user: { ...existingAccount.toObject(), password: undefined, otp: undefined, role: "MASTER" }, status: true })
       }
     }
-    if (existingAccount && existingAccount.password !== password ||
-      existingCustomer && existingCustomer.password !== password) {
-      return res.status(400).json({ message: "Incorrect password", status: false });
-    }
+    
     const token = Jwt.sign({ subject: email }, process.env.TOKEN_SECRET_KEY);
     if (existingAccount) {
       await User.updateOne({ email }, { $set: { latitude, longitude, currentAddress } });
