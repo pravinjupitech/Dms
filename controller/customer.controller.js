@@ -1027,6 +1027,144 @@ export const paymentDueReport = async (req, res) => {
 // };
 
 
+// export const SaveLeadPartyExcel = async (req, res) => {
+//     try {
+//         const constants = {
+//             leadStatusCheck: "leadStatusCheck",
+//             databaseKey: "database",
+//             mobNo: "mobileNumber",
+//             cityKey: "City",
+//             stateKey: "State",
+//             companyKey: "CompanyName",
+//             createdByKey: "created_by",
+//         };
+
+//         const existingMobileNo = [];
+//         const insertedDocuments = [];
+//         const dataNotExist = [];
+
+//         const filePath = req?.file?.path;
+//         const fileMime = req?.file?.mimetype;
+//         const fileExt = path.extname(filePath).toLowerCase();
+
+//         if (!filePath || !fs.existsSync(filePath)) {
+//             return res.status(400).json({ error: 'Uploaded file not found', status: false });
+//         }
+
+//         const stats = fs.statSync(filePath);
+//         if (stats.size === 0) {
+//             return res.status(400).json({ error: 'Uploaded file is empty', status: false });
+//         }
+
+//         const workbook = new ExcelJS.Workbook();
+//         let worksheet;
+
+//         if (fileMime === 'text/csv' || fileExt === '.csv') {
+//             worksheet = await workbook.csv.readFile(filePath);
+//         } else if (
+//             fileMime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+//             fileExt === '.xlsx'
+//         ) {
+//             await workbook.xlsx.readFile(filePath);
+//             worksheet = workbook.getWorksheet(1);
+//         } else {
+//             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
+//         }
+
+//         const headerRow = worksheet.getRow(1);
+//         const headings = [];
+//         headerRow.eachCell((cell) => {
+//             headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
+//         });
+
+//         const existingUsers = await User.find({ database: req.params.database, status: "Active" })
+//             .populate({ path: "rolename", model: "role" });
+
+//         const salesPersons = existingUsers.filter(user =>
+//             user?.rolename?.roleName === "Sales Person"
+//         );
+
+//         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+//             const dataRow = worksheet.getRow(rowIndex);
+//             const document = {};
+
+//             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
+//                 const heading = headings[columnIndex - 1];
+//                 const cellValue = dataRow.getCell(columnIndex).value;
+//                 const value = typeof cellValue === 'object' && 'text' in cellValue ? cellValue.text : cellValue;
+
+//                 if (heading === 'remark') {
+//                     const now = new Date();
+//                     const date = now.toISOString().split('T')[0];
+//                     const time = now.toTimeString().split(' ')[0];
+
+//                     document.remark = [{
+//                         remark: value,
+//                         date,
+//                         time
+//                     }];
+//                 } else {
+//                     document[heading] = value;
+//                 }
+//             }
+
+//             document[constants.databaseKey] = req.params.database;
+
+//             if (!document.database) {
+//                 dataNotExist.push(document.ownername || document.companyname);
+//                 continue;
+//             }
+
+//             const phone = document.mobilenumber || document.contactnumber;
+//             document[constants.mobNo] = phone;
+//             document[constants.cityKey] = document.city;
+//             document[constants.stateKey] = document.state;
+//             document[constants.companyKey] = document.companyname;
+//             document[constants.leadStatusCheck] = "true";
+
+//             const existingId = await Customer.findOne({
+//                 mobileNumber: phone,
+//                 database: document.database,
+//                 status: "Active"
+//             });
+
+//             if (existingId) {
+//                 existingMobileNo.push(phone);
+//                 continue;
+//             }
+
+//             const matchedSalesPerson = salesPersons.find(user => {
+//                 const services = user?.service;
+//                 if (!Array.isArray(services)) return false;
+
+//                 return services.some(service =>
+//                     String(service?.pincode).trim() === String(document.pincode).trim()
+//                 );
+//             });
+
+//             if (matchedSalesPerson) {
+//                 document[constants.createdByKey] = matchedSalesPerson._id;
+//             }
+
+//             const insertedDocument = await Customer.create(document);
+//             insertedDocuments.push(insertedDocument);
+//         }
+
+//         let message = 'Data Inserted Successfully';
+//         if (dataNotExist.length > 0) {
+//             message = `These customers have no database: ${dataNotExist.join(', ')}`;
+//         } else if (existingMobileNo.length > 0) {
+//             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
+//         }
+//         return res.status(200).json({ message, status: true });
+
+//     } catch (err) {
+//         console.error("Error processing file:", err);
+//         return res.status(500).json({ error: 'Internal Server Error', status: false });
+//     }
+// };
+
+
 export const SaveLeadPartyExcel = async (req, res) => {
     try {
         const constants = {
@@ -1071,10 +1209,12 @@ export const SaveLeadPartyExcel = async (req, res) => {
             return res.status(400).json({ error: 'Unsupported file type. Please upload a .csv or .xlsx file.', status: false });
         }
 
+        // Read header row
         const headerRow = worksheet.getRow(1);
         const headings = [];
         headerRow.eachCell((cell) => {
-            headings.push((cell?.text || cell?.value || '').toString().trim().toLowerCase());
+            const cellText = (cell?.text || cell?.value || "").toString().trim().toLowerCase();
+            headings.push(cellText);
         });
 
         const existingUsers = await User.find({ database: req.params.database, status: "Active" })
@@ -1084,14 +1224,21 @@ export const SaveLeadPartyExcel = async (req, res) => {
             user?.rolename?.roleName === "Sales Person"
         );
 
+        // Start reading data rows
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const dataRow = worksheet.getRow(rowIndex);
             const document = {};
 
             for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
                 const heading = headings[columnIndex - 1];
+
                 const cellValue = dataRow.getCell(columnIndex).value;
-                const value = typeof cellValue === 'object' && 'text' in cellValue ? cellValue.text : cellValue;
+
+                // SAFE CHECK (Fix)
+                const value =
+                    cellValue && typeof cellValue === "object" && "text" in cellValue
+                        ? cellValue.text
+                        : (cellValue ?? "");
 
                 if (heading === 'remark') {
                     const now = new Date();
@@ -1151,11 +1298,13 @@ export const SaveLeadPartyExcel = async (req, res) => {
         }
 
         let message = 'Data Inserted Successfully';
+
         if (dataNotExist.length > 0) {
             message = `These customers have no database: ${dataNotExist.join(', ')}`;
         } else if (existingMobileNo.length > 0) {
             message = `These mobile numbers already exist: ${existingMobileNo.join(', ')}`;
         }
+
         return res.status(200).json({ message, status: true });
 
     } catch (err) {
