@@ -1301,7 +1301,7 @@ export const InvertReport = async (req, res, next) => {
                     qty: qty,
                     total:total,
                     date: item?.date,
-                    Purchase_Rate: totalPrice/qty,
+                    Purchase_Rate: total/qty,
                     GSTRate: order?.productId?.GSTRate,
                 });
             }
