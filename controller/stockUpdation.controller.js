@@ -1291,7 +1291,7 @@ export const InvertReport = async (req, res, next) => {
             for (let order of item.orderItems) {
 
                 const qty = order?.qty || 0;
-                const rate = order?.productId?.Purchase_Rate || 0;
+                const total = order?.totalPrice || 0;
 
                 result.push({
                     sno: sno++,
@@ -1299,10 +1299,10 @@ export const InvertReport = async (req, res, next) => {
                     Product_Title: order?.productId?.Product_Title,
                     HSN_Code: order?.productId?.HSN_Code,
                     qty: qty,
+                    total:total,
                     date: item?.date,
-                    Purchase_Rate: rate,
+                    Purchase_Rate: totalPrice/qty,
                     GSTRate: order?.productId?.GSTRate,
-                    total: qty * rate
                 });
             }
         }
@@ -1342,21 +1342,22 @@ export const OutwordReport = async (req, res, next) => {
             for (let order of item.orderItems) {
 
                 const qty = order?.qty || 0;
-                const rate = order?.productId?.SalesRate || 0;
+                const total = order?.totalPrice || 0;
+
                 result.push({
                     sno: sno++,
                     party: item?.partyId?.CompanyName,
                     Product_Title: order?.productId?.Product_Title,
                     HSN_Code: order?.productId?.HSN_Code,
                     qty: qty,
+                    total: total,
                     date: item?.date,
-                    SalesRate: rate,
+                    SalesRate: total/qty,
                     GSTRate: order?.productId?.GSTRate,
-                    total: qty * rate
                 });
             }
         }
-       
+
         return res.status(200).json({
             message: "Data fetched successfully",
             status: true,
