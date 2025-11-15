@@ -1058,14 +1058,13 @@ export const stockReport = async (req, res, next) => {
         for (const po of purchaseOrders) {
             const status = po.status || 'pending';
             const totalTax = (status === 'completed')
-                ? (po.coolieAndCartage || 0) +
+                ? ((po.coolieAndCartage || 0) +
                 (po.labourCost || 0) +
                 (po.localFreight || 0) +
                 (po.miscellaneousCost || 0) +
                 (po.transportationCost || 0) +
-                (po.tax || 0)
+                (po.tax || 0))/po.orderItems.length
                 : 0;
-
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
                 if (!productId) continue;
@@ -1289,9 +1288,15 @@ export const InvertReport = async (req, res, next) => {
 
         for (let item of purchaseOrders) {
             for (let order of item.orderItems) {
-
+                const totalTax = ((item.coolieAndCartage || 0) +
+                    (item.labourCost || 0) +
+                    (item.localFreight || 0) +
+                    (item.miscellaneousCost || 0) +
+                    (item.transportationCost || 0) +
+                    (item.tax || 0)) / item.orderItems.length;
                 const qty = order?.qty || 0;
-                const total = order?.totalPrice || 0;
+                const totalprice = order?.totalPrice || 0;
+                const total = totalprice + totalTax;
 
                 result.push({
                     sno: sno++,
@@ -1299,14 +1304,21 @@ export const InvertReport = async (req, res, next) => {
                     Product_Title: order?.productId?.Product_Title,
                     HSN_Code: order?.productId?.HSN_Code,
                     qty: qty,
-                    total:total,
+                    total: total,
                     date: item?.date,
-                    Purchase_Rate: total/qty,
+                    Purchase_Rate: total / qty,
                     GSTRate: order?.productId?.GSTRate,
                 });
             }
         }
+        const totalprice = result.reduce((tot, item) => {
+            return tot += item.total;
+        }, 0)
+        const totalqty = result.reduce((tot, item) => {
+            return tot += item.qty;
+        }, 0)
 
+        console.log("totalprice", totalprice, "totalqty", totalqty)
         return res.status(200).json({
             message: "Data fetched successfully",
             status: true,
@@ -1352,7 +1364,7 @@ export const OutwordReport = async (req, res, next) => {
                     qty: qty,
                     total: total,
                     date: item?.date,
-                    SalesRate: total/qty,
+                    SalesRate: total / qty,
                     GSTRate: order?.productId?.GSTRate,
                 });
             }
