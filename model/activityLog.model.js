@@ -15,14 +15,20 @@ const ActivityLogSchema = new mongoose.Schema({
     logOutTime: {
         type: String
     },
+    latitude: {
+        type: String
+    },
+    longitude: {
+        type: String
+    },
     roleName: {
         type: String
     },
     userId: {
         type: String
     },
-    database:{
-        type:String
+    database: {
+        type: String
     }
 }, { timestamps: true });
 export const ActivityLog = mongoose.model("ActivityLog", ActivityLogSchema)
