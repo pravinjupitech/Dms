@@ -12,17 +12,34 @@ export const AddLog = async (req, res, next) => {
 
 export const updateLogTime = async (req, res, next) => {
     try {
-        const { userId, logOutTime, date } = req.body;
-        const log = await ActivityLog.findOne({ userId: userId, date: date, logOutTime: "" });
+        const { userId, logOutTime } = req.body;
+
+        const log = await ActivityLog.findOne({
+            userId: userId,
+            logOutTime: { $in: ["", null] }
+        }).sort({ createdAt: -1 });
+
         if (!log) {
-            return res.status(404).json({ message: "Not Found", status: false })
+            return res.status(404).json({ 
+                message: "No active session found for logout",
+                status: false 
+            });
         }
-        log.logOutTime = logOutTime
-        log.save();
-        res.status(200).json({ message: "LogOut Time Saved", status: true })
+
+        log.logOutTime = logOutTime;
+        await log.save();
+
+        return res.status(200).json({
+            message: "Logout time saved successfully",
+            status: true
+        });
+
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", status: false })
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            status: false
+        });
     }
 }
 
