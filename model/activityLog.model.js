@@ -24,6 +24,9 @@ const ActivityLogSchema = new mongoose.Schema({
     roleName: {
         type: String
     },
+    sessionId:{
+        type:String
+    },
     userId: {
         type: String
     },
