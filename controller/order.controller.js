@@ -542,7 +542,7 @@ export const updateCreateOrder = async (req, res, next) => {
     try {
         const orderId = req.params.id;
         const updatedFields = req.body;
-        console.log("request body", updatedFields)
+        // console.log("request body", updatedFields)
         if (!orderId || !updatedFields) {
             return res.status(400).json({ message: "Invalid input data", status: false });
         }

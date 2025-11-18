@@ -1311,14 +1311,7 @@ export const InvertReport = async (req, res, next) => {
                 });
             }
         }
-        const totalprice = result.reduce((tot, item) => {
-            return tot += item.total;
-        }, 0)
-        const totalqty = result.reduce((tot, item) => {
-            return tot += item.qty;
-        }, 0)
-
-        console.log("totalprice", totalprice, "totalqty", totalqty)
+  
         return res.status(200).json({
             message: "Data fetched successfully",
             status: true,
