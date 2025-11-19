@@ -2,6 +2,7 @@ import { ActivityLog } from "../model/activityLog.model.js";
 
 export const AddLog = async (req, res, next) => {
     try {
+        console.log("req.body",req.body)
         const sessionId = Date.now() + "-" + req.body.userId;
 
         const log = await ActivityLog.create({
