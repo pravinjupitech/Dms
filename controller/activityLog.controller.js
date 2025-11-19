@@ -27,7 +27,7 @@ export const AddLog = async (req, res, next) => {
 
         // Reverse geocoding to get pincode
         const pincode = await getPincodeFromLatLng(latitude, longitude);
-
+console.log("pincode",pincode)
         if (!pincode) {
             return res.status(400).json({
                 message: "Could not fetch pincode for given location",
