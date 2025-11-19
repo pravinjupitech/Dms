@@ -1,5 +1,5 @@
 import { ActivityLog } from "../model/activityLog.model.js";
-import axios from "axios";
+
 const getPincodeFromLatLng = async (latitude, longitude) => {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
 
@@ -16,47 +16,20 @@ export const AddLog = async (req, res, next) => {
     try {
         const sessionId = Date.now() + "-" + req.body.userId;
 
-        const { latitude, longitude } = req.body;
-
-        if (!latitude || !longitude) {
-            return res.status(400).json({
-                message: "Latitude and Longitude are required",
-                status: false
-            });
-        }
-
-        // Reverse geocoding to get pincode
-        const pincode = await getPincodeFromLatLng(latitude, longitude);
-console.log("pincode",pincode)
-        if (!pincode) {
-            return res.status(400).json({
-                message: "Could not fetch pincode for given location",
-                status: false
-            });
-        }
-
         const log = await ActivityLog.create({
             ...req.body,
-            sessionId,
-            latitude,
-            longitude,
-            pincode
+            sessionId
         });
-
-        return log
-            ? res.status(200).json({
-                message: "Data Saved",
-                status: true,
-                sessionId
-            })
-            : res.status(404).json({ message: "Something Went Wrong", status: false });
-
+        return log ? res.status(200).json({
+            message: "Data Saved",
+            status: true,
+            sessionId
+        }) : res.status(404).json({ message: "Something Went Wrong", status: false })
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "Internal Server Error", status: false });
+        return res.status(500).json({ message: "Internal Server Error", status: false })
     }
-};
-
+}
 
 export const updateLogTime = async (req, res, next) => {
     try {
