@@ -30,6 +30,9 @@ const ActivityLogSchema = new mongoose.Schema({
     userId: {
         type: String
     },
+    pincode:{
+        type:String
+    },
     database: {
         type: String
     }
