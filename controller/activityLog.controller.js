@@ -1,17 +1,5 @@
 import { ActivityLog } from "../model/activityLog.model.js";
 
-const getPincodeFromLatLng = async (latitude, longitude) => {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-
-    const response = await axios.get(url, {
-        headers: { "User-Agent": "YourAppName" }
-    });
-
-    const address = response.data.address;
-
-    return address.postcode || null;
-};
-
 export const AddLog = async (req, res, next) => {
     try {
         const sessionId = Date.now() + "-" + req.body.userId;
