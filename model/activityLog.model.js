@@ -24,14 +24,17 @@ const ActivityLogSchema = new mongoose.Schema({
     roleName: {
         type: String
     },
-    sessionId:{
-        type:String
+    sessionId: {
+        type: String
     },
     userId: {
         type: String
     },
-    pincode:{
-        type:String
+    pincode: {
+        type: String
+    },
+    city: {
+        type: String
     },
     database: {
         type: String
