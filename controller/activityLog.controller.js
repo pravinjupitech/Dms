@@ -2,7 +2,6 @@ import { ActivityLog } from "../model/activityLog.model.js";
 
 export const AddLog = async (req, res, next) => {
     try {
-        console.log("req.body",req.body)
         const sessionId = Date.now() + "-" + req.body.userId;
 
         const log = await ActivityLog.create({
@@ -61,6 +60,56 @@ export const viewLogs = async (req, res, next) => {
         return res.status(500).json({ message: "Internal Server Error", status: false })
     }
 }
+
+export const checkPincode =async (req, res) => {
+  try {
+    const { lat, log } = req.body;
+
+    if (!lat || !log) {
+      return res
+        .status(400)
+        .json({ message: "Latitude and Longitude required", status: false });
+    }
+
+    const getPincodeFromLocationIQ = async (lat, lon) => {
+    try {
+    const url = `https://us1.locationiq.com/v1/reverse?key=pk.60c684b42995cc248db8034396d610f2&lat=${lat}&lon=${lon}&format=json`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      return {
+        city:
+          data?.address?.state_district ||
+          data?.address?.town ||
+          data?.address?.village ||
+          data?.address?.district ||
+          data?.address?.city
+ ||
+          "Unknown",
+
+        pincode: data?.address?.postcode || "—",
+        data
+      };
+    } catch (error) {
+      console.log("LocationIQ Error:", error);
+      return { city: "Unknown", pincode: "—" };
+    }
+  };
+    const pincode = await getPincodeFromLocationIQ(lat, log);
+
+    if (!pincode) {
+      return res
+        .status(404)
+        .json({ message: "Pincode not found", status: false });
+    }
+
+    return res.status(200).json({ pincode, status: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
 
 export const deleteAllLogs = async (req, res, next) => {
     try {
