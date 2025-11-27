@@ -1168,12 +1168,38 @@ const generateUniqueSixDigitNumber = () => {
 export const updateServiceArea = async (req, res, next) => {
   try {
     const { id, service } = req.body;
-    const existingUser = await User.findById(id);
-    if (!existingUser) {
+    const user = await User.findById(id);
+    if (!user) {
       return res.status(404).json({ message: "Not Found", status: false })
     }
-    existingUser.service = service;
-    await existingUser.save();
+    
+    user.service = service;
+    await user.save();
+     const BATCH_SIZE = 500; 
+
+if ( Array.isArray(user.service) && user.service.length > 0) {
+  const pincodes = [...new Set(
+    user.service
+      .map(area => area.pincode)
+      .filter(pincode => pincode !== undefined && pincode !== null)
+  )];
+
+  for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
+    const chunk = pincodes.slice(i, i + BATCH_SIZE);
+
+    await Customer.updateMany(
+      {
+        $or: [
+          { created_by: "" },
+          { created_by: { $exists: false } },
+          { created_by: null }
+        ],
+        pincode: { $in: chunk }
+      },
+      { $set: { created_by: user._id } }
+    );
+  }
+    }
     return res.status(200).json({ message: "Area Updated", status: true })
   } catch (error) {
     console.log(error);

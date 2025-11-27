@@ -75,6 +75,7 @@ export const checkPincode =async (req, res) => {
     try {
     const url = `https://us1.locationiq.com/v1/reverse?key=pk.60c684b42995cc248db8034396d610f2&lat=${lat}&lon=${lon}&format=json`;
 
+
       const res = await fetch(url);
       const data = await res.json();
 

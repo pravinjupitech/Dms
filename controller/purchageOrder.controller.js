@@ -937,3 +937,13 @@ export const DeleteStockPurchase = async (orderItem, date, orderData) => {
         console.log("Error in DeleteStockPurchase:", error);
     }
 };
+
+// export const purchaseReport=async(req,res,next)=>{
+//     try {
+//         const purchageOrders=await PurchaseOrder.find({database:database,status:"completed"});
+//         const paymentReceipt=await Receipt.find({})
+//     } catch (error) {
+//         console.error(err);
+//         return res.status(500).json({ error: "Internal Server Error", status: false }); 
+//     }
+// }
