@@ -2,12 +2,62 @@ import { Pincode } from "../model/pincode.model.js";
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 
+// export const saveExcelPincode = async (req, res, next) => {
+//     const filePath = req.file?.path;
+//     try {
+//         if (!filePath) {
+//             return res.status(400).json({ message: "No Excel file uploaded", status: false });
+//         }
+//         const workbook = new ExcelJS.Workbook();
+//         await workbook.xlsx.readFile(filePath);
+//         const worksheet = workbook.getWorksheet(1);
+//         const headerRow = worksheet.getRow(1);
+//         const headings = headerRow.values.slice(1);
+
+//         const bulkData = [];
+
+//         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+//             const row = worksheet.getRow(rowIndex);
+//             const rowData = {};
+
+//             headings.forEach((heading, i) => {
+//                 const cell = row.getCell(i + 1);
+//                 const value = cell.value;
+//                 rowData[heading] = typeof value === 'object' && value?.text ? value.text : value;
+//             });
+//             if (rowData.pincode) {
+//                 bulkData.push(rowData);
+//             }
+//         }
+
+//         if (bulkData.length === 0) {
+//             return res.status(400).json({ message: "No valid data found in Excel", status: false });
+//         }
+
+//         await Pincode.insertMany(bulkData);
+
+//         // fs.unlinkSync(filePath);
+
+//         return res.status(200).json({ message: "Pincode data added successfully", status: true });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             message: "Something went wrong during Excel import",
+//             error: error.message,
+//             status: false
+//         });
+//     }
+// };
+
+
 export const saveExcelPincode = async (req, res, next) => {
     const filePath = req.file?.path;
+
     try {
         if (!filePath) {
             return res.status(400).json({ message: "No Excel file uploaded", status: false });
         }
+
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(filePath);
         const worksheet = workbook.getWorksheet(1);
@@ -23,9 +73,10 @@ export const saveExcelPincode = async (req, res, next) => {
             headings.forEach((heading, i) => {
                 const cell = row.getCell(i + 1);
                 const value = cell.value;
-                rowData[heading] = typeof value === 'object' && value?.text ? value.text : value;
+                rowData[heading] = typeof value === "object" && value?.text ? value.text : value;
             });
-            if (rowData.pincode) {
+
+            if (rowData.pincode && rowData.city) {
                 bulkData.push(rowData);
             }
         }
@@ -34,11 +85,41 @@ export const saveExcelPincode = async (req, res, next) => {
             return res.status(400).json({ message: "No valid data found in Excel", status: false });
         }
 
-        await Pincode.insertMany(bulkData);
+        const excelPairs = bulkData.map(item => ({
+            pincode: item.pincode.toString(),
+            city: item.city.toString()
+        }));
 
-        // fs.unlinkSync(filePath);
+        const existing = await Pincode.find({
+            $or: excelPairs
+        }).select("pincode city");
 
-        return res.status(200).json({ message: "Pincode data added successfully", status: true });
+        const existingSet = new Set(
+            existing.map(item => `${item.pincode}_${item.city}`)
+        );
+
+        const newData = bulkData.filter(item => {
+            const key = `${item.pincode}_${item.city}`;
+            return !existingSet.has(key);
+        });
+
+        if (newData.length === 0) {
+            return res.status(200).json({
+                message: "All pincodes already exist. No new data inserted.",
+                status: true
+            });
+        }
+
+        await Pincode.insertMany(newData);
+
+
+        return res.status(200).json({
+            message: "Pincode data added successfully",
+            inserted: newData.length,
+            skipped: bulkData.length - newData.length,
+            status: true
+        });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
