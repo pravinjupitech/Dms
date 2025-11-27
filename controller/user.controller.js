@@ -1169,8 +1169,8 @@ export const updateServiceArea = async (req, res, next) => {
   try {
     const { id, service } = req.body;
 
-    const user = await User.findById(id);
-    if (!user) {
+    const users = await User.findById(id);
+    if (!users) {
       return res.status(404).json({ message: "Not Found", status: false });
     }
 
@@ -1178,10 +1178,10 @@ export const updateServiceArea = async (req, res, next) => {
       return res.status(400).json({ message: "Service must be an array", status: false });
     }
 
-    user.service = service;
-    await user.save();
-
-    const BATCH_SIZE = 500;
+    users.service = service;
+   const user= await users.save();
+if(user){
+ const BATCH_SIZE = 500;
 
     if (Array.isArray(user.service) && user.service.length > 0) {
       const pincodes = [...new Set(
@@ -1195,14 +1195,14 @@ export const updateServiceArea = async (req, res, next) => {
 
         await Customer.updateMany(
           {
-            created_by: { $in: [null, ""] },
             pincode: { $in: chunk }
           },
           { $set: { created_by: user._id } }
         );
       }
     }
-
+}
+   
     return res.status(200).json({ message: "Area Updated", status: true });
 
   } catch (error) {
