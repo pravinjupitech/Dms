@@ -1168,41 +1168,45 @@ const generateUniqueSixDigitNumber = () => {
 export const updateServiceArea = async (req, res, next) => {
   try {
     const { id, service } = req.body;
+
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: "Not Found", status: false })
+      return res.status(404).json({ message: "Not Found", status: false });
     }
-    
+
+    if (!Array.isArray(service)) {
+      return res.status(400).json({ message: "Service must be an array", status: false });
+    }
+
     user.service = service;
     await user.save();
-     const BATCH_SIZE = 500; 
 
-if ( Array.isArray(user.service) && user.service.length > 0) {
-  const pincodes = [...new Set(
-    user.service
-      .map(area => area.pincode)
-      .filter(pincode => pincode !== undefined && pincode !== null)
-  )];
+    const BATCH_SIZE = 500;
 
-  for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
-    const chunk = pincodes.slice(i, i + BATCH_SIZE);
+    if (Array.isArray(user.service) && user.service.length > 0) {
+      const pincodes = [...new Set(
+        user.service
+          .map(area => area.pincode)
+          .filter(p => p !== undefined && p !== null)
+      )];
 
-    await Customer.updateMany(
-      {
-        $or: [
-          { created_by: "" },
-          { created_by: { $exists: false } },
-          { created_by: null }
-        ],
-        pincode: { $in: chunk }
-      },
-      { $set: { created_by: user._id } }
-    );
-  }
+      for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
+        const chunk = pincodes.slice(i, i + BATCH_SIZE);
+
+        await Customer.updateMany(
+          {
+            created_by: { $in: [null, ""] },
+            pincode: { $in: chunk }
+          },
+          { $set: { created_by: user._id } }
+        );
+      }
     }
-    return res.status(200).json({ message: "Area Updated", status: true })
+
+    return res.status(200).json({ message: "Area Updated", status: true });
+
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: "Internal Server Error", status: false })
+    return res.status(500).json({ message: "Internal Server Error", status: false });
   }
-}
+};
