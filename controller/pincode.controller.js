@@ -1,5 +1,6 @@
 import { Pincode } from "../model/pincode.model.js";
 import ExcelJS from 'exceljs';
+
 import fs from 'fs';
 
 // export const saveExcelPincode = async (req, res, next) => {
@@ -50,7 +51,7 @@ import fs from 'fs';
 // };
 
 
-export const saveExcelPincodeLarge = async (req, res) => {
+export const saveExcelPincode = async (req, res) => {
     const filePath = req.file?.path;
 
     if (!filePath) {
