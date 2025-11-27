@@ -50,21 +50,29 @@ import fs from 'fs';
 // };
 
 
-export const saveExcelPincode = async (req, res, next) => {
+export const saveExcelPincodeLarge = async (req, res) => {
     const filePath = req.file?.path;
 
-    try {
-        if (!filePath) {
-            return res.status(400).json({ message: "No Excel file uploaded", status: false });
-        }
+    if (!filePath) {
+        return res.status(400).json({ message: "No Excel file uploaded", status: false });
+    }
 
+    try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(filePath);
+        await workbook.xlsx.readFile(filePath, { 
+            entries: "emit", 
+            sharedStrings: "cache", 
+            styles: "cache" 
+        });
+
         const worksheet = workbook.getWorksheet(1);
         const headerRow = worksheet.getRow(1);
         const headings = headerRow.values.slice(1);
 
-        const bulkData = [];
+        const BATCH_SIZE = 1000;
+        let batch = [];
+        let totalInserted = 0;
+        let totalSkipped = 0;
 
         for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
             const row = worksheet.getRow(rowIndex);
@@ -77,46 +85,43 @@ export const saveExcelPincode = async (req, res, next) => {
             });
 
             if (rowData.pincode && rowData.city) {
-                bulkData.push(rowData);
+                batch.push(rowData);
+            }
+
+            // Process batch
+            if (batch.length >= BATCH_SIZE || rowIndex === worksheet.actualRowCount) {
+                // Extract pincodes in batch
+                const pincodes = [...new Set(batch.map(item => item.pincode.toString()))];
+
+                // Fetch existing records
+                const existingRecords = await Pincode.find({
+                    pincode: { $in: pincodes }
+                }).select("pincode city");
+
+                const existingSet = new Set(existingRecords.map(item => `${item.pincode}_${item.city}`));
+
+                // Filter new rows
+                const newData = batch.filter(item => {
+                    const key = `${item.pincode}_${item.city}`;
+                    return !existingSet.has(key);
+                });
+
+                if (newData.length > 0) {
+                    await Pincode.insertMany(newData);
+                    totalInserted += newData.length;
+                }
+
+                totalSkipped += batch.length - newData.length;
+
+                // Reset batch
+                batch = [];
             }
         }
 
-        if (bulkData.length === 0) {
-            return res.status(400).json({ message: "No valid data found in Excel", status: false });
-        }
-
-        const excelPairs = bulkData.map(item => ({
-            pincode: item.pincode.toString(),
-            city: item.city.toString()
-        }));
-
-        const existing = await Pincode.find({
-            $or: excelPairs
-        }).select("pincode city");
-
-        const existingSet = new Set(
-            existing.map(item => `${item.pincode}_${item.city}`)
-        );
-
-        const newData = bulkData.filter(item => {
-            const key = `${item.pincode}_${item.city}`;
-            return !existingSet.has(key);
-        });
-
-        if (newData.length === 0) {
-            return res.status(200).json({
-                message: "All pincodes already exist. No new data inserted.",
-                status: true
-            });
-        }
-
-        await Pincode.insertMany(newData);
-
-
         return res.status(200).json({
-            message: "Pincode data added successfully",
-            inserted: newData.length,
-            skipped: bulkData.length - newData.length,
+            message: "Pincode data processed successfully",
+            inserted: totalInserted,
+            skipped: totalSkipped,
             status: true
         });
 
@@ -143,6 +148,50 @@ export const viewPincode = async (req, res, next) => {
         });
     }
 }
+// export const viewPincode = async (req, res, next) => {
+//     try {
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 100; // default 100 per page
+//         const skip = (page - 1) * limit;
+
+//         // optional search
+//         const search = req.query.search || "";
+
+//         const query = search
+//             ? {
+//                 $or: [
+//                     { pincode: { $regex: search, $options: "i" } },
+//                     { city: { $regex: search, $options: "i" } },
+//                     { state: { $regex: search, $options: "i" } },
+//                     { district: { $regex: search, $options: "i" } }
+//                 ]
+//             }
+//             : {};
+
+//         const [data, total] = await Promise.all([
+//             Pincode.find(query).skip(skip).limit(limit),
+//             Pincode.countDocuments(query)
+//         ]);
+
+//         return res.status(200).json({
+//             message: "Data Found",
+//             status: true,
+//             currentPage: page,
+//             totalPages: Math.ceil(total / limit),
+//             totalRecords: total,
+//             limit: limit,
+//             data
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             message: "Internal Server Error",
+//             error: error.message,
+//             status: false
+//         });
+//     }
+// };
 
 export const updatePincode = async (req, res, next) => {
     try {
