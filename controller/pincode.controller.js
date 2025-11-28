@@ -50,61 +50,15 @@ export const saveExcelPincode = async (req, res, next) => {
     }
 };
 
-export const viewPincode = async (req, res, next) => {
-    try {
-        const pinCodeList = await Pincode.find().lean(); // ⚡ Big performance boost
-
-        if (pinCodeList.length === 0) {
-            return res.status(404).json({ message: "No Data Found", status: false });
-        }
-
-        return res.status(200).json({ message: "Data Found", status: true, pinCodeList });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal Server Error",
-            error: error.message,
-            status: false
-        });
-    }
-};
-
-
 // export const viewPincode = async (req, res, next) => {
 //     try {
-//         const page = parseInt(req.query.page) || 1;
-//         const limit = parseInt(req.query.limit) || 100; // default 100 per page
-//         const skip = (page - 1) * limit;
+//         const pinCodeList = await Pincode.find().lean(); 
 
-//         // optional search
-//         const search = req.query.search || "";
+//         if (pinCodeList.length === 0) {
+//             return res.status(404).json({ message: "No Data Found", status: false });
+//         }
 
-//         const query = search
-//             ? {
-//                 $or: [
-//                     { pincode: { $regex: search, $options: "i" } },
-//                     { city: { $regex: search, $options: "i" } },
-//                     { state: { $regex: search, $options: "i" } },
-//                     { district: { $regex: search, $options: "i" } }
-//                 ]
-//             }
-//             : {};
-
-//         const [data, total] = await Promise.all([
-//             Pincode.find(query).skip(skip).limit(limit),
-//             Pincode.countDocuments(query)
-//         ]);
-
-//         return res.status(200).json({
-//             message: "Data Found",
-//             status: true,
-//             currentPage: page,
-//             totalPages: Math.ceil(total / limit),
-//             totalRecords: total,
-//             limit: limit,
-//             data
-//         });
-
+//         return res.status(200).json({ message: "Data Found", status: true, pinCodeList });
 //     } catch (error) {
 //         console.error(error);
 //         return res.status(500).json({
@@ -114,6 +68,52 @@ export const viewPincode = async (req, res, next) => {
 //         });
 //     }
 // };
+
+
+export const viewPincode = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100; // default 100 per page
+        const skip = (page - 1) * limit;
+
+        // optional search
+        const search = req.query.search || "";
+
+        const query = search
+            ? {
+                $or: [
+                    { pincode: { $regex: search, $options: "i" } },
+                    { city: { $regex: search, $options: "i" } },
+                    { state: { $regex: search, $options: "i" } },
+                    { district: { $regex: search, $options: "i" } }
+                ]
+            }
+            : {};
+
+        const [data, total] = await Promise.all([
+            Pincode.find(query).skip(skip).limit(limit),
+            Pincode.countDocuments(query)
+        ]);
+
+        return res.status(200).json({
+            message: "Data Found",
+            status: true,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalRecords: total,
+            limit: limit,
+            data
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: error.message,
+            status: false
+        });
+    }
+};
 
 export const updatePincode = async (req, res, next) => {
     try {
