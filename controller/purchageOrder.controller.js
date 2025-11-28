@@ -418,7 +418,7 @@ export const updatePurchaseOrder = async (req, res, next) => {
             // console.log("newItem.qty",newItem.qty,oldItem.qty)
             const qtyChange = newItem.qty - oldItem.qty;
             const priceChange = newItem.totalPrice - oldItem.totalPrice;
-// console.log("qtyChange priceChange",qtyChange,priceChange)
+            // console.log("qtyChange priceChange",qtyChange,priceChange)
             if (qtyChange === 0 && priceChange === 0) continue;
 
             const product = await Product.findById({ _id: newItem.productId });
@@ -438,7 +438,7 @@ export const updatePurchaseOrder = async (req, res, next) => {
                         whItem.totalPrice += priceChange;
                     }
                     await warehouse.save();
-                                        // console.log("whItem",whItem)
+                    // console.log("whItem",whItem)
                 }
 
                 if (stock) {
@@ -450,7 +450,7 @@ export const updatePurchaseOrder = async (req, res, next) => {
                         sItem.pTotal += priceChange;
                         await stock.save();
                     }
-                                        // console.log("aftersItem",sItem)
+                    // console.log("aftersItem",sItem)
                 }
             } else {
                 product.qty -= qtyChange;
@@ -938,12 +938,28 @@ export const DeleteStockPurchase = async (orderItem, date, orderData) => {
     }
 };
 
-// export const purchaseReport=async(req,res,next)=>{
-//     try {
-//         const purchageOrders=await PurchaseOrder.find({database:database,status:"completed"});
-//         const paymentReceipt=await Receipt.find({})
-//     } catch (error) {
-//         console.error(err);
-//         return res.status(500).json({ error: "Internal Server Error", status: false }); 
-//     }
-// }
+export const gstInputReport = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const [purchaseOrders, paymentReceipt] = await Promise.all([
+            PurchaseOrder.find({ database, status: "completed" })
+                .populate({ path: "partyId", model: "customer" }),
+
+            Receipt.find({ database, type: "payment", status: "Active" })
+                .populate({ path: "userId", model: "user" })
+                .populate({ path: "partyId", model: "customer" })
+        ]);
+
+        const GstInput = [...purchaseOrders, ...paymentReceipt];
+
+        return GstInput.length > 0
+            ? res.status(200).json({ message: "Data Found", GstInput, status: true })
+            : res.status(404).json({ message: "Not Found", status: false });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
+
