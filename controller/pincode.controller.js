@@ -73,10 +73,9 @@ export const saveExcelPincode = async (req, res, next) => {
 export const viewPincode = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 100; // default 100 per page
+        const limit = parseInt(req.query.limit) || 100; 
         const skip = (page - 1) * limit;
 
-        // optional search
         const search = req.query.search || "";
 
         const query = search
