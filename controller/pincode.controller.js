@@ -90,7 +90,7 @@ export const viewPincode = async (req, res, next) => {
             }
             : {};
 
-        const [data, total] = await Promise.all([
+        const [pinCodeList, total] = await Promise.all([
             Pincode.find(query).skip(skip).limit(limit),
             Pincode.countDocuments(query)
         ]);
@@ -102,7 +102,7 @@ export const viewPincode = async (req, res, next) => {
             totalPages: Math.ceil(total / limit),
             totalRecords: total,
             limit: limit,
-            data
+            pinCodeList
         });
 
     } catch (error) {
