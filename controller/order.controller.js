@@ -1865,90 +1865,30 @@ totals.grandTotal = Math.round(totals.grandTotal);
     }
 };
 
-// export const hsnWiseSaleReportB2C = async (req, res, next) => {
-//     try {
-//         const {database, startDate, endDate } = req.body;
+export const gstOutputReport = async (req, res, next) => {
+    try {
+        const { database } = req.params;
 
-//         const start = new Date(startDate);
-//         const end = new Date(endDate);
-//         const orders = await CreateOrder.find({
-//             database: database,
-//             status: "completed",
-//             date: {
-//                 $gte: start,
-//                 $lte: end
-//             },
-//             sgstTotal: { $ne: 0 },
-//             cgstTotal:{$ne:0}
-//         }).populate({
-//             path: 'orderItems.productId',
-//             model: 'product'
-//         });
-//         const hsnMap = new Map();
-//         // orders.map((item)=>console.log("sgstTotal",item?.sgstTotal))
-//         const totalSGST = orders.reduce((total, o) => total + (o.sgstTotal|| 0), 0);
+        const [saleOrders, salesReceipt] = await Promise.all([
+            CreateOrder.find({ database, status: "completed" })
+                .populate({ path: "partyId", model: "customer" }),
 
-//         orders?.forEach((invoice, invoiceIndex) => {
-//             //   console.log(`Processing Invoice #${invoiceIndex + 1}`);
-//             invoice?.orderItems?.forEach((item) => {
-//                 const product = item?.productId || {};
-//                 const hsnCode = product?.HSN_Code || '';
-//                 const key = hsnCode;
-//                 const qty = item?.qty || 0;
-//                 const grandTotal = item?.totalPriceWithDiscount || 0;
-//                 const gstPercentage = Number(product?.GSTRate || item?.gstPercentage || 0)
+            Receipt.find({ database, type: "receipt", status: "Active" })
+                .populate({ path: "userId", model: "user" })
+                .populate({ path: "partyId", model: "customer" })
+        ]);
 
-//                 const entry = {
-//                     primaryUnit: item?.primaryUnit || product?.primaryUnit || '',
-//                     secondaryUnit: item?.secondaryUnit || product?.secondaryUnit || '',
-//                     HSN_Code: hsnCode,
-//                     Product_Desc: product?.Product_Desc || '',
-//                     qty,
-//                     grandTotal,
-//                     gstPercentage,
-//                     taxableAmount: item?.taxableAmount || 0,
-//                     sgstRate: item?.sgstRate||item?.sgstAmount,
-//                     cgstRate: item?.cgstRate||item?.cgstAmount,
-//                 };
-//                 if (hsnMap.has(key)) {
-//                     const existing = hsnMap.get(key);
+        const GstOutput = [...saleOrders, ...salesReceipt];
 
-//                     //   console.log(`HSN ${key} exists. Updating values...`);
-//                     //   console.log('Before:', { ...existing });
+        return GstOutput.length > 0
+            ? res.status(200).json({ message: "Data Found", GstOutput, status: true })
+            : res.status(404).json({ message: "Not Found", status: false });
 
-//                     existing.qty += entry.qty;
-//                     existing.grandTotal += entry.grandTotal;
-//                     existing.taxableAmount += entry.taxableAmount;
-//                     existing.sgstRate += entry.sgstRate;
-//                     existing.cgstRate += entry.cgstRate;
-//                     //   console.log('After:', { ...existing });
-//                 } else {
-//                     //   console.log(`HSN ${key} not found. Adding new entry...`);
-//                     //   console.log('Entry:', entry);
-//                     hsnMap.set(key, { ...entry });
-//                 }
-//             });
-//         });
-
-//         const result = Array.from(hsnMap.values());
-//         const totals = result.reduce(
-//             (acc, item) => {
-//                 acc.qty += item.qty;
-//                 acc.taxableAmount += item.taxableAmount;
-//                 acc.grandTotal += item.grandTotal;
-//                 acc.cgstRate+=item.cgstRate;
-//                 acc.sgstRate +=item.sgstRate;
-//                 acc.gstPercentage+=item.gstPercentage;
-//                 return acc;
-//             },
-//             { qty: 0, taxableAmount: 0,gstPercentage:0 , sgstRate: 0,cgstRate:0,grandTotal: 0}
-//         );
-// return res.status(200).json({ result, totals})
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ message: "Internal Server Error", status: false })
-//     }
-// }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
 
 
 
