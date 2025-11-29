@@ -817,10 +817,11 @@ export const UserList = async (req, res, next) => {
   try {
     const database = req.params.database
     const user = await User.find({ database: database }).populate({ path: "created_by", model: "user" }).populate({ path: "rolename", model: "role" })
-    let customer = await Customer.find({ database: database }).sort({ sortorder: -1 }).populate({ path: "created_by", model: "user" }).populate({ path: "rolename", model: "role" })
+    let customer = await Customer.find({ database: database }).sort({ sortorder: -1 }).populate({ path: "rolename", model: "role" })
     const data = user.concat(customer)
     return data.length > 0 ? res.status(200).json({ User: data, status: true }) : res.status(404).json({ message: "Not Found", status: false });
   } catch (err) {
+    
     console.log(err);
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
