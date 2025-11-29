@@ -821,6 +821,7 @@ export const UserList = async (req, res, next) => {
     const data = user.concat(customer)
     return data.length > 0 ? res.status(200).json({ User: data, status: true }) : res.status(404).json({ message: "Not Found", status: false });
   } catch (err) {
+    
     console.log(err);
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
