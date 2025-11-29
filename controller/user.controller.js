@@ -1192,6 +1192,7 @@ const generateUniqueSixDigitNumber = () => {
   return uniqueNumber;
 };
 
+
 export const updateServiceArea = async (req, res) => {
   try {
     const { id, service } = req.body;
@@ -1208,25 +1209,27 @@ export const updateServiceArea = async (req, res) => {
     user.service = service;
     await user.save();
 
-    const pincodes = Array.from(
-      new Set(
-        service
-          .map(s => s.pincode)
-          .filter(Boolean)        
-      )
+    const newPincodes = Array.from(
+      new Set(service.map(s => s.pincode).filter(Boolean))
     );
-
-    if (pincodes.length === 0) {
-      return res.status(200).json({ message: "Updated No Pincodes", status: true });
-    }
 
     await Customer.updateMany(
-      { pincode: { $in: pincodes } },
-      { $set: { created_by: user._id } }
+      {
+        created_by: user._id,
+        pincode: { $nin: newPincodes }
+      },
+      { $set: { created_by: "" } }   
     );
 
+    if (newPincodes.length > 0) {
+      await Customer.updateMany(
+        { pincode: { $in: newPincodes } },
+        { $set: { created_by: user._id } }
+      );
+    }
+
     return res.status(200).json({
-      message: "Customer Updated Successfully",
+      message: "Service Area & Customers Updated Successfully",
       status: true
     });
 
@@ -1235,4 +1238,50 @@ export const updateServiceArea = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error", status: false });
   }
 };
+
+
+
+// export const updateServiceArea = async (req, res) => {
+//   try {
+//     const { id, service } = req.body;
+
+//     const user = await User.findById(id);
+//     if (!user) {
+//       return res.status(404).json({ message: "User Not Found", status: false });
+//     }
+
+//     if (!Array.isArray(service)) {
+//       return res.status(400).json({ message: "Service must be an array", status: false });
+//     }
+
+//     user.service = service;
+//     await user.save();
+
+//     const pincodes = Array.from(
+//       new Set(
+//         service
+//           .map(s => s.pincode)
+//           .filter(Boolean)        
+//       )
+//     );
+
+//     if (pincodes.length === 0) {
+//       return res.status(200).json({ message: "Updated No Pincodes", status: true });
+//     }
+
+//     await Customer.updateMany(
+//       { pincode: { $in: pincodes } },
+//       { $set: { created_by: user._id } }
+//     );
+
+//     return res.status(200).json({
+//       message: "Customer Updated Successfully",
+//       status: true
+//     });
+
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ message: "Internal Server Error", status: false });
+//   }
+// };
 
