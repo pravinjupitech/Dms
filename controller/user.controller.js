@@ -247,30 +247,7 @@ export const DeleteUser = async (req, res, next) => {
         { $unset: { created_by: "" } }
       );
     }
-        const [purchaseOrder, salesOrder, receipt] = await Promise.all([
-    PurchaseOrder.find({ 
-        userId: req.params.id, 
-        status: { $in: ["pending", "completed"] } 
-    }),
-    CreateOrder.find({ 
-        userId: req.params.id, 
-        status: { $in: ["pending", "completed"] } 
-    }),
-    Receipt.find({ 
-        userId: req.params.id, 
-        status: "Active" 
-    })
-]);
-
-            if (receipt.length > 0) {
-                return res.json({ message: "User has used Receipt or Payment", status: false })
-            }
-            if ( purchaseOrder.length > 0) {
-                return res.json({ message: "User is used in Purchase Order", status: false })
-            }
-            if (salesOrder.length > 0) {
-                return res.json({ message: "User is used in Sales order", status: false })
-            }
+   
     user.status = "Deactive";
     await user.save();
     return res.status(200).json({ message: "delete successful", status: true })
@@ -821,7 +798,7 @@ export const UserList = async (req, res, next) => {
     const data = user.concat(customer)
     return data.length > 0 ? res.status(200).json({ User: data, status: true }) : res.status(404).json({ message: "Not Found", status: false });
   } catch (err) {
-    
+
     console.log(err);
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
