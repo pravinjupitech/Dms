@@ -1713,9 +1713,9 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-                    igstRate: (item?.igstRate || item?.igstAmount||0) + (item?.newIgstAmount || 0),
-                    cgstRate: (item?.cgstRate ||item?.cgstAmount|| 0) + (item?.newCgstAmount || 0),
-                    sgstRate: (item?.sgstRate ||item?.sgstAmount|| 0) + (item?.newSgstAmount || 0),
+                    igstRate: (item?.igstRate || item?.igstAmount || 0) + (item?.newIgstAmount || 0),
+                    cgstRate: (item?.cgstRate || item?.cgstAmount || 0) + (item?.newCgstAmount || 0),
+                    sgstRate: (item?.sgstRate || item?.sgstAmount || 0) + (item?.newSgstAmount || 0),
                 };
 
                 if (hsnMap.has(key)) {
@@ -1746,7 +1746,7 @@ export const hsnWiseSaleReportB2B = async (req, res, next) => {
             },
             { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0, sgstRate: 0, cgstRate: 0, grandTotal: 0 }
         );
-totals.grandTotal = Math.round(totals.grandTotal);
+        totals.grandTotal = Math.round(totals.grandTotal);
         return res.status(200).json({
             message: "B2B Data Found",
             result,
@@ -1816,9 +1816,9 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
                     grandTotal,
                     gstPercentage,
                     taxableAmount: item?.taxableAmount || 0,
-           igstRate: (item?.igstRate || item?.igstAmount||0) + (item?.newIgstAmount || 0),
-                    cgstRate: (item?.cgstRate ||item?.cgstAmount|| 0) + (item?.newCgstAmount || 0),
-                    sgstRate: (item?.sgstRate ||item?.sgstAmount|| 0) + (item?.newSgstAmount || 0),
+                    igstRate: (item?.igstRate || item?.igstAmount || 0) + (item?.newIgstAmount || 0),
+                    cgstRate: (item?.cgstRate || item?.cgstAmount || 0) + (item?.newCgstAmount || 0),
+                    sgstRate: (item?.sgstRate || item?.sgstAmount || 0) + (item?.newSgstAmount || 0),
                 };
 
                 if (hsnMap.has(key)) {
@@ -1852,7 +1852,7 @@ export const hsnWiseSaleReportB2C = async (req, res, next) => {
             },
             { qty: 0, taxableAmount: 0, gstPercentage: 0, igstRate: 0, sgstRate: 0, cgstRate: 0, grandTotal: 0 }
         );
-totals.grandTotal = Math.round(totals.grandTotal);
+        totals.grandTotal = Math.round(totals.grandTotal);
         return res.status(200).json({
             message: "B2C Data Found",
             result,
@@ -1890,5 +1890,14 @@ export const gstOutputReport = async (req, res, next) => {
     }
 };
 
-
+export const completeSalesOrder = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const orders = await CreateOrder.find({ database: database, status: "completed" });
+        return orders.length > 0 ? res.status(200).json({ message: "Data Found", orders, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
 
