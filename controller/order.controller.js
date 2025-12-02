@@ -1901,3 +1901,32 @@ export const completeSalesOrder = async (req, res, next) => {
     }
 }
 
+export const dashboardSales = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const orderHistory = await CreateOrder.find({
+            database: database,
+            status: "completed"
+        });
+
+        const totalSalesBasic = orderHistory.reduce((total, item) => {
+            return total + (item?.basicPrice || 0);
+        }, 0);
+
+        res.status(200).json({
+            message: "Data Found",
+            totalSalesBasic,
+            status: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false
+        });
+    }
+};
+
+
