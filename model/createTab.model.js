@@ -24,7 +24,9 @@ const TabSchemaDashboard = new mongoose.Schema({
         show: {
             type: Boolean
         }
-    }]
+    }], groupSize: {
+        type: String
+    }
 }, { timestamps: true })
 
 const TabSchema = new mongoose.Schema({
@@ -47,7 +49,9 @@ const TabSchema = new mongoose.Schema({
         navLink: {
             type: String
         }
-    }]
+    }], groupSize: {
+        type: String
+    }
 }, { timestamps: true })
 
 export const Tab = mongoose.model("tab", TabSchema)
