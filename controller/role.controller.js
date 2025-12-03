@@ -201,7 +201,6 @@ export const viewTab = async (req, res, next) => {
 export const saveDashboardTabs = async (req, res, next) => {
     try {
         const user = await DashboardTab.findOne({ userId: req.body.userId.toString() });
-console.log(req.body)
         if (user) {
             for (let item of req.body.tab) {
                 const existingTab = user.tab.find(t => t.key === item.key);
@@ -224,7 +223,7 @@ console.log(req.body)
                     user.tab.push(item);
                 }
             }
-
+            user.groupSize = req.body.groupSize;
             await user.save();
             return res.status(200).json({ message: "data save successful", tab: user, status: true });
 
