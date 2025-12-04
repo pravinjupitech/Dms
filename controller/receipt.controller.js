@@ -659,87 +659,87 @@ export const ProfitLossReport = async (req, res, next) => {
 };
 
 export const CashBookReport = async (req, res, next) => {
-  try {
-    const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
-    const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
+    try {
+        const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
+        const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
 
-    const salesOrders = await CreateOrder.find({ 
-      database: req.params.database, 
-      status: "completed" 
-    }).populate({ path: "partyId", model: "customer" });
+        const salesOrders = await CreateOrder.find({
+            database: req.params.database,
+            status: "completed"
+        }).populate({ path: "partyId", model: "customer" });
 
-    const salesData = salesOrders
-      .filter(order => order?.partyId?.paymentTerm === "cash")
-      .map(order => ({
-        party: order.partyId?.CompanyName || "",
-        amount: order.grandTotal||0,
-        date:order.date,
-        type:"receipt"
-      }));
+        const salesData = salesOrders
+            .filter(order => order?.partyId?.paymentTerm === "cash")
+            .map(order => ({
+                party: order.partyId?.CompanyName || "",
+                amount: order.grandTotal || 0,
+                date: order.date,
+                type: "receipt"
+            }));
 
-      const purchaseOrders=await PurchaseOrder.find({ 
-      database: req.params.database, 
-      status: "completed" 
-    }).populate({ path: "partyId", model: "customer" });
-    const purchaseData = purchaseOrders
-      .filter(order => order?.partyId?.paymentTerm === "cash")
-      .map(order => ({
-        party: order.partyId?.CompanyName || "",
-        amount: order.grandTotal||0,
-        date:order.date,
-        type:"receipt"
-      }));
+        const purchaseOrders = await PurchaseOrder.find({
+            database: req.params.database,
+            status: "completed"
+        }).populate({ path: "partyId", model: "customer" });
+        const purchaseData = purchaseOrders
+            .filter(order => order?.partyId?.paymentTerm === "cash")
+            .map(order => ({
+                party: order.partyId?.CompanyName || "",
+                amount: order.grandTotal || 0,
+                date: order.date,
+                type: "receipt"
+            }));
 
-    const accountDetails = await User.findOne({ id: "CASH ACCOUNT-Cash-in-Hand" });
-    const userId = accountDetails?._id;
+        const accountDetails = await User.findOne({ id: "CASH ACCOUNT-Cash-in-Hand" });
+        const userId = accountDetails?._id;
 
-    const query1 = {
-      database: req.params.database,
-      paymentMode: "Cash",
-      status: "Active"
-    };
+        const query1 = {
+            database: req.params.database,
+            paymentMode: "Cash",
+            status: "Active"
+        };
 
-    const query2 = {
-      status: "Active",
-      userId: userId
-    };
+        const query2 = {
+            status: "Active",
+            userId: userId
+        };
 
-    if (startDate && endDate) {
-      query1.createdAt = { $gte: startDate, $lte: endDate };
-      query2.createdAt = { $gte: startDate, $lte: endDate };
+        if (startDate && endDate) {
+            query1.createdAt = { $gte: startDate, $lte: endDate };
+            query2.createdAt = { $gte: startDate, $lte: endDate };
+        }
+
+        const receipts1 = await Receipt.find(query1).select('_id');
+        const receipts2 = await Receipt.find(query2).select('_id');
+
+        const ids1 = new Set(receipts1.map(r => r._id.toString()));
+        const ids2 = new Set(receipts2.map(r => r._id.toString()));
+        const combinedIds = [...new Set([...ids1, ...ids2])];
+
+        const receipts = await Receipt.find({ _id: { $in: combinedIds } })
+            .sort({ sortorder: -1 })
+            .populate({ path: "partyId", model: "customer" })
+            .populate({ path: "userId", model: "user" })
+            .populate({ path: "expenseId", model: "createAccount" })
+            .populate({ path: "transporterId", model: "transporter" });
+
+        if (!receipts.length) {
+            return res.status(404).json({ message: "No receipts found", status: false });
+        }
+
+        return res.status(200).json({
+            CashBook: {
+                salesData,
+                purchaseData,
+                receipts
+            },
+            status: true
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
     }
-
-    const receipts1 = await Receipt.find(query1).select('_id');
-    const receipts2 = await Receipt.find(query2).select('_id');
-
-    const ids1 = new Set(receipts1.map(r => r._id.toString()));
-    const ids2 = new Set(receipts2.map(r => r._id.toString()));
-    const combinedIds = [...new Set([...ids1, ...ids2])];
-
-    const receipts = await Receipt.find({ _id: { $in: combinedIds } })
-      .sort({ sortorder: -1 })
-      .populate({ path: "partyId", model: "customer" })
-      .populate({ path: "userId", model: "user" })
-      .populate({ path: "expenseId", model: "createAccount" })
-      .populate({ path: "transporterId", model: "transporter" });
-
-    if (!receipts.length) {
-      return res.status(404).json({ message: "No receipts found", status: false });
-    }
-
-    return res.status(200).json({
-      CashBook: {
-        salesData,
-        purchaseData,
-        receipts
-      },
-      status: true
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal Server Error", status: false });
-  }
 };
 
 export const BankAccountReport = async (req, res, next) => {
@@ -857,7 +857,7 @@ export const transactionCalculate = async (req, res, next) => {
                 : -CompanyAmount.openingBalance
         );
 
-        if (CompanyAmount.bankDetails&&CompanyAmount.bankDetails.length>0) {
+        if (CompanyAmount.bankDetails && CompanyAmount.bankDetails.length > 0) {
             CompanyAmount.bankDetails.forEach(item => {
                 if (!item.openingBalance || !item.openingType) return;
                 transaction.BankAmount += parseInt(
@@ -1102,6 +1102,68 @@ export const ViewReceiptBySalesPersonId = async (req, res, next) => {
         return (receipt.length > 0) ? res.status(200).json({ Receipts: receipt, status: true }) : res.status(404).json({ message: "Receipt Not Found", status: false });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
+
+
+export const dashboardReceipt = async (req, res, next) => {
+    try {
+        const receipts = await Receipt.find({
+            database: req.params.database,
+            status: "Active",
+            type: "receipt"
+        }).populate({ path: "partyId", model: "customer" });
+
+        let count = 0;
+
+        for (let item of receipts) {
+            if (
+                item?.partyId &&
+                (item?.partyId?.registrationType === "Regular" ||
+                    item?.partyId?.registrationType === "Register")
+            ) {
+                count++;
+            }
+        }
+
+        return receipts.length > 0
+            ? res.status(200).json({ message: "Data Found", receipt: count, status: true })
+            : res.status(400).json({ message: "Not Found", status: false });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+};
+
+
+export const dashboardPayment = async (req, res, next) => {
+    try {
+        const receipts = await Receipt.find({
+            database: req.params.database,
+            status: "Active",
+            type: "payment"
+        }).populate({ path: "partyId", model: "customer" });
+
+        let count = 0;
+
+        for (let item of receipts) {
+            if (
+                item?.partyId &&
+                (item?.partyId?.registrationType === "Regular" ||
+                    item?.partyId?.registrationType === "Register")
+            ) {
+                count++;
+            }
+        }
+
+        return receipts.length > 0
+            ? res.status(200).json({ message: "Data Found", payment: count, status: true })
+            : res.status(400).json({ message: "Not Found", status: false });
+
+    } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
