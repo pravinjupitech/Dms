@@ -963,4 +963,16 @@ export const gstInputReport = async (req, res, next) => {
     }
 };
 
-
+export const dashboardPurchase = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
+        const purchaseTotal =purchase.reduce((tot, item) => {
+           return tot += (item?.amount || 0)
+        }, 0)
+        return purchaseTotal ? res.status(200).json({ message: "Data Found", purchase: purchaseTotal, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}

@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { CreditorCalculate, ProductWisePurchaseReport, Purch, PurchaseOrderDispatch, UpdatePurchaseInvoiceOrder, deletePurchaseOrder, deletedPurchase, gstInputReport, purchaseInvoiceOrder, purchaseOrder, purchaseOrderHistory, purchaseOrderHistoryByOrderId, updatePurchaseOrder, updatePurchaseOrderStatus } from "../controller/purchageOrder.controller.js";
+import { CreditorCalculate, ProductWisePurchaseReport, Purch, PurchaseOrderDispatch, UpdatePurchaseInvoiceOrder, dashboardPurchase, deletePurchaseOrder, deletedPurchase, gstInputReport, purchaseInvoiceOrder, purchaseOrder, purchaseOrderHistory, purchaseOrderHistoryByOrderId, updatePurchaseOrder, updatePurchaseOrderStatus } from "../controller/purchageOrder.controller.js";
 
 const router = express.Router();
 const upload = multer({ dest: "public/Images/" })
@@ -19,4 +19,5 @@ router.delete("/deleted-purchase-order/:id", deletedPurchase)
 router.get("/gst-input/:database",gstInputReport)
 router.get("/creditor-calculate/:database", CreditorCalculate)
 router.post("/purch/:id", Purch)
+router.get("/dashboard-purchase/:database",dashboardPurchase)
 export default router;
