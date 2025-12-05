@@ -133,7 +133,7 @@ export const DeleteCustomer = async (req, res, next) => {
         if (reciept.length > 0) {
             return res.json({ message: "Customer has used Receipt or Payment", status: false })
         }
-        if ( purchaseOrder.length > 0) {
+        if (purchaseOrder.length > 0) {
             return res.json({ message: "Customer is used in Purchase Order", status: false })
         }
         if (salesOrder.length > 0) {
@@ -217,12 +217,32 @@ export const UpdateCustomer = async (req, res, next) => {
             if (req.body.bankDetails) {
                 req.body.bankDetails = JSON.parse(req.body.bankDetails)
             }
-            const updatedCustomer = req.body;
             const existOver = await OverDueReport.findOne({ partyId: customerId, activeStatus: "Active" })
             if (existOver) {
                 existOver.lockingAmount = req.body.limit
                 await existOver.save()
             }
+            if (req.body.pincode !== existingCustomer.pincode) {
+    
+            const existingUsers = await User.find({ database: existingCustomer?.database, status: "Active" }).populate({ path: "rolename", model: "role" });
+
+            const salesPersons = existingUsers.filter(user =>
+                user?.rolename?.roleName === "Sales Person"
+            );
+            const matchedSalesPerson = salesPersons.find(user => {
+                const services = user?.service;
+                if (!Array.isArray(services)) return false;
+                
+                return services.some(service =>
+                    String(service?.pincode).trim() === String(req.body.pincode).trim()
+                );
+            });
+            
+            if (matchedSalesPerson) {
+                req.body.created_by = matchedSalesPerson._id;
+            }
+        }
+        const updatedCustomer = req.body;
             await Customer.findByIdAndUpdate(customerId, updatedCustomer, { new: true });
             return res.status(200).json({ message: 'Customer Updated Successfully', status: true });
         }
@@ -231,7 +251,7 @@ export const UpdateCustomer = async (req, res, next) => {
         return res.status(500).json({ error: 'Internal Server Error', status: false });
     }
 };
- 
+
 export const GPSReport = async (req, res, next) => {
     try {
         const customers = await Customer.find(
