@@ -223,8 +223,9 @@ export const UpdateCustomer = async (req, res, next) => {
                 existOver.lockingAmount = req.body.limit
                 await existOver.save()
             }
+            console.log("req.body.pincode",req.body.pincode,"existingCustomer.pincode",existingCustomer.pincode)
             if (req.body.pincode !== existingCustomer.pincode) {
-    
+    console.log("true condition")
             const existingUsers = await User.find({ database: existingCustomer?.database, status: "Active" }).populate({ path: "rolename", model: "role" });
 
             const salesPersons = existingUsers.filter(user =>
@@ -238,7 +239,7 @@ export const UpdateCustomer = async (req, res, next) => {
                     String(service?.pincode).trim() === String(req.body.pincode).trim()
                 );
             });
-            
+            console.log("matchedSalesPerson",matchedSalesPerson)
             if (matchedSalesPerson) {
                 req.body.created_by = matchedSalesPerson._id;
             }
