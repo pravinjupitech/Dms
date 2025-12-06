@@ -1159,7 +1159,7 @@ export const dashboardPayment = async (req, res, next) => {
         }
 
         return receipts.length > 0
-            ? res.status(200).json({ message: "Data Found", payment: count, status: true })
+            ? res.status(200).json({ message: "Data Found", pay: count, status: true })
             : res.status(400).json({ message: "Not Found", status: false });
 
     } catch (error) {
@@ -1167,3 +1167,68 @@ export const dashboardPayment = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
+export const dashboardCashInHand=async(req,res,next)=>{
+    try {
+        const {database}=req.params;
+      const [receiptData, salesData, purchaseData] = await Promise.all([
+    Receipt.find({ database, status: "Active" })
+        .populate({ path: "partyId", model: "customer" }),
+
+    CreateOrder.find({ database, status: "completed" })
+        .populate({ path: "partyId", model: "customer" }),
+
+    PurchaseOrder.find({ database, status: "completed" })
+        .populate({ path: "partyId", model: "customer" })
+]);
+
+const filterReceipt = receiptData.filter(
+    item => item.partyId?.CompanyName === "CASH" || item.paymentMode === "Cash"
+);
+
+const filterSales = salesData.filter(
+    item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
+);
+
+const filterPurchase = purchaseData.filter(
+    item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
+);
+
+let totalDebit = 0;
+let totalCredit = 0;
+
+filterReceipt.forEach(item => {
+    if (item.type === "receipt") {
+        totalDebit += item.amount || 0;   
+    }
+    if (item.type === "payment") {
+        totalCredit += item.amount || 0;  
+    }
+});
+
+filterSales.forEach(item => {
+    totalDebit += item.grandTotal || 0;
+});
+
+filterPurchase.forEach(item => {
+    totalCredit += item.grandTotal || 0;
+});
+const totalBalance=totalDebit-totalCredit
+const result = {
+    totalDebit,
+    totalCredit,
+    totalBalance
+};
+
+res.status(200).json({
+    status: true,
+    message: "Data Found",
+    result: result
+});
+
+
+    } catch (error) {
+                console.log(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}

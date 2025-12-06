@@ -1929,4 +1929,22 @@ export const dashboardSales = async (req, res, next) => {
     }
 };
 
-
+export const dashboardGstOutput = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const orderHistory = await CreateOrder.find({
+            database: database,
+            status: "completed"
+        });
+        const saleOutTotal = orderHistory.reduce((tot, item) => {
+            return tot
+                + (item?.igstTotal || 0)
+                + (item?.cgstTotal || 0)
+                + (item?.sgstTotal || 0);
+        }, 0);
+        res.status(200).json({ message: "Data Found", gstOutput: saleOutTotal, status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}

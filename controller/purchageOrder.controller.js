@@ -967,10 +967,27 @@ export const dashboardPurchase = async (req, res, next) => {
     try {
         const { database } = req.params;
         const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
-        const purchaseTotal =purchase.reduce((tot, item) => {
-           return tot += (item?.amount || 0)
+        const purchaseTotal = purchase.reduce((tot, item) => {
+            return tot += (item?.amount || 0)
         }, 0)
         return purchaseTotal ? res.status(200).json({ message: "Data Found", purchase: purchaseTotal, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const dashboardGstInput = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
+        const purchaseInputTotal = purchase.reduce((tot, item) => {
+            return tot
+                + (item?.igstTotal || 0)
+                + (item?.cgstTotal || 0)
+                + (item?.sgstTotal || 0);
+        }, 0);
+        res.status(200).json({ message: "Data Found", gstInput: purchaseInputTotal, status: true })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
