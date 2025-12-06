@@ -1380,4 +1380,109 @@ export const OutwordReport = async (req, res, next) => {
 };
 
 
+export const dashboardStockReport = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const purchaseOrders = await PurchaseOrder.find({ database, status: { $ne: "Deactive" } });
+        const salesOrders = await CreateOrder.find({ database, status: { $ne: "Deactive" } });
+        const productMap = {};
+
+        for (const po of purchaseOrders) {
+            const isCompleted = po.status === "completed";
+
+            const taxPerItem = isCompleted
+                ? (
+                    (po.coolieAndCartage || 0) +
+                    (po.labourCost || 0) +
+                    (po.localFreight || 0) +
+                    (po.miscellaneousCost || 0) +
+                    (po.transportationCost || 0) +
+                    (po.tax || 0)
+                ) / po.orderItems.length
+                : 0;
+
+            for (const item of po.orderItems) {
+                const id = item.productId?.toString();
+                if (!id) continue;
+
+                if (!productMap[id]) {
+                    productMap[id] = { pQty: 0, pTotal: 0, totalTax: 0, sQty: 0 };
+                }
+
+                if (isCompleted) {
+                    productMap[id].pQty += item.qty || 0;
+                    productMap[id].pTotal += item.totalPrice || 0;
+                    productMap[id].totalTax += taxPerItem;
+                }
+            }
+        }
+
+        for (const so of salesOrders) {
+            const isCompleted = so.status === "completed";
+
+            for (const item of so.orderItems) {
+                const id = item.productId?.toString();
+                if (!id) continue;
+
+                if (!productMap[id]) {
+                    productMap[id] = { pQty: 0, pTotal: 0, totalTax: 0, sQty: 0 };
+                }
+
+                if (isCompleted) {
+                    productMap[id].sQty += item.qty || 0;
+                }
+            }
+        }
+
+        const products = await Product.find({ database, status: "Active" });
+
+        const results = [];
+        let grandClosingTotal = 0;
+
+        for (const p of products) {
+            const id = p._id.toString();
+            const entry = productMap[id] || { pQty: 0, pTotal: 0, totalTax: 0, sQty: 0 };
+
+            const oQty = p.Opening_Stock || 0;
+            const openingRate = p.openingRate || 0;
+
+            const openingTotal = oQty * openingRate;
+
+            const totalQty = oQty + entry.pQty;
+
+            const closingQty = oQty + entry.pQty - entry.sQty;
+
+            const closingAveRate = totalQty > 0
+                ? (openingTotal + (entry.pTotal + entry.totalTax)) / totalQty
+                : 0;
+
+            const closingTotal = closingQty * closingAveRate;
+
+            grandClosingTotal += closingTotal;
+
+            results.push({
+                productId: id,
+                Product_Title: p.Product_Title,
+                closingQty,
+                closingAveRate,
+                closingTotal
+            });
+        }
+
+        return res.status(200).json({
+            status: true,
+            message: "Stock closing report generated",
+            // data: results,
+            grandClosingTotal
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: err.message
+        });
+    }
+};
 

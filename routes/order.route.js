@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, completeSalesOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, dashboardSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, completeSalesOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, dashboardGstOutput, dashboardSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -51,4 +51,5 @@ router.post("/hsn-wise-sale-reportb2c",hsnWiseSaleReportB2C)
 router.get("/gst-output/:database",gstOutputReport)
 router.get("/view-complete-order/:database",completeSalesOrder)
 router.get("/view-dashboard/:database",dashboardSales)
+router.get("/dashboard-gstoutput/:database",dashboardGstOutput)
 export default router;

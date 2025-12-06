@@ -171,7 +171,6 @@ export const DeleteBulkCustomer = async (req, res, next) => {
 }
 export const UpdateCustomer = async (req, res, next) => {
     try {
-        console.log("req.body",req.body)
         if (req.files) {
             let images = [];
             req.files.map(file => {

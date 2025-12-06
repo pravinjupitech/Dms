@@ -96,7 +96,7 @@ export const DeleteProduct = async (req, res, next) => {
       "orderItems.productId": req.params.id,
       status: { $in: ["pending", "completed"] }
     });
-    if ( purchaseOrder.length > 0) {
+    if (purchaseOrder.length > 0) {
       return res.json({ message: "Product is used in Purchase order", status: false })
     }
     if (salesOrder.length > 0) {
@@ -321,7 +321,7 @@ export const saveItemWithExcel = async (req, res) => {
           WarehouseNotExisting.push(document.warehouse)
         } else {
           document[warehouse] = existingWarehouse._id.toString()
-          if (document.Product_Title && document.SubCategory&&document.category) {
+          if (document.Product_Title && document.SubCategory && document.category) {
             // let last4 = '';
             // let existName = document.Product_Title.split(" ");
             // let fname = existName[0];
@@ -413,14 +413,14 @@ export const updateItemWithExcel = async (req, res) => {
         document[heading] = cellValue;
       }
       document[database] = req.params.database
-        if (document.Product_Title && document.SubCategory&&document.category) {
-            // let last4 = '';
-            // let existName = document.Product_Title.split(" ");
-            // let fname = existName[0];
-            // const hsn = document.HSN_Code.trim();
-            // last4 = hsn.slice(-4);
-            document['sId'] = `${document.category}-${document.SubCategory}-${document.Product_Title}`;
-          }
+      if (document.Product_Title && document.SubCategory && document.category) {
+        // let last4 = '';
+        // let existName = document.Product_Title.split(" ");
+        // let fname = existName[0];
+        // const hsn = document.HSN_Code.trim();
+        // last4 = hsn.slice(-4);
+        document['sId'] = `${document.category}-${document.SubCategory}-${document.Product_Title}`;
+      }
       if (document.HSN_Code) {
         const existingWarehouse = await Warehouse.findOne({ id: document.warehouse, database: document.database, status: "Active" })
         if (!existingWarehouse) {
@@ -1421,3 +1421,17 @@ export const UpdateProductSalesRate = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 };
+
+export const dashboardOpening = async (req, res, next) => {
+  try {
+    const { database } = req.params;
+    const products = await Product.find({ database: database, status: "Active" })
+    const openingTotal = products.reduce((tot, item) => {
+      return tot += (item.Opening_Stock || 0)
+    }, 0)
+    res.status(200).json({ message: "Data Found", openingTotal, status: true })
+  } catch (error) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal Server Error", status: false });
+  }
+}
