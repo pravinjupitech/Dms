@@ -1435,3 +1435,17 @@ export const dashboardOpening = async (req, res, next) => {
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 }
+
+export const currentStock=async(req,res,next)=>{
+  try {
+    const {database}=req.params;
+    const product=await Product.find({database:database,status:"Active"})
+    if(product.length===0){
+      return res.status(404).json({message:"Not Found",status:false})
+    }
+    res.status(200).json({message:"Data Found",product,status:true})
+  } catch (error) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal Server Error", status: false });
+  }
+}
