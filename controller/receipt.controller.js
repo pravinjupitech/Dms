@@ -1168,82 +1168,107 @@ export const dashboardPayment = async (req, res, next) => {
     }
 };
 
-export const dashboardCashInHand=async(req,res,next)=>{
+export const dashboardCashInHand = async (req, res, next) => {
     try {
-        const {database}=req.params;
-      const [receiptData, salesData, purchaseData] = await Promise.all([
-    Receipt.find({ database, status: "Active" })
-        .populate({ path: "partyId", model: "customer" }),
+        const { database } = req.params;
+        const [receiptData, salesData, purchaseData] = await Promise.all([
+            Receipt.find({ database, status: "Active" })
+                .populate({ path: "partyId", model: "customer" }),
 
-    CreateOrder.find({ database, status: "completed" })
-        .populate({ path: "partyId", model: "customer" }),
+            CreateOrder.find({ database, status: "completed" })
+                .populate({ path: "partyId", model: "customer" }),
 
-    PurchaseOrder.find({ database, status: "completed" })
-        .populate({ path: "partyId", model: "customer" })
-]);
+            PurchaseOrder.find({ database, status: "completed" })
+                .populate({ path: "partyId", model: "customer" })
+        ]);
 
-const filterReceipt = receiptData.filter(
-    item => item.partyId?.CompanyName === "CASH" || item.paymentMode === "Cash"
-);
+        const filterReceipt = receiptData.filter(
+            item => item.partyId?.CompanyName === "CASH" || item.paymentMode === "Cash"
+        );
 
-const filterSales = salesData.filter(
-    item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
-);
+        const filterSales = salesData.filter(
+            item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
+        );
 
-const filterPurchase = purchaseData.filter(
-    item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
-);
+        const filterPurchase = purchaseData.filter(
+            item => item.partyId?.CompanyName === "CASH" || item.partyId?.paymentTerm === "cash"
+        );
 
-let totalDebit = 0;
-let totalCredit = 0;
+        let totalDebit = 0;
+        let totalCredit = 0;
 
-filterReceipt.forEach(item => {
-    if (item.type === "receipt") {
-        totalDebit += item.amount || 0;   
-    }
-    if (item.type === "payment") {
-        totalCredit += item.amount || 0;  
-    }
-});
+        filterReceipt.forEach(item => {
+            if (item.type === "receipt") {
+                totalDebit += item.amount || 0;
+            }
+            if (item.type === "payment") {
+                totalCredit += item.amount || 0;
+            }
+        });
 
-filterSales.forEach(item => {
-    totalDebit += item.grandTotal || 0;
-});
+        filterSales.forEach(item => {
+            totalDebit += item.grandTotal || 0;
+        });
 
-filterPurchase.forEach(item => {
-    totalCredit += item.grandTotal || 0;
-});
-const totalBalance=totalDebit-totalCredit
-const result = {
-    totalDebit,
-    totalCredit,
-    totalBalance
-};
+        filterPurchase.forEach(item => {
+            totalCredit += item.grandTotal || 0;
+        });
+        const totalBalance = totalDebit - totalCredit
+        const result = {
+            totalDebit,
+            totalCredit,
+            totalBalance
+        };
 
-res.status(200).json({
-    status: true,
-    message: "Data Found",
-    result: result
-});
+        res.status(200).json({
+            status: true,
+            message: "Data Found",
+            result: result
+        });
 
 
     } catch (error) {
-                console.log(error);
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
 
-export const ExpensesTotal=async(req,res,next)=>{
+export const ExpensesTotal = async (req, res, next) => {
     try {
-        const {database}=req.params;
-        const payments=await Receipt.find({database:database,status:"Active",type:"payment"}).populate({path:"userId",model:"user"})
-       const filterData = payments.filter((item) =>
-  ["Indirect Expenses", "Direct Expenses"].includes(item?.userId?.account)
-);
-const totalExpenses=filterData.reduce((tot,item)=>{return tot+=item?.amount},0)
-return filterData.length>0?res.status(200).json({message:"Data Found",totalExpenses,expenses:filterData,status:true}):res.status(404).json({message:"Not Found",status:false})
+        const { database } = req.params;
+        const payments = await Receipt.find({ database: database, status: "Active", type: "payment" }).populate({ path: "userId", model: "user" })
+        const filterData = payments.filter((item) =>
+            ["Indirect Expenses", "Direct Expenses"].includes(item?.userId?.account)
+        );
+        const totalExpenses = filterData.reduce((tot, item) => { return tot += item?.amount }, 0)
+        return filterData.length > 0 ? res.status(200).json({ message: "Data Found", totalExpenses, expenses: filterData, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
-            console.log(error);
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const dashboardBalance = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const receipt = await Receipt.find({ database: database, paymentMode: "Bank", status: "Active" })
+        if (receipt.length === 0) {
+            return res.status(404).json({ message: "Not Found", status: false });
+        }
+
+        let debit = 0;
+        let credit = 0;
+        for (let item of receipt) {
+            if (item?.type==="receipt") {
+                credit += item?.amount
+            } else {
+                debit += item?.amount
+            }
+        }
+        const totalBankBalance = credit - debit;
+        res.status(200).json({ message: "Data Found", totalBankBalance, status: true })
+    } catch (error) {
+        console.log(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }

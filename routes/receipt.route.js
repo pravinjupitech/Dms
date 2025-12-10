@@ -1,5 +1,5 @@
 import express from "express";
-import { BankAccountReport, CashBookReport, DeletePayment, DeleteReceipt, ExpensesTotal, OtpVerifyForReceipt, PartySendOtp, ProfitLossReport, SaveOtp, TaxReport, UpdatePayment, UpdateReceipt, ViewOtp, ViewReceiptById, ViewReceiptByPartyId, ViewReceiptBySalesPersonId, dashboardCashInHand, dashboardPayment, dashboardReceipt, savePayment, savePaymentWithExcel, saveReceipt, saveReceiptWithExcel, transactionCalculate, viewReceipt } from "../controller/receipt.controller.js";
+import { BankAccountReport, CashBookReport, DeletePayment, DeleteReceipt, ExpensesTotal, OtpVerifyForReceipt, PartySendOtp, ProfitLossReport, SaveOtp, TaxReport, UpdatePayment, UpdateReceipt, ViewOtp, ViewReceiptById, ViewReceiptByPartyId, ViewReceiptBySalesPersonId, dashboardBalance, dashboardCashInHand, dashboardPayment, dashboardReceipt, savePayment, savePaymentWithExcel, saveReceipt, saveReceiptWithExcel, transactionCalculate, viewReceipt } from "../controller/receipt.controller.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -37,5 +37,6 @@ router.get("/dashboard-receipt/:database",dashboardReceipt)
 router.get("/dashboard-payment/:database",dashboardPayment)
 router.get("/cash-dashboard/:database",dashboardCashInHand)
 router.get("/expenses/:database",ExpensesTotal)
+router.get("/dashboard-bankbalance/:database",dashboardBalance)
 
 export default router;
