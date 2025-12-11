@@ -28,6 +28,8 @@ const TabSchemaDashboard = new mongoose.Schema({
         type: String
     },selectedLayout:{
         type:String
+    },isCombined:{
+        type:String
     }
 }, { timestamps: true })
 

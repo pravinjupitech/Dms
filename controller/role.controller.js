@@ -225,6 +225,7 @@ export const saveDashboardTabs = async (req, res, next) => {
             }
             user.groupSize = req.body.groupSize;
             user.selectedLayout=req.body.selectedLayout;
+            user.isCombined=req.body.isCombined;
             await user.save();
             return res.status(200).json({ message: "data save successful", tab: user, status: true });
 
