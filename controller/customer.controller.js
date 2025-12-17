@@ -1452,7 +1452,7 @@ export const ViewDeadParty = async (req, res, next) => {
             // const resultItem = { id, party, lastDays };
             // result.push(resultItem);
         }
-        return res.status(200).json({ Parties: Parties, status: true });
+        return Parties.length>0? res.status(200).json({ Parties: Parties, status: true }):res.status(400).json({message:"Not Found",status:false})
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
