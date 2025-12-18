@@ -1896,7 +1896,7 @@ export const completeSalesOrder = async (req, res, next) => {
         const orderHistory = await CreateOrder.find({ database: database, status: "completed" }).populate({ path: "partyId", model: "customer" }).populate({
             path: 'orderItems.productId',
             model: 'product'
-        });
+        }).populate({ path: "userId", model: "user" }).populate({ path: "partyId", model: "customer" }).populate({ path: "warehouseId", model: "warehouse" }).exec();
         return orderHistory.length > 0 ? res.status(200).json({ message: "Data Found", orderHistory, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (error) {
         console.error(error);
