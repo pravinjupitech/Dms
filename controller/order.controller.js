@@ -1893,7 +1893,10 @@ export const gstOutputReport = async (req, res, next) => {
 export const completeSalesOrder = async (req, res, next) => {
     try {
         const { database } = req.params;
-        const orderHistory = await CreateOrder.find({ database: database, status: "completed" }).populate({ path: "partyId", model: "customer" });
+        const orderHistory = await CreateOrder.find({ database: database, status: "completed" }).populate({ path: "partyId", model: "customer" }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        });
         return orderHistory.length > 0 ? res.status(200).json({ message: "Data Found", orderHistory, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (error) {
         console.error(error);
