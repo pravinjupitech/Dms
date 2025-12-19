@@ -33,7 +33,6 @@ const __dirname = dirname(__filename);
 
 export const createOrder = async (req, res, next) => {
     try {
-        console.log("req.body", req.body)
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
@@ -1951,3 +1950,316 @@ export const dashboardGstOutput = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
+
+export const lastMonthSale = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const now = new Date();
+
+        const startOfLastMonth = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth() - 1,
+            1, 0, 0, 0, 0
+        ));
+
+        const endOfLastMonth = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            0, 23, 59, 59, 999
+        ));
+
+        const result = await CreateOrder.aggregate([
+            {
+                $match: {
+                    database,
+                    status: "completed",
+                    date: {
+                        $gte: startOfLastMonth,
+                        $lte: endOfLastMonth
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    lastMonthSale: { $sum: "$grandTotal" }
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            lastMonthSale: result[0]?.lastMonthSale || 0
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            message: error.message
+        });
+    }
+};
+
+export const currentMonthSale = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const now = new Date();
+
+        const startOfCurrentMonth = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            1, 0, 0, 0, 0
+        ));
+
+        const endOfCurrentMonth = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth() + 1,
+            0, 23, 59, 59, 999
+        ));
+
+        const result = await CreateOrder.aggregate([
+            {
+                $match: {
+                    database,
+                    status: "completed",
+                    date: {
+                        $gte: startOfCurrentMonth,
+                        $lte: endOfCurrentMonth
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    currentMonthSale: { $sum: "$grandTotal" }
+                }
+            }
+        ]);
+
+        res.status(200).json({
+            status: true,
+            currentMonthSale: result[0]?.currentMonthSale || 0
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            status: false,
+            message: error.message
+        });
+    }
+};
+
+export const averageSinceFirstOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const firstOrder = await CreateOrder.findOne(
+            { database, status: "completed" },
+            { date: 1 }
+        ).sort({ date: 1 });
+
+        if (!firstOrder) {
+            return res.status(200).json({
+                success: true,
+                totalSales: 0,
+                monthsCount: 0,
+                averagePerMonth: 0
+            });
+        }
+
+        const start = new Date(firstOrder.date);
+        const end = new Date();
+
+        const monthsCount =
+            (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+            (end.getUTCMonth() - start.getUTCMonth()) + 1;
+
+        const result = await CreateOrder.aggregate([
+            {
+                $match: {
+                    database,
+                    status: "completed",
+                    date: { $gte: start, $lte: end }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalSales: { $sum: "$grandTotal" }
+                }
+            }
+        ]);
+
+        const totalSales = result[0]?.totalSales || 0;
+        const averagePerMonth = monthsCount ? totalSales / monthsCount : 0;
+
+        res.status(200).json({
+            status: true,
+            //   firstOrderDate: start.toISOString(),
+            //   totalSales,
+            //   monthsCount,
+            averagePerMonth
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const dashboardTotalSales = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const orderHistory = await CreateOrder.find({
+            database: database,
+            status: "completed"
+        });
+
+        const totalSales = orderHistory.reduce((total, item) => {
+            return total + (item?.grandTotal || 0);
+        }, 0);
+
+        res.status(200).json({
+            message: "Data Found",
+            totalSales,
+            status: true
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false
+        });
+    }
+};
+
+export const countOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "Pending" });
+
+        let count = 0;
+        allOrders.forEach(order => {
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                count += order.orderItems.filter(item => item.status === "ordered").length;
+            }
+        });
+
+        res.status(200).json({
+            status: true,
+            order: count
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const countPendingOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "Pending" });
+
+        let count = 0;
+        allOrders.forEach(order => {
+            const statuses = ["Forward To Warehouse", "inprocess"];
+
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                count += order.orderItems.filter(item => statuses.includes(item.status)).length;
+            }
+
+        });
+
+        res.status(200).json({
+            status: true,
+            pendingOrder: count
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const countReadytoDispatchOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "Pending" });
+
+        let count = 0;
+        allOrders.forEach(order => {
+            if (order.orderItems && Array.isArray(order.orderItems)) {
+                count += order.orderItems.filter(item => item.status === "ready to dispatch").length;
+            }
+        });
+
+        res.status(200).json({
+            status: true,
+            readyToDispatchOrder: count
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const countOutOfDeliveryOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "Out For Delivery" });
+
+        // let count = 0;
+        // allOrders.forEach(order => {
+        //     if (order.orderItems && Array.isArray(order.orderItems)) {
+        //         count += order.orderItems.filter(item => item.status === "Out For Delivery").length;
+        //     }
+        // });
+
+        res.status(200).json({
+            status: true,
+            OutOfDelivery: allOrders.length
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const countCompletedOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "completed" });
+
+        res.status(200).json({
+            status: true,
+            delivered: allOrders.length
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};
+
+export const countCancelledOrder = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const allOrders = await CreateOrder.find({ database, status: "Cancelled" });
+
+        res.status(200).json({
+            status: true,
+            cancelled: allOrders.length
+        });
+
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+};

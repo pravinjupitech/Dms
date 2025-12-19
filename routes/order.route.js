@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, checkPartyOrderLimit, completeSalesOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, dashboardGstOutput, dashboardSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -52,4 +52,15 @@ router.get("/gst-output/:database",gstOutputReport)
 router.get("/view-complete-order/:database",completeSalesOrder)
 router.get("/view-dashboard/:database",dashboardSales)
 router.get("/dashboard-gstoutput/:database",dashboardGstOutput)
+router.get("/dashboard-lastmonth/:database",lastMonthSale)
+router.get("/dashboard-currentmonth/:database",currentMonthSale)
+router.get("/dashboard-averagemonth/:database",averageSinceFirstOrder)
+router.get("/dashboard-totalSale/:database",dashboardTotalSales)
+router.get("/dashboard-order/:database",countOrder)
+router.get("/dashboard-pendingorder/:database",countPendingOrder)
+router.get("/dashboard-readytodispatchorder/:database",countReadytoDispatchOrder)
+router.get("/dashboard-outofdeliveryorder/:database",countOutOfDeliveryOrder)
+router.get("/dashboard-completedorder/:database",countCompletedOrder)
+router.get("/dashboard-cancelled/:database",countCancelledOrder)
+
 export default router;

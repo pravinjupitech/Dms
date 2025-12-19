@@ -970,7 +970,40 @@ export const dashboardPurchase = async (req, res, next) => {
         const purchaseTotal = purchase.reduce((tot, item) => {
             return tot += (item?.amount || 0)
         }, 0)
-        return purchaseTotal ? res.status(200).json({ message: "Data Found", purchase: purchaseTotal, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+        return purchaseTotal ? res.status(200).json({ message: "Data Found", purchaseTotal: purchaseTotal, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const CountPurchase = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
+        return purchase.length>0 ? res.status(200).json({ message: "Data Found", purchase: purchase.length, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const CountpendingPurchase = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "pending" });
+        return purchase.length>0 ? res.status(200).json({ message: "Data Found", purchasePending: purchase.length, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const CountInTransitPurchase = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "Dispatch" });
+        return purchase.length>0 ? res.status(200).json({ message: "Data Found", purchaseInTransit: purchase.length, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
