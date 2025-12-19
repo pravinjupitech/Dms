@@ -1123,7 +1123,7 @@ export const dashboardReceipt = async (req, res, next) => {
                 (item?.partyId?.registrationType === "Regular" ||
                     item?.partyId?.registrationType === "Register")
             ) {
-                count++;
+                count+=item.amount
             }
         }
 
@@ -1154,7 +1154,7 @@ export const dashboardPayment = async (req, res, next) => {
                 (item?.partyId?.registrationType === "Regular" ||
                     item?.partyId?.registrationType === "Register")
             ) {
-                count++;
+                count+=item?.amount;
             }
         }
 
@@ -1241,7 +1241,7 @@ export const ExpensesTotal = async (req, res, next) => {
             ["Indirect Expenses", "Direct Expenses"].includes(item?.userId?.account)
         );
         const totalExpenses = filterData.reduce((tot, item) => { return tot += item?.amount }, 0)
-        return filterData.length > 0 ? res.status(200).json({ message: "Data Found", totalExpenses, expenses: filterData, status: true }) : res.status(404).json({ message: "Not Found", status: false })
+        return filterData.length > 0 ? res.status(200).json({ message: "Data Found", totalExpenses, status: true }) : res.status(404).json({ message: "Not Found", status: false })
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
