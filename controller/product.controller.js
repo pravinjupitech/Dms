@@ -1426,9 +1426,19 @@ export const dashboardOpening = async (req, res, next) => {
   try {
     const { database } = req.params;
     const products = await Product.find({ database: database, status: "Active" })
-    const openingTotal = products.reduce((tot, item) => {
-      return tot += (item.Opening_Stock || 0)
+    const openingTotal = products.reduce((total, item) => {
+      const Opening_Stock = item?.Opening_Stock || 0
+      const openingRate = item?.openingRate || 0
+
+      // Skip if either value is 0
+      if (Opening_Stock === 0 || openingRate === 0) {
+        return total
+      }
+
+      return total + (Opening_Stock * openingRate)
     }, 0)
+
+
     res.status(200).json({ message: "Data Found", openingTotal, status: true })
   } catch (error) {
     console.error(err);
@@ -1436,14 +1446,14 @@ export const dashboardOpening = async (req, res, next) => {
   }
 }
 
-export const currentStock=async(req,res,next)=>{
+export const currentStock = async (req, res, next) => {
   try {
-    const {database}=req.params;
-    const product=await Product.find({database:database,status:"Active"})
-    if(product.length===0){
-      return res.status(404).json({message:"Not Found",status:false})
+    const { database } = req.params;
+    const product = await Product.find({ database: database, status: "Active" })
+    if (product.length === 0) {
+      return res.status(404).json({ message: "Not Found", status: false })
     }
-    res.status(200).json({message:"Data Found",product,status:true})
+    res.status(200).json({ message: "Data Found", product, status: true })
   } catch (error) {
     console.error(err);
     return res.status(500).json({ error: "Internal Server Error", status: false });
