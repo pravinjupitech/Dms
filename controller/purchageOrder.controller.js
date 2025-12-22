@@ -1026,3 +1026,22 @@ export const dashboardGstInput = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
+export const invertDashboard=async(req,res,next)=>{
+    try {
+       const { database } = req.params;
+        const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
+    
+const purchaseTotal = purchase.reduce((tot, item) => {
+  const grandTotal = item?.grandTotal || 0
+ 
+
+  return tot + grandTotal 
+}, 0)
+
+        res.status(200).json({message:"Data Found",purchaseTotal,status:true})
+    } catch (error) {
+               console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false }); 
+    }
+}
