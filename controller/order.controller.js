@@ -2263,3 +2263,75 @@ export const countCancelledOrder = async (req, res) => {
         res.status(500).json({ status: false, message: error.message });
     }
 };
+
+export const outWardStockReport = async (req, res) => {
+  try {
+    const { database } = req.params;
+
+    const salesOrders = await CreateOrder.find({
+      database,
+      status: "completed"
+    }).populate({ path: "orderItems.productId", model: "product" });
+
+    if (!salesOrders.length) {
+      return res.status(404).json({
+        status: false,
+        message: "No sales data found"
+      });
+    }
+
+    const productMap = {};
+
+    for (const so of salesOrders) {
+      for (const item of so.orderItems) {
+
+        const productId = item.productId?._id?.toString();
+        const productName = item.productId?.Product_Title;
+        const HSN_Code = item?.productId?.HSN_Code || "";
+        const GSTRate = item?.productId?.GSTRate || 0;
+
+        if (!productId) continue;
+
+        const qty = Number(item.qty || 0);
+        const sTotal = Number(item.totalPrice || 0);
+
+        const key = `${productId}_${HSN_Code}_${GSTRate}`;
+
+        if (!productMap[key]) {
+          productMap[key] = {
+            productName,
+            HSN_Code,
+            GSTRate,
+            sQty: 0,
+            sTotal: 0,
+            gstAmount:0,
+            averageSalesRate: 0  
+          };
+        }
+
+        productMap[key].sQty += qty;
+        productMap[key].sTotal += sTotal;
+      }
+    }
+
+    const result = Object.values(productMap).map(item => ({
+      ...item,
+      averageSalesRate:
+        item.sQty > 0 ? Number((item.sTotal / item.sQty).toFixed(2)) : 0
+    }));
+
+    return res.status(200).json({
+      status: true,
+      data: result
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: false,
+      error: "Internal Server Error"
+    });
+  }
+};
+
+

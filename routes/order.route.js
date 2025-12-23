@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
+import { CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, outWardStockReport, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -62,5 +62,6 @@ router.get("/dashboard-readytodispatchorder/:database",countReadytoDispatchOrder
 router.get("/dashboard-outofdeliveryorder/:database",countOutOfDeliveryOrder)
 router.get("/dashboard-completedorder/:database",countCompletedOrder)
 router.get("/dashboard-cancelled/:database",countCancelledOrder)
+router.get("/outward-stock-report/:database",outWardStockReport)
 
 export default router;
