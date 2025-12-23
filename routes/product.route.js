@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path"
-import { DeleteProduct, HSNWisePurchaseReport, HSNWiseSalesReport, SaveProduct, StockAlert, UpdateProduct, UpdateProductSalesRate, UpdateProductSalesRateMultiple, ViewProduct, ViewProductById, ViewProductForPurchase, currentStock, dashboardOpening, saveItemWithExcel, updateItemWithExcel, viewCurrentStock } from "../controller/product.controller.js";
+import { DeleteProduct, HSNWisePurchaseReport, HSNWiseSalesReport, SaveProduct, StockAlert, UpdateProduct, UpdateProductSalesRate, UpdateProductSalesRateMultiple, ViewProduct, ViewProductById, ViewProductForPurchase, currentStock, dashboardOpening, openingReport, saveItemWithExcel, updateItemWithExcel, viewCurrentStock } from "../controller/product.controller.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -34,5 +34,5 @@ router.put("/product-price-update/:id", UpdateProductSalesRate)
 router.put("/product-price-updated", UpdateProductSalesRateMultiple)
 router.get("/dashboard-opening/:database",dashboardOpening)
 router.get("/recancelation-stock/:database",currentStock)
-
+router.get("/view-opening-report/:database",openingReport)
 export default router;
