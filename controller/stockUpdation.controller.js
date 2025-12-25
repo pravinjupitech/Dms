@@ -307,6 +307,38 @@ export const saveDamageItem = async (req, res, next) => {
         return res.status(500).json({ error: "Internal server error", status: false });
     }
 };
+
+export const saveShortItem = async (req, res, next) => {
+    try {
+        const warehouse = await Warehouse.findOne({ _id: req.body.warehouse });
+        if (!warehouse) {
+            return res.status(404).json({ message: "Warehouse not found", status: false });
+        }
+        const existingProduct = warehouse.productItems.find(item => item.productId.toString() === req.body.productId.toString());
+
+        if (existingProduct) {
+            existingProduct.shortItem = {
+                productId: req.body.productId,
+                date: req.body.date,
+                shortQty: req.body.qty,
+                dateOfShortage: req.body.dateOfShortage,
+                price: req.body.price,
+                totalPrice: req.body.totalPrice,
+                reason: req.body.reason,
+                typeStatus: req.body.typeStatus
+            };
+            // existingProduct.currentStock = req.body.currentStock
+            // warehouse.typeStatus = req.body.typeStatus;
+            const savedWarehouse = await warehouse.save();
+            return res.status(200).json({ message: "short item saved successfully", status: true, warehouse: savedWarehouse });
+        } else {
+            return res.status(404).json({ message: "product not found in warehouse", status: false })
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error", status: false });
+    }
+};
 export const updateDamageItem = async (req, res, next) => {
     try {
         const warehouse = await Warehouse.findOne({ _id: req.body.warehouse });
@@ -389,6 +421,50 @@ export const getDamageItems = async (req, res, next) => {
         }));
 
         return res.status(200).json({ damageItems: resultArray, status: true });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message, status: false });
+    }
+};
+
+export const getShortItems = async (req, res, next) => {
+    try {
+        const warehouseId = req.params.id;
+        const warehouse = await Warehouse.findOne({ _id: warehouseId })
+            .populate({ path: 'shortItem.productId', model: 'product' });
+        if (!warehouse) {
+            return res.status(404).json({ message: "Warehouse not found", status: false });
+        }
+        const shortItem = warehouse.shortItem;
+        if (!shortItem || shortItem.length === 0) {
+            return res.status(404).json({ message: "No damage items found", status: false });
+        }
+        const resultArray = shortItem.map(item => ({
+            warehouse: {
+                _id: warehouse._id,
+                warehouseName: warehouse.warehouseName,
+                // lastName: warehouse.lastName,
+                typeStatus: warehouse.typeStatus
+            },
+            shortItem: {
+                productId: {
+                    _id: item.productId._id,
+                    Product_Title: item.productId.Product_Title,
+                },
+                _id: item._id,
+                 productId: item.productId,
+                date:item.date,
+                shortQty: item.qty,
+                dateOfShortage: item.dateOfShortage,
+                price:item.price,
+                totalPrice:item.totalPrice,
+                // demagePercentage: item.demagePercentage,
+                // reason: item.reason,
+                // typeStatus: item.typeStatus
+            },
+        }));
+
+        return res.status(200).json({ shortItem: resultArray, status: true });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: error.message, status: false });

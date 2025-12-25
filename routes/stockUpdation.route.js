@@ -1,5 +1,5 @@
 import express from "express";
-import { InvertReport, OutwordReport, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, saveDamageItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
+import { InvertReport, OutwordReport, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
 
 const router = express.Router();
 
@@ -18,6 +18,10 @@ router.put("/update-damageItem/:warehouseId/:damageItemId", updateDamageItem)
 router.delete("/delete-item/:warehouseId/:damageItemId", deletedamageItem);
 router.put("/update-status/:id", updateTypeStatus)
 //---------------------------------------------------------
+router.post("/save-short-item", saveShortItem);
+router.get("/get-short-item/:id", getShortItems);
+
+//--------------------------------------------------------
 router.get("/all-warehouse", ViewAllWarehouse)
 router.get("/view-closing-stock/:database", viewStockClosingWarehouse)
 router.get("/view-opening-stock/:database", viewOpeningStockWarehouse)

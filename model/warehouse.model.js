@@ -91,6 +91,9 @@ const WarehouseSchema = new mongoose.Schema({
     damageItem: {
       type: Object
     },
+    shortItem: {
+      type: Object
+    },
     oQty: {
       type: Number,
       default: 0

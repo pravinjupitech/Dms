@@ -1070,7 +1070,6 @@ export const invertReportStock = async (req, res) => {
         Number(po.miscellaneousCost || 0) +
         Number(po.transportationCost || 0) +
         Number(po.tax || 0))/po?.orderItems?.length;
-
       const orderTotal = po.orderItems.reduce(
         (sum, i) => sum + Number(i.totalPrice || 0),
         0
@@ -1101,9 +1100,7 @@ export const invertReportStock = async (req, res) => {
 
         const entry = productMap[productId];
 
-        const itemTax =
-          orderTotal > 0 ? (totalPrice / orderTotal) * extraCosts : 0;
-
+        const itemTax =extraCosts;
         entry.pQty += qty;
         entry.pTotalPrice += totalPrice;
         entry.totalTax += itemTax;
