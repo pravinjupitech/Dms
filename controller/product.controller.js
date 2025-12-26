@@ -239,6 +239,7 @@ export const StockAlert = async (req, res) => {
         let StockAlerts = {
           productId: item._id.toString(),
           HSN_Code: item.HSN_Code,
+          lastPurchaseDate:item.Purchase_Rate||item?.landedCost,
           Product_Title: item.Product_Title,
           Product_image: item.Product_image,
           Product_Desc: item.Product_Desc,
@@ -1459,29 +1460,29 @@ export const currentStock = async (req, res, next) => {
   }
 }
 
-export const openingReport=async(req,res,next)=>{
+export const openingReport = async (req, res, next) => {
   try {
     const { database } = req.params;
     const product = await Product.find({ database: database, status: "Active" })
     if (product.length === 0) {
       return res.status(404).json({ message: "Not Found", status: false })
     }
-    let products=[];
-    for(let item of product){
-let obj={
-  productName:item?.Product_Title,
-  HSN_Code:item?.HSN_Code,
-  opening_Qty:item?.Opening_Stock,
-  openingRate:item?.openingRate,
-  gstRate:item?.GSTRate,
-  gstAmount:0,
-  total:item?.Opening_Stock*item?.openingRate
-}
-products.push(obj)
+    let products = [];
+    for (let item of product) {
+      let obj = {
+        productName: item?.Product_Title,
+        HSN_Code: item?.HSN_Code,
+        opening_Qty: item?.Opening_Stock,
+        openingRate: item?.openingRate,
+        gstRate: item?.GSTRate,
+        gstAmount: 0,
+        total: item?.Opening_Stock * item?.openingRate
+      }
+      products.push(obj)
     }
-   return product.length>0?res.status(200).json({message:"Data Found",products,status:true}):res.status(400).json({message:"Not Found",status:false})
+    return product.length > 0 ? res.status(200).json({ message: "Data Found", products, status: true }) : res.status(400).json({ message: "Not Found", status: false })
   } catch (error) {
-     console.error(error);
+    console.error(error);
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 }
