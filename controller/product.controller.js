@@ -266,6 +266,31 @@ export const StockAlert = async (req, res) => {
   }
 };
 
+export const dashboardLowStock = async (req, res) => {
+  try {
+    const Stock = []
+    const product = await Product.find({ database: req.params.database, status: "Active" }).populate({ path: "partyId.partyId", model: "customer" }).populate({ path: "warehouse", model: "warehouse" })
+    if (product.length === 0) {
+      return res.status(404).json({ message: "product not found", status: false })
+    }
+    product.forEach(item => {
+      if (item.qty < item.MIN_stockalert) {
+        let StockAlerts = {       
+          taxableAmount: (item.qty * item.Product_MRP).toFixed(2),     
+        };
+        Stock.push(StockAlerts)
+      }
+    })
+    let lowStockTotal=Stock.reduce((tot,item)=>{
+      return tot+=Number(item.taxableAmount)
+    },0)
+    return (Stock.length > 0) ? res.status(200).json({lowStockTotal, status: true }) : res.status(404).json({ message: "Product Not Found", status: false })
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message, status: false });
+  }
+};
+
 export const viewCurrentStock = async (req, res, next) => {
   try {
     const warehouse = await Warehouse.findById(req.params.id);
@@ -1570,6 +1595,18 @@ export const openingReport = async (req, res, next) => {
       products.push(obj)
     }
     return product.length > 0 ? res.status(200).json({ message: "Data Found", products, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error", status: false });
+  }
+}
+
+export const dashboardDeadStock=async(req,res,next)=>{
+  try {
+    const {database}=req.params;
+    const product=await Product.find({database:database,status:"Active"});
+    const deadStock=product.reduce((tot,item)=>{return tot+=(item.qty*item.landedCost)},0)
+    res.status(200).json({message:"Data Found",deadStock,status:true})
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal Server Error", status: false });

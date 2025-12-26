@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path"
-import { DeleteProduct, HSNWisePurchaseReport, HSNWiseSalesReport, SaveProduct, StockAlert, UpdateProduct, UpdateProductSalesRate, UpdateProductSalesRateMultiple, ViewProduct, ViewProductById, ViewProductForPurchase,currentStocks, dashboardOpening, openingReport, saveItemWithExcel, updateItemWithExcel, viewCurrentStock } from "../controller/product.controller.js";
+import { DeleteProduct, HSNWisePurchaseReport, HSNWiseSalesReport, SaveProduct, StockAlert, UpdateProduct, UpdateProductSalesRate, UpdateProductSalesRateMultiple, ViewProduct, ViewProductById, ViewProductForPurchase,currentStocks, dashboardDeadStock, dashboardLowStock, dashboardOpening, openingReport, saveItemWithExcel, updateItemWithExcel, viewCurrentStock } from "../controller/product.controller.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -27,6 +27,7 @@ router.get("/view-product-by-id/:id", ViewProductById)
 router.delete("/delete-product/:id", DeleteProduct)
 router.put("/update-product/:id", upload.array("files"), UpdateProduct);
 router.get("/view-stock-alert/:database", StockAlert);
+router.get("/dashboard-low-stock/:database", dashboardLowStock);
 router.get("/view-current-stock/:id/:productId", viewCurrentStock)
 router.post("/hsn-sales-summary/:database", HSNWiseSalesReport)
 router.post("/hsn-purchase-summary/:database", HSNWisePurchaseReport)
@@ -35,4 +36,5 @@ router.put("/product-price-updated", UpdateProductSalesRateMultiple)
 router.get("/dashboard-opening/:database",dashboardOpening)
 router.get("/recancelation-stock/:database",currentStocks)
 router.get("/view-opening-report/:database",openingReport)
+router.get("/dashboard-dead-stock/:database",dashboardDeadStock)
 export default router;
