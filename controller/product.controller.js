@@ -1447,19 +1447,107 @@ export const dashboardOpening = async (req, res, next) => {
   }
 }
 
-export const currentStock = async (req, res, next) => {
+// export const currentStocks = async (req, res, next) => {
+//   try {
+//     const { database } = req.params;
+//     const product = await Product.find({ database: database, status: "Active" })
+//     if (product.length === 0) {
+//       return res.status(404).json({ message: "Not Found", status: false })
+//     }
+//   const warehouses=await Warehouse.find({database:database,status:"Active"})
+//   const productItems=await warehouses.flatMap((item)=>item?.productItems);
+
+// for(let item of product){
+//   let availQty=0;
+//   let demageQty=0;
+//   let shortQty=0;
+//   for(let obj of productItems){
+//     if(item._id.toString()===obj.productId.toString()){
+// availQty+=obj.currentStock;
+//     }
+//   }
+// }
+//   res.status(200).json({ message: "Data Found", product, status: true })
+//   } catch (error) {
+//     console.error(err);
+//     return res.status(500).json({ error: "Internal Server Error", status: false });
+//   }
+// }
+export const currentStocks = async (req, res) => {
   try {
     const { database } = req.params;
-    const product = await Product.find({ database: database, status: "Active" })
-    if (product.length === 0) {
-      return res.status(404).json({ message: "Not Found", status: false })
+
+    const products = await Product.find({
+      database,
+      status: "Active"
+    });
+
+    if (!products.length) {
+      return res.status(404).json({
+        message: "No Products Found",
+        status: false
+      });
     }
-    res.status(200).json({ message: "Data Found", product, status: true })
+
+    const warehouses = await Warehouse.find({
+      database,
+      status: "Active"
+    });
+
+    const result = products.map((product) => {
+      const availableWarehouses = [];
+
+      for (const warehouse of warehouses) {
+        let qty = 0; 
+        let damageQty=0;
+        let shortQty=0;
+
+        if (Array.isArray(warehouse.productItems)) {
+          const productItem = warehouse.productItems.find((item) => {
+            const itemProductId = item?.productId || item?.rawProductId;
+            if (!itemProductId || !product?._id) return false;
+            return itemProductId.toString() === product._id.toString();
+          });
+
+          if (productItem) {
+            qty = Number(productItem.currentStock || 0);
+            damageQty =  0;
+            shortQty =  0;
+          }
+        }
+
+        availableWarehouses.push({
+          warehouseName: warehouse?.warehouseName,
+          warehouseId: warehouse._id,
+          qty,
+          shortQty,
+          damageQty
+        });
+      }
+
+      return {
+        ...product.toObject(),
+        availableWarehouses 
+      };
+    });
+
+    return res.status(200).json({
+      message: "Data Found",
+      status: true,
+      data: result
+    });
+
   } catch (error) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal Server Error", status: false });
+    console.error(error);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      status: false
+    });
   }
-}
+};
+
+
+
 
 export const openingReport = async (req, res, next) => {
   try {
