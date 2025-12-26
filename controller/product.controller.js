@@ -239,7 +239,7 @@ export const StockAlert = async (req, res) => {
         let StockAlerts = {
           productId: item._id.toString(),
           HSN_Code: item.HSN_Code,
-          lastPurchaseDate:item.Purchase_Rate||item?.landedCost,
+          lastPurchaseRate:item.Purchase_Rate||item?.landedCost,
           Product_Title: item.Product_Title,
           Product_image: item.Product_image,
           Product_Desc: item.Product_Desc,
@@ -265,6 +265,7 @@ export const StockAlert = async (req, res) => {
     return res.status(500).json({ error: error.message, status: false });
   }
 };
+
 export const viewCurrentStock = async (req, res, next) => {
   try {
     const warehouse = await Warehouse.findById(req.params.id);
