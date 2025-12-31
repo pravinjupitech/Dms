@@ -2271,7 +2271,14 @@ export const outWardStockReport = async (req, res) => {
     const salesOrders = await CreateOrder.find({
       database,
       status: "completed"
-    }).populate({ path: "orderItems.productId", model: "product" });
+    }).populate({
+  path: "orderItems.productId",
+  model: "product",
+  populate: {
+    path: "warehouse",
+    model: "warehouse"
+  }
+});;
 
     if (!salesOrders.length) {
       return res.status(404).json({
@@ -2286,6 +2293,7 @@ export const outWardStockReport = async (req, res) => {
       for (const item of so.orderItems) {
 
         const productId = item.productId?._id?.toString();
+        const warehouseName=item.productId?.warehouse?.warehouseName;
         const productName = item.productId?.Product_Title;
         const HSN_Code = item?.productId?.HSN_Code || "";
         const GSTRate = item?.productId?.GSTRate || 0;
@@ -2300,6 +2308,7 @@ export const outWardStockReport = async (req, res) => {
         if (!productMap[key]) {
           productMap[key] = {
             productName,
+            warehouseName,
             HSN_Code,
             GSTRate,
             sQty: 0,

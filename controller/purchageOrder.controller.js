@@ -1051,65 +1051,81 @@ export const invertReportStock = async (req, res) => {
     const { database } = req.params;
 
     const purchaseOrders = await PurchaseOrder.find({
-      database,
-      status: "completed"
-    }).populate({ path: "orderItems.productId", model: "product" });
+  database,
+  status: "completed"
+})
+.populate({
+  path: "orderItems.productId",
+  model: "product",
+  populate: {
+    path: "warehouse",
+    model: "warehouse"
+  }
+});
 
     if (!purchaseOrders.length) {
-      return res.status(404).json({ message: "Not Found", status: false });
+      return res.status(404).json({
+        status: false,
+        message: "Not Found"
+      });
     }
 
     const productMap = {};
 
     for (const po of purchaseOrders) {
-
       const extraCosts =
-      (  Number(po.coolieAndCartage || 0) +
-        Number(po.labourCost || 0) +
-        Number(po.localFreight || 0) +
-        Number(po.miscellaneousCost || 0) +
-        Number(po.transportationCost || 0) +
-        Number(po.tax || 0))/po?.orderItems?.length;
-      const orderTotal = po.orderItems.reduce(
-        (sum, i) => sum + Number(i.totalPrice || 0),
-        0
-      );
+        (
+          Number(po.coolieAndCartage || 0) +
+          Number(po.labourCost || 0) +
+          Number(po.localFreight || 0) +
+          Number(po.miscellaneousCost || 0) +
+          Number(po.transportationCost || 0) +
+          Number(po.tax || 0)
+        ) / (po?.orderItems?.length || 1);
 
       for (const item of po.orderItems) {
         const productId = item.productId?._id?.toString();
-        const productName = item.productId?.Product_Title;
-        const HSN_Code = item?.productId?.HSN_Code || "";
-        const GSTRate = item?.productId?.GSTRate || 0;
         if (!productId) continue;
+
+        const warehouseName = item.productId?.warehouse?.warehouseName || "";
+        const productName = item.productId?.Product_Title || "";
+        const HSN_Code = item.productId?.HSN_Code || "";
+        const GSTRate = item.productId?.GSTRate || 0;
 
         const qty = Number(item.qty || 0);
         const totalPrice = Number(item.totalPrice || 0);
 
         if (!productMap[productId]) {
           productMap[productId] = {
+            warehouseName,
             productName,
             HSN_Code,
             GSTRate,
             pQty: 0,
             pTotalPrice: 0,
             totalTax: 0,
-            totalPurchaseData: 0,
-            averagePurchaseRate: 0   
+            totalPurchaseData: 0
           };
         }
 
         const entry = productMap[productId];
 
-        const itemTax =extraCosts;
         entry.pQty += qty;
         entry.pTotalPrice += totalPrice;
-        entry.totalTax += itemTax;
-        entry.totalPurchaseData += totalPrice + itemTax;
+        entry.totalTax += extraCosts;
+        entry.totalPurchaseData += totalPrice + extraCosts;
       }
     }
 
     const result = Object.values(productMap).map(item => ({
-      ...item,
+      warehouseName: item.warehouseName,
+      productName: item.productName,
+      HSN_Code: item.HSN_Code,
+      GSTRate: item.GSTRate,
+      pQty: item.pQty,
+      pTotalPrice: item.pTotalPrice,
+      totalTax: item.totalTax,
+      totalPurchaseData: item.totalPurchaseData,
       averagePurchaseRate:
         item.pQty > 0
           ? Number((item.totalPurchaseData / item.pQty).toFixed(2))
@@ -1125,7 +1141,8 @@ export const invertReportStock = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       status: false,
-      error: "Internal Server Error"
+      message: "Internal Server Error"
     });
   }
 };
+
