@@ -1577,13 +1577,14 @@ export const currentStocks = async (req, res) => {
 export const openingReport = async (req, res, next) => {
   try {
     const { database } = req.params;
-    const product = await Product.find({ database: database, status: "Active" })
+    const product = await Product.find({ database: database, status: "Active" }).populate({ path: "warehouse", model: "warehouse" })
     if (product.length === 0) {
       return res.status(404).json({ message: "Not Found", status: false })
     }
     let products = [];
     for (let item of product) {
       let obj = {
+        warehouseName:item?.warehouse.warehouseName,
         productName: item?.Product_Title,
         HSN_Code: item?.HSN_Code,
         opening_Qty: item?.Opening_Stock,
