@@ -2265,82 +2265,167 @@ export const countCancelledOrder = async (req, res) => {
 };
 
 export const outWardStockReport = async (req, res) => {
-  try {
-    const { database } = req.params;
+    try {
+        const { database } = req.params;
 
-    const salesOrders = await CreateOrder.find({
-      database,
-      status: "completed"
-    }).populate({
-  path: "orderItems.productId",
-  model: "product",
-  populate: {
-    path: "warehouse",
-    model: "warehouse"
-  }
-});;
+        const salesOrders = await CreateOrder.find({
+            database,
+            status: "completed"
+        }).populate({
+            path: "orderItems.productId",
+            model: "product",
+            populate: {
+                path: "warehouse",
+                model: "warehouse"
+            }
+        });;
 
-    if (!salesOrders.length) {
-      return res.status(404).json({
-        status: false,
-        message: "No sales data found"
-      });
-    }
-
-    const productMap = {};
-
-    for (const so of salesOrders) {
-      for (const item of so.orderItems) {
-
-        const productId = item.productId?._id?.toString();
-        const warehouseName=item.productId?.warehouse?.warehouseName;
-        const productName = item.productId?.Product_Title;
-        const HSN_Code = item?.productId?.HSN_Code || "";
-        const GSTRate = item?.productId?.GSTRate || 0;
-
-        if (!productId) continue;
-
-        const qty = Number(item.qty || 0);
-        const sTotal = Number(item.totalPrice || 0);
-
-        const key = `${productId}_${HSN_Code}_${GSTRate}`;
-
-        if (!productMap[key]) {
-          productMap[key] = {
-            productName,
-            warehouseName,
-            HSN_Code,
-            GSTRate,
-            sQty: 0,
-            sTotal: 0,
-            gstAmount:0,
-            averageSalesRate: 0  
-          };
+        if (!salesOrders.length) {
+            return res.status(404).json({
+                status: false,
+                message: "No sales data found"
+            });
         }
 
-        productMap[key].sQty += qty;
-        productMap[key].sTotal += sTotal;
-      }
+        const productMap = {};
+
+        for (const so of salesOrders) {
+            for (const item of so.orderItems) {
+
+                const productId = item.productId?._id?.toString();
+                const warehouseName = item.productId?.warehouse?.warehouseName;
+                const productName = item.productId?.Product_Title;
+                const HSN_Code = item?.productId?.HSN_Code || "";
+                const GSTRate = item?.productId?.GSTRate || 0;
+
+                if (!productId) continue;
+
+                const qty = Number(item.qty || 0);
+                const sTotal = Number(item.totalPrice || 0);
+
+                const key = `${productId}_${HSN_Code}_${GSTRate}`;
+
+                if (!productMap[key]) {
+                    productMap[key] = {
+                        productName,
+                        warehouseName,
+                        HSN_Code,
+                        GSTRate,
+                        sQty: 0,
+                        sTotal: 0,
+                        gstAmount: 0,
+                        averageSalesRate: 0
+                    };
+                }
+
+                productMap[key].sQty += qty;
+                productMap[key].sTotal += sTotal;
+            }
+        }
+
+        const result = Object.values(productMap).map(item => ({
+            ...item,
+            averageSalesRate:
+                item.sQty > 0 ? Number((item.sTotal / item.sQty).toFixed(2)) : 0
+        }));
+
+        return res.status(200).json({
+            status: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
     }
-
-    const result = Object.values(productMap).map(item => ({
-      ...item,
-      averageSalesRate:
-        item.sQty > 0 ? Number((item.sTotal / item.sQty).toFixed(2)) : 0
-    }));
-
-    return res.status(200).json({
-      status: true,
-      data: result
-    });
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: false,
-      error: "Internal Server Error"
-    });
-  }
 };
 
+export const BalanceGst = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const orderHistory = await CreateOrder.find({
+            database: database,
+            status: "completed"
+        });
+        const saleOutTotal = orderHistory.reduce((tot, item) => {
+            return tot
+                + (item?.igstTotal || 0)
+                + (item?.cgstTotal || 0)
+                + (item?.sgstTotal || 0);
+        }, 0);
+        const purchase = await PurchaseOrder.find({ database: database, status: "completed" });
+        const purchaseInputTotal = purchase.reduce((tot, item) => {
+            return tot
+                + (item?.igstTotal || 0)
+                + (item?.cgstTotal || 0)
+                + (item?.sgstTotal || 0);
+        }, 0);
+        const balanceGst = purchaseInputTotal - saleOutTotal;
+        return res.status(200).json({ message: "Data Found", balanceGst, status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+}
+
+export const HsnOutput = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const orders = await CreateOrder.find({
+            database: database,
+            status: "completed"
+        }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        });
+
+        if (!orders || orders.length === 0) {
+            return res.status(400).json({
+                status: false,
+                message: "Not Found"
+            });
+        }
+
+        const orderItems = orders.flatMap(order => order.orderItems || []);
+
+        const hsnReport = {};
+
+        orderItems.forEach(item => {
+            const product = item.productId;
+            if (!product || !product.HSN_Code) return;
+
+            const hsnCode = product.HSN_Code;
+
+            if (!hsnReport[hsnCode]) {
+                hsnReport[hsnCode] = {
+                    hsnCode: hsnCode,
+                    totalPrice: 0
+                };
+            }
+
+            hsnReport[hsnCode].totalPrice += Number(item.totalPrice || 0);
+        });
+
+        const result = Object.values(hsnReport);
+
+        return res.status(200).json({
+            status: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+};
 

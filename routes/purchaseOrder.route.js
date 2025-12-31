@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { CountInTransitPurchase, CountPurchase, CountpendingPurchase, CreditorCalculate, ProductWisePurchaseReport, Purch, PurchaseOrderDispatch, UpdatePurchaseInvoiceOrder, dashboardGstInput, dashboardPurchase, deletePurchaseOrder, deletedPurchase, gstInputReport, invertDashboard, invertReportStock, purchaseInvoiceOrder, purchaseOrder, purchaseOrderHistory, purchaseOrderHistoryByOrderId, updatePurchaseOrder, updatePurchaseOrderStatus } from "../controller/purchageOrder.controller.js";
+import { CountInTransitPurchase, CountPurchase, CountpendingPurchase, CreditorCalculate, HsnIutput, ProductWisePurchaseReport, Purch, PurchaseOrderDispatch, UpdatePurchaseInvoiceOrder, dashboardGstInput, dashboardPurchase, deletePurchaseOrder, deletedPurchase, gstInputReport, invertDashboard, invertReportStock, purchaseInvoiceOrder, purchaseOrder, purchaseOrderHistory, purchaseOrderHistoryByOrderId, totalHsnBalance, updatePurchaseOrder, updatePurchaseOrderStatus } from "../controller/purchageOrder.controller.js";
 
 const router = express.Router();
 const upload = multer({ dest: "public/Images/" })
@@ -26,5 +26,6 @@ router.get("/dashboard-invert/:database",invertDashboard)
 router.get("/dashboard-purchase-pending/:database",CountpendingPurchase)
 router.get("/dashboard-purchase-intransit/:database",CountInTransitPurchase)
 router.get("/invert-report-stock/:database",invertReportStock)
-
+router.get("/dashboard-hsn-input/:database",HsnIutput)
+router.get("/dashboard-hsn-balance/:database",totalHsnBalance)
 export default router;

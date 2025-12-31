@@ -1123,7 +1123,7 @@ export const dashboardReceipt = async (req, res, next) => {
                 (item?.partyId?.registrationType === "Regular" ||
                     item?.partyId?.registrationType === "Register")
             ) {
-                count+=item.amount
+                count += item.amount
             }
         }
 
@@ -1154,7 +1154,7 @@ export const dashboardPayment = async (req, res, next) => {
                 (item?.partyId?.registrationType === "Regular" ||
                     item?.partyId?.registrationType === "Register")
             ) {
-                count+=item?.amount;
+                count += item?.amount;
             }
         }
 
@@ -1259,7 +1259,7 @@ export const dashboardBalance = async (req, res, next) => {
         let debit = 0;
         let credit = 0;
         for (let item of receipt) {
-            if (item?.type==="receipt") {
+            if (item?.type === "receipt") {
                 credit += item?.amount
             } else {
                 debit += item?.amount
@@ -1267,6 +1267,27 @@ export const dashboardBalance = async (req, res, next) => {
         }
         const totalBankBalance = credit - debit;
         res.status(200).json({ message: "Data Found", totalBankBalance, status: true })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
+
+export const gstPaymentDashboard = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+       const receipts = await Receipt.find({
+            database,
+            type: "payment",
+            userId: { $exists: true, $ne: null }
+        }).populate({
+            path: "userId",
+            model: "user"
+        });
+
+        const gstPayments = receipts.filter(item => item.userId?.firstName === "GST PAYMENT");
+        const gstPayment=gstPayments.reduce((tot,item)=>{return tot+=item?.amount},0)
+        res.status(200).json({message:"Data Found",gstPayment,status:true})
     } catch (error) {
         console.log(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
