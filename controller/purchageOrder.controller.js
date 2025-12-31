@@ -11,6 +11,7 @@ import { CustomerGroup } from "../model/customerGroup.model.js";
 import { ledgerPartyForCredit } from "../service/ledger.js";
 import { Stock } from "../model/stock.js";
 import { Customer } from "../model/customer.model.js";
+import { CreateOrder } from "../model/createOrder.model.js";
 
 export const purchaseOrder = async (req, res, next) => {
     try {
@@ -1146,3 +1147,127 @@ export const invertReportStock = async (req, res) => {
   }
 };
 
+export const HsnIutput = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const orders = await PurchaseOrder.find({
+            database: database,
+            status: "completed"
+        }).populate({
+            path: 'orderItems.productId',
+            model: 'product'
+        });
+
+        if (!orders || orders.length === 0) {
+            return res.status(400).json({
+                status: false,
+                message: "Not Found"
+            });
+        }
+
+        const orderItems = orders.flatMap(order => order.orderItems || []);
+
+        const hsnReport = {};
+
+        orderItems.forEach(item => {
+            const product = item.productId;
+            if (!product || !product.HSN_Code) return;
+
+            const hsnCode = product.HSN_Code;
+
+            if (!hsnReport[hsnCode]) {
+                hsnReport[hsnCode] = {
+                    hsnCode: hsnCode,
+                    totalPrice: 0
+                };
+            }
+
+            hsnReport[hsnCode].totalPrice += Number(item.totalPrice || 0);
+        });
+
+        const result = Object.values(hsnReport);
+
+        return res.status(200).json({
+            status: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+};
+
+export const totalHsnBalance = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+
+        const purchaseOrders = await PurchaseOrder.find({
+            database,
+            status: "completed"
+        }).populate({
+            path: "orderItems.productId",
+            model: "product"
+        });
+
+        const salesOrders = await CreateOrder.find({
+            database,
+            status: "completed"
+        }).populate({
+            path: "orderItems.productId",
+            model: "product"
+        });
+
+        const inputMap = {};
+        const outputMap = {};
+
+        purchaseOrders.flatMap(o => o.orderItems || []).forEach(item => {
+            const hsnCode = item?.productId?.HSN_Code;
+            if (!hsnCode) return;
+
+            inputMap[hsnCode] = (inputMap[hsnCode] || 0) + Number(item.totalPrice || 0);
+        });
+
+        salesOrders.flatMap(o => o.orderItems || []).forEach(item => {
+            const hsnCode = item?.productId?.HSN_Code;
+            if (!hsnCode) return;
+
+            outputMap[hsnCode] = (outputMap[hsnCode] || 0) + Number(item.totalPrice || 0);
+        });
+
+        const allHsnCodes = new Set([
+            ...Object.keys(inputMap),
+            ...Object.keys(outputMap)
+        ]);
+
+        const balanceReport = [];
+
+        allHsnCodes.forEach(hsnCode => {
+            const input = inputMap[hsnCode] || 0;
+            const output = outputMap[hsnCode] || 0;
+
+            balanceReport.push({
+                hsnCode,
+                // inputTotal: input,
+                // outputTotal: output,
+                balanceGST: input - output
+            });
+        });
+
+        return res.status(200).json({
+            status: true,
+            data: balanceReport
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+};
