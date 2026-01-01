@@ -1206,6 +1206,21 @@ export const LeadPartyList = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false })
     }
 }
+
+export const leadPartyCounter=async(req,res,next)=>{
+      try {
+        const party = await Customer.find({ database: req.params.database, leadStatusCheck: "true" }).populate({ path: "created_by", model: "user" });
+        if (party.length == 0) {
+            return res.status(404).json({ message: "Data Not Found", status: false })
+        }
+        return res.status(200).json({ LeadParty: party.length, status: true })
+    }
+    catch (err) {
+        console.log(err)
+        return res.status(500).json({ error: "Internal Server Error", status: false })
+    }
+}
+
 export const AssignLeadParty = async (req, res, next) => {
     try {
         const sales = await User.findById({ _id: req.body.salesPerson })

@@ -1,5 +1,5 @@
 import express from "express";
-import { InvertReport, OutwordReport, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
+import { InvertReport, OutwordReport, OverDuePartyCounter, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewDeadPartyCount, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
 
 const router = express.Router();
 
@@ -32,5 +32,7 @@ router.get("/invert-report/:database",InvertReport)
 router.get("/outword-report/:database",OutwordReport)
 router.get("/testing", ViewAllWarehouse1)
 router.get("/dashboard-stock/:database",dashboardStockReport)
+router.get("/dead-parties-dashboard/:database",ViewDeadPartyCount)
+router.get("/lock-parties-dashboard/:database",OverDuePartyCounter)
 
 export default router;
