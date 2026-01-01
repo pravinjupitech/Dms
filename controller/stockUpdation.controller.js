@@ -1158,6 +1158,8 @@ export const stockReport = async (req, res, next) => {
                         openingRate: 0,
                         oQty: 0,
                         Product_Title: "",
+                        warehouseName:"",
+                        GSTRate:0,
                         HSN_Code: "",
                         openingCombineTotal: 0,
                         pTotalPrice: 0,
@@ -1207,6 +1209,8 @@ export const stockReport = async (req, res, next) => {
                         openingRate: 0,
                         oQty: 0,
                         Product_Title: "",
+                        warehouseName:"",
+                        GSTRate:0,
                         HSN_Code: "",
                         openingCombineTotal: 0,
                         pTotalPrice: 0,
@@ -1236,7 +1240,7 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        const productList = await Product.find({ database, status: "Active" });
+        const productList = await Product.find({ database, status: "Active" }).populate({path:"warehouse",model:"warehouse"});
 
         for (const product of productList) {
             const id = product._id.toString();
@@ -1250,6 +1254,8 @@ export const stockReport = async (req, res, next) => {
                     openingRate: 0,
                     oQty: 0,
                     Product_Title: "",
+                    warehouseName:"",
+                        GSTRate:0,
                     HSN_Code: "",
                     openingCombineTotal: 0,
                     pTotalPrice: 0,
@@ -1272,6 +1278,8 @@ export const stockReport = async (req, res, next) => {
             entry.openingRate = product.openingRate || 0;
             entry.oQty = product.Opening_Stock || 0;
             entry.Product_Title = product.Product_Title || "";
+            entry.warehouseName=product.warehouse?.warehouseName;
+            entry.GSTRate=product.GSTRate;
             entry.HSN_Code = product.HSN_Code || "";
             entry.openingCombineTotal = entry.openingRate * entry.oQty;
 
