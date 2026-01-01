@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path"
-import { AssignLeadParty, Check, DeleteBulkCustomer, DeleteCustomer, DeleteSalesLead, DeleteSalesLeadMultiple, GPSReport, LeadPartyList, LeadPartyListById, PartyWithSalesPerson, SaveCustomer, SaveLeadPartyExcel, SaveRemark, SignIn, SignInWithMobile, SuperAdminList, UpdateCustomer, UpdateSalesLead, ViewCustomer, ViewCustomerById, ViewDeadParty, deleteAssignLeadParty, dueParty, forgetPassword, generateInvoice, lockParty, otpVerify, overDueReport, paymentDueReport, saveExcelFile, testGST, testGST1, testWhatsapp, updateExcelFile, updatePassword } from "../controller/customer.controller.js";
+import { AssignLeadParty, Check, DeleteBulkCustomer, DeleteCustomer, DeleteSalesLead, DeleteSalesLeadMultiple, GPSReport, LeadPartyList, LeadPartyListById, PartyWithSalesPerson, SaveCustomer, SaveLeadPartyExcel, SaveRemark, SignIn, SignInWithMobile, SuperAdminList, UpdateCustomer, UpdateSalesLead, ViewCustomer, ViewCustomerById, ViewDeadParty, deleteAssignLeadParty, dueParty, forgetPassword, generateInvoice, leadPartyCounter, lockParty, otpVerify, overDueReport, paymentDueReport, saveExcelFile, testGST, testGST1, testWhatsapp, updateExcelFile, updatePassword } from "../controller/customer.controller.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -40,6 +40,7 @@ router.get("/due-report/:database", dueParty)
 router.get("/over-due-report/:database", overDueReport)
 router.get("/auto-billing-lock/:database", lockParty)
 router.post("/payment-due-report/:database", paymentDueReport)
+router.get("/lead-party-counter/:database",leadPartyCounter)
 
 // --------------------------------------------------------------------
 router.post("/save-lead-party-bulk/:database", uploads.single("file"), SaveLeadPartyExcel)

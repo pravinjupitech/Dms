@@ -1,4 +1,5 @@
 import moment from "moment"
+import mongoose from "mongoose";
 import { StockUpdation } from "../model/stockUpdation.model.js";
 import { User } from "../model/user.model.js";
 import { Stock } from "../model/stock.js";
@@ -12,6 +13,7 @@ import { PurchaseOrder } from "../model/purchaseOrder.model.js";
 import { RawProduct } from "../model/rawProduct.model.js";
 import { otpVerify } from "./warehouse.controller.js";
 import { Order } from "../model/order.model.js";
+import { Ledger } from "../model/ledger.model.js";
 
 export const viewInWardStockToWarehouse = async (req, res, next) => {
     try {
@@ -452,12 +454,12 @@ export const getShortItems = async (req, res, next) => {
                     Product_Title: item.productId.Product_Title,
                 },
                 _id: item._id,
-                 productId: item.productId,
-                date:item.date,
+                productId: item.productId,
+                date: item.date,
                 shortQty: item.qty,
                 dateOfShortage: item.dateOfShortage,
-                price:item.price,
-                totalPrice:item.totalPrice,
+                price: item.price,
+                totalPrice: item.totalPrice,
                 // demagePercentage: item.demagePercentage,
                 // reason: item.reason,
                 // typeStatus: item.typeStatus
@@ -646,8 +648,22 @@ export const ViewDeadParty = async (req, res, next) => {
         const currentDate = moment();
         const startOfLastMonth = currentDate.clone().subtract(30, 'days');
 
-        const hierarchy = await Customer.find({ database: database, status: 'Active', leadStatusCheck: "false", createdAt: { $lt: startOfLastMonth } }).populate({ path: "created_by", model: "user" }).populate({ path: "category", model: "customerGroup" })
-
+        const hierarchy = await Customer.find({
+            database: database,
+            status: 'Active',
+            leadStatusCheck: "false",
+            createdAt: { $lt: startOfLastMonth },
+            created_by: { $nin: [null, ""] }
+        })
+            .populate({
+                path: "created_by",
+                model: "user",
+                match: { _id: { $exists: true } }
+            })
+            .populate({
+                path: "category",
+                model: "customerGroup"
+            });
         const allOrderedParties = await CreateOrder.find({ database: database, createdAt: { $gte: startOfLastMonth.toDate() } })
         let allParty = []
         let result = []
@@ -683,6 +699,166 @@ export const ViewDeadParty = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 };
+
+
+export const OverDuePartyCounter = async (req, res) => {
+  try {
+    const database = req.params.database;
+    const today = new Date();
+
+    const customers = await Customer.find({
+      database,
+      status: "Active"
+    }).select("_id OpeningBalance Type lockInTime");
+
+    let overDueCount = 0;
+
+    for (const customer of customers) {
+      const partyId = customer._id;
+
+      if (!partyId || !mongoose.Types.ObjectId.isValid(partyId)) continue;
+
+      const ledgerRes = await Ledger.find({ partyId }).sort({ date: 1 });
+
+      let totalDebit = 0;
+      let totalCredit = 0;
+
+      for (const entry of ledgerRes) {
+        if (entry.debit) totalDebit += entry.debit;
+        if (entry.credit) totalCredit += entry.credit;
+      }
+
+      const openingBalance = Number(customer.OpeningBalance) || 0;
+      const openingType = customer.Type?.toLowerCase();
+
+      if (openingBalance > 0) {
+        if (openingType === "debit") totalDebit += openingBalance;
+        else if (openingType === "credit") totalCredit += openingBalance;
+      }
+
+      const closingBalance = totalDebit - totalCredit;
+
+      const { overDueDays } = await calculateDueAndOverdueDays(ledgerRes, customer.lockInTime || 0, closingBalance);
+
+      if (overDueDays > 0) {
+        overDueCount++;
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      count: overDueCount
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error"
+    });
+  }
+};
+
+async function calculateDueAndOverdueDays(ledgerRes, lockInTime, closing) {
+  const today = new Date();
+
+  if (closing < 0) return { dueDays: 0, overDueDays: 0 };
+
+  const debits = [];
+  const credits = [];
+
+  if (Array.isArray(ledgerRes)) {
+    ledgerRes.forEach(entry => {
+      const entryDate = entry.date ? new Date(entry.date) : null;
+      if (entry.debit && entryDate) debits.push({ amount: entry.debit, date: entryDate });
+      if (entry.credit && entryDate) credits.push({ amount: entry.credit, date: entryDate });
+    });
+  }
+
+  debits.sort((a, b) => a.date - b.date);
+  credits.sort((a, b) => a.date - b.date);
+
+  let unpaidDebits = [...debits];
+
+  for (const credit of credits) {
+    let creditAmount = credit.amount;
+    while (creditAmount > 0 && unpaidDebits.length > 0) {
+      const firstDebit = unpaidDebits[0];
+      if (creditAmount >= firstDebit.amount) {
+        creditAmount -= firstDebit.amount;
+        unpaidDebits.shift();
+      } else {
+        firstDebit.amount -= creditAmount;
+        creditAmount = 0;
+      }
+    }
+  }
+
+  if (unpaidDebits.length > 0) {
+    const lastUnpaid = unpaidDebits[0];
+    const dueDate = new Date(lastUnpaid.date);
+    dueDate.setDate(dueDate.getDate() + lockInTime);
+
+    const diff = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+    const dueDays = diff > 0 ? diff : 0;
+    const overDueDays = diff < 0 ? Math.abs(diff) : 0;
+    return { dueDays, overDueDays };
+  }
+
+  return { dueDays: 0, overDueDays: 0 };
+}
+
+
+
+
+export const ViewDeadPartyCount = async (req, res, next) => {
+    try {
+        const database = req.params.database;
+        const currentDate = moment();
+        const startOfLastMonth = currentDate.clone().subtract(30, 'days');
+
+        const hierarchy = await Customer.find({
+            database: database,
+            status: 'Active',
+            leadStatusCheck: "false",
+            createdAt: { $lt: startOfLastMonth },
+            created_by: { $nin: [null, ""] }
+        }).select("_id");
+
+        const allOrderedParties = await CreateOrder.find({
+            database: database,
+            createdAt: { $gte: startOfLastMonth.toDate() }
+        }).select("partyId");
+
+        const orderedPartySet = new Set(
+            allOrderedParties
+                .filter(o => mongoose.Types.ObjectId.isValid(o.partyId))
+                .map(o => o.partyId.toString())
+        );
+
+        let deadPartyCount = 0;
+
+        for (let customer of hierarchy) {
+            if (!orderedPartySet.has(customer._id.toString())) {
+                deadPartyCount++;
+            }
+        }
+
+        return res.status(200).json({
+            count: deadPartyCount,
+            status: true
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false
+        });
+    }
+};
+
+
 export const ViewDeadParty1 = async (req, res, next) => {
     try {
         const Parties = []
@@ -1135,11 +1311,11 @@ export const stockReport = async (req, res, next) => {
             const status = po.status || 'pending';
             const totalTax = (status === 'completed')
                 ? ((po.coolieAndCartage || 0) +
-                (po.labourCost || 0) +
-                (po.localFreight || 0) +
-                (po.miscellaneousCost || 0) +
-                (po.transportationCost || 0) +
-                (po.tax || 0))/po.orderItems.length
+                    (po.labourCost || 0) +
+                    (po.localFreight || 0) +
+                    (po.miscellaneousCost || 0) +
+                    (po.transportationCost || 0) +
+                    (po.tax || 0)) / po.orderItems.length
                 : 0;
             for (const item of po.orderItems) {
                 const productId = item.productId?.toString();
@@ -1158,8 +1334,8 @@ export const stockReport = async (req, res, next) => {
                         openingRate: 0,
                         oQty: 0,
                         Product_Title: "",
-                        warehouseName:"",
-                        GSTRate:0,
+                        warehouseName: "",
+                        GSTRate: 0,
                         HSN_Code: "",
                         openingCombineTotal: 0,
                         pTotalPrice: 0,
@@ -1209,8 +1385,8 @@ export const stockReport = async (req, res, next) => {
                         openingRate: 0,
                         oQty: 0,
                         Product_Title: "",
-                        warehouseName:"",
-                        GSTRate:0,
+                        warehouseName: "",
+                        GSTRate: 0,
                         HSN_Code: "",
                         openingCombineTotal: 0,
                         pTotalPrice: 0,
@@ -1240,7 +1416,7 @@ export const stockReport = async (req, res, next) => {
             }
         }
 
-        const productList = await Product.find({ database, status: "Active" }).populate({path:"warehouse",model:"warehouse"});
+        const productList = await Product.find({ database, status: "Active" }).populate({ path: "warehouse", model: "warehouse" });
 
         for (const product of productList) {
             const id = product._id.toString();
@@ -1254,8 +1430,8 @@ export const stockReport = async (req, res, next) => {
                     openingRate: 0,
                     oQty: 0,
                     Product_Title: "",
-                    warehouseName:"",
-                        GSTRate:0,
+                    warehouseName: "",
+                    GSTRate: 0,
                     HSN_Code: "",
                     openingCombineTotal: 0,
                     pTotalPrice: 0,
@@ -1278,8 +1454,8 @@ export const stockReport = async (req, res, next) => {
             entry.openingRate = product.openingRate || 0;
             entry.oQty = product.Opening_Stock || 0;
             entry.Product_Title = product.Product_Title || "";
-            entry.warehouseName=product.warehouse?.warehouseName;
-            entry.GSTRate=product.GSTRate;
+            entry.warehouseName = product.warehouse?.warehouseName;
+            entry.GSTRate = product.GSTRate;
             entry.HSN_Code = product.HSN_Code || "";
             entry.openingCombineTotal = entry.openingRate * entry.oQty;
 
@@ -1395,7 +1571,7 @@ export const InvertReport = async (req, res, next) => {
                 });
             }
         }
-  
+
         return res.status(200).json({
             message: "Data fetched successfully",
             status: true,
