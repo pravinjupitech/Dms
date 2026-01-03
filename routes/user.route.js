@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, signInWithMob, updatePassword, updatePlan, updateServiceArea, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
+import { DeleteUser, DeleteUserDetail, EditProfile, GetExcelKeys, SaveUser, SaveUserDetail, SignIn, SignInWithAdmin, SuperAdminRoleUpdate, UpdateUser, UpdateUserDetail, UserList, ViewByIdUserDetail, ViewRegisterUser, ViewUser, ViewUserById, ViewUserDetail, ViewUserHRM, ViewWarehouse, assignUser, customId, deleteAssignUser, forgetPassword, otpVerify, saveUserWithExcel, signInWithMob, staticUser, updatePassword, updatePlan, updateServiceArea, updateUserWithExcel, verifyOTP, verifyPanNo, viewApplyRules, viewApplyRulesById } from "../controller/user.controller.js";
 
 const router = express.Router();
 // const upload = multer({ dest: "public/Images" })
@@ -64,5 +64,6 @@ router.post("/login-user", SignInWithAdmin);
 router.get("/user-list-hrm/:database", ViewUserHRM)
 
 router.post("/create-custom-id", customId)
+router.get("/test",staticUser)
 
 export default router;

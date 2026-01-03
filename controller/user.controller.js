@@ -27,8 +27,8 @@ dotenv.config();
 export const SaveUser = async (req, res, next) => {
   try {
     let findRole;
-     if (req.body.rolename) {
-       findRole = await Role.findById(req.body.rolename);
+    if (req.body.rolename) {
+      findRole = await Role.findById(req.body.rolename);
     }
     if (req.body.id) {
       const existing = await User.findOne({ status: "Active", database: req.body.database, id: req.body.id })
@@ -126,10 +126,10 @@ export const SaveUser = async (req, res, next) => {
     if (req.body.role && req.body.role.length > 0) {
       req.body.role = JSON.parse(req.body.role);
     }
-      if (findRole?.roleName === "Labour" || findRole?.roleName === "Packing And Labour") {
-        const pakerId = await generateUniqueSixDigitNumber();
-        req.body.pakerId = pakerId;
-      }
+    if (findRole?.roleName === "Labour" || findRole?.roleName === "Packing And Labour") {
+      const pakerId = await generateUniqueSixDigitNumber();
+      req.body.pakerId = pakerId;
+    }
     if (req.body.warehouse) {
       req.body.warehouse = await JSON.parse(req.body.warehouse);
       // await assingWarehouse(req.body.warehouse, user._id)
@@ -144,31 +144,31 @@ export const SaveUser = async (req, res, next) => {
       if (user?.rolename) {
         const findRoles = await Role.findById(user.rolename);
 
-     const BATCH_SIZE = 500; 
+        const BATCH_SIZE = 500;
 
-if (findRoles?.roleName === "Sales Person" && Array.isArray(user.service) && user.service.length > 0) {
-  const pincodes = [...new Set(
-    user.service
-      .map(area => area.pincode)
-      .filter(pincode => pincode !== undefined && pincode !== null)
-  )];
+        if (findRoles?.roleName === "Sales Person" && Array.isArray(user.service) && user.service.length > 0) {
+          const pincodes = [...new Set(
+            user.service
+              .map(area => area.pincode)
+              .filter(pincode => pincode !== undefined && pincode !== null)
+          )];
 
-  for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
-    const chunk = pincodes.slice(i, i + BATCH_SIZE);
+          for (let i = 0; i < pincodes.length; i += BATCH_SIZE) {
+            const chunk = pincodes.slice(i, i + BATCH_SIZE);
 
-    await Customer.updateMany(
-      {
-        $or: [
-          { created_by: "" },
-          { created_by: { $exists: false } },
-          { created_by: null }
-        ],
-        pincode: { $in: chunk }
-      },
-      { $set: { created_by: user._id } }
-    );
-  }
-}
+            await Customer.updateMany(
+              {
+                $or: [
+                  { created_by: "" },
+                  { created_by: { $exists: false } },
+                  { created_by: null }
+                ],
+                pincode: { $in: chunk }
+              },
+              { $set: { created_by: user._id } }
+            );
+          }
+        }
       }
 
     }
@@ -247,7 +247,7 @@ export const DeleteUser = async (req, res, next) => {
         { $unset: { created_by: "" } }
       );
     }
-   
+
     user.status = "Deactive";
     await user.save();
     return res.status(200).json({ message: "delete successful", status: true })
@@ -363,11 +363,11 @@ export const SignIn = async (req, res, next) => {
         return res.status(200).json({ message: "otp send successfull!", user: { ...existingAccount.toObject(), password: undefined, otp: undefined, role: "MASTER" }, status: true })
       }
     }
-    
+
     const token = Jwt.sign({ subject: email }, process.env.TOKEN_SECRET_KEY);
     if (existingAccount) {
       await User.updateOne({ email }, { $set: { latitude, longitude, currentAddress } });
-      return res.json({ message: "Login successful", user: { ...existingAccount.toObject(), password: undefined, token,otp: undefined, }, status: true, });
+      return res.json({ message: "Login successful", user: { ...existingAccount.toObject(), password: undefined, token, otp: undefined, }, status: true, });
     }
     if (existingCustomer) {
       await Customer.updateOne({ email }, { $set: { latitude, longitude, currentAddress, loginDate: new Date() } });
@@ -798,7 +798,6 @@ export const UserList = async (req, res, next) => {
     const data = user.concat(customer)
     return data.length > 0 ? res.status(200).json({ User: data, status: true }) : res.status(404).json({ message: "Not Found", status: false });
   } catch (err) {
-
     console.log(err);
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
@@ -1196,7 +1195,7 @@ export const updateServiceArea = async (req, res) => {
         created_by: user._id,
         pincode: { $nin: newPincodes }
       },
-      { $set: { created_by: "" } }   
+      { $set: { created_by: "" } }
     );
 
     if (newPincodes.length > 0) {
@@ -1217,49 +1216,95 @@ export const updateServiceArea = async (req, res) => {
   }
 };
 
+export const staticUser = async (req, res, next) => {
+  try {
+    const SuperAdmins = await User.find({ status: "Active" })
+      .populate({ path: "rolename", model: "role" });
 
+    if (!SuperAdmins || SuperAdmins.length === 0) {
+      return res.status(404).json({
+        message: "Not Found",
+        status: false
+      });
+    }
 
-// export const updateServiceArea = async (req, res) => {
-//   try {
-//     const { id, service } = req.body;
+    const filterData = SuperAdmins
+      .filter(item => item?.rolename?.roleName === "SuperAdmin")
+      .map(item => ({
+        database: item.database,
+        user_id: item._id,
+        pincode:item.pincode
+      }));
 
-//     const user = await User.findById(id);
-//     if (!user) {
-//       return res.status(404).json({ message: "User Not Found", status: false });
-//     }
+    for (const item of filterData) {
 
-//     if (!Array.isArray(service)) {
-//       return res.status(400).json({ message: "Service must be an array", status: false });
-//     }
+      const userFind = await User.findOne({
+        database: item.database,
+        firstName: "GST PAYMENT"
+      });
 
-//     user.service = service;
-//     await user.save();
+      if (!userFind) {
+        const userObj = {
+          id: "GST PAYMENT-Duties and Taxes",
+          database: item.database,
+          setRule: [],
+          status: "Active",
+          firstName: "GST PAYMENT",
+          reference: [],
+          deviceStatus: false,
+          userRegister: 0,
+          userAllotted: 0,
+          planStatus: "unpaid",
+          OpeningBalance: "00",
+          Type: "debit",
+          account: "Duties and Taxes",
+          warehouse: [],
+          role: [],
+          service: [],
+          created_by: item.user_id
+        };
 
-//     const pincodes = Array.from(
-//       new Set(
-//         service
-//           .map(s => s.pincode)
-//           .filter(Boolean)        
-//       )
-//     );
+        await User.create(userObj);
+      }
 
-//     if (pincodes.length === 0) {
-//       return res.status(200).json({ message: "Updated No Pincodes", status: true });
-//     }
+      const findCustomer = await Customer.findOne({
+        database: item.database,
+        CompanyName: "CASH"
+      });
 
-//     await Customer.updateMany(
-//       { pincode: { $in: pincodes } },
-//       { $set: { created_by: user._id } }
-//     );
+      if (!findCustomer) {
 
-//     return res.status(200).json({
-//       message: "Customer Updated Successfully",
-//       status: true
-//     });
+        const customerObj = {
+          sId: "CASH7845",
+          database: item.database,
+          limit: 0,
+          AdvanceAmount: 0,
+          paymentTerm: "cash",
+          transporterDetail: "0",
+          assignTransporter: [],
+          serviceArea: "LOCAL",
+          partyType: "Debitor",
+          registrationType: "UnKnown",
+          CompanyName: "CASH",
+          bankDetails: [],
+          shopPhoto: [],
+          OpeningBalance: 0,
+          Type: "debit",
+          status: "Active",
+          autoBillingStatus: "open",
+          leadStatusCheck: "false",
+          dummyAmount: 0,
+          remark: [],
+          regionType: "Local",
+          created_by:item?.user_id,
+          pincode:item?.pincode
+        };
 
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ message: "Internal Server Error", status: false });
-//   }
-// };
-
+        await Customer.create(customerObj);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    
+  }
+};

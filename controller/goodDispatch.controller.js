@@ -174,122 +174,288 @@ export const sendOtp1 = async (req, res) => {
         return res.status(500).json({ error: error, status: false });
     }
 }
+
 export const updateOrderStatusByDeliveryBoy = async (req, res) => {
-    try {
-        let CNUpload
-        if (req.file) {
-            req.body.CNUpload = req.file.filename;
-            CNUpload = req.body.CNUpload
-        }
-        let CNDetails = req.body.CNDetails
-        const { status, otp, partyId, orderId, reason, paymentMode } = req.body;
-        if (status === "Cancel in process") {
-            const orders = await CreateOrder.findById(orderId);
-            if (!orders) {
-                return res.status(404).json({ message: "Order Not Found", status: false });
-            }
-            const customer = await Customer.findById(partyId);
-            if (!customer) {
-                return res.status(404).json({ message: "Party Not Found", status: false })
-            }
-            const user = await User.findById(orders.userId);
-            if (!user) {
-                return res.status(404).json({ message: "Party Not Found", status: false })
-            }
-            if (user.otpVerify !== parseInt(otp)) {
-                return res.status(400).json({ message: "Incorrect OTP", status: false });
-            }
-            user.otpVerify = undefined
-            customer.remainingLimit += orders.grandTotal
-            let invoiceId = orders.challanNo || orders.invoiceId
-            const commonUpdate = { status, paymentMode, CNUpload, invoiceId, CNDetails };
-            if (reason) {
-                commonUpdate.reason = reason;
-            }
-            if (orders) {
-                Object.assign(orders, commonUpdate);
-                await orders.save();
-                await user.save();
-                await customer.save();
-            }
-            if (50000 > orders.grandTotal) {
-                const companyDetails = await CompanyDetails.findOne({ database: orders.database });
-                if (companyDetails) {
-                    companyDetails.cancelInvoice.push({ invoice: orders.invoiceId })
-                    await companyDetails.save();
-                }
-            }
-        } else {
-            const user = await Customer.findById(partyId);
-            if (!user) {
-                return res.status(404).json({ message: "Party Not Found", status: false })
-            }
-            const orders = await CreateOrder.findById(orderId);
-            if (!orders) {
-                return res.status(404).json({ message: "Order Not Found", status: false });
-            }
-            if (user.otpVerify !== parseInt(otp)) {
-                return res.status(400).json({ message: "Incorrect OTP", status: false });
-            }
-            // const result = await generateInvoice(user.database);
-
-            // let challanNo = result
-            // let invoiceId = result
-
-            user.otpVerify = undefined
-
-            const commonUpdate = { status, paymentMode, CNUpload, invoiceId, challanNo, CNDetails };
-            if (reason) {
-                commonUpdate.reason = reason;
-            }
-            if (orders) {
-                Object.assign(orders, commonUpdate);
-                await orders.save();
-                await user.save();
-            }
-            for (const orderItem of orders.orderItems) {
-                const product = await Product.findById({ _id: orderItem.productId });
-                if (product) {
-                    const warehouse = await Warehouse.findById(orderItem.warehouse)
-                    if (warehouse) {
-                        let tax = 0;
-                        tax = (orderItem.igstRate + orderItem.sgstRate + orderItem.cgstRate)
-                        const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
-                        if (pro) {
-                            // pro.currentStock -= (orderItem.qty)
-                            const current = new Date()
-                            product.pendingQty -= (orderItem.qty)
-                            pro.sQty += (orderItem.qty);
-                            pro.sRate = (orderItem.price);
-                            pro.sBAmount += orderItem.totalPrice;
-                            pro.sTaxRate = (product.GSTRate);
-                            pro.sTotal += (orderItem.totalPrice + tax)
-                            await warehouse.save();
-                            await product.save()
-                            await addProductInWarehouse7(product, product.warehouse, orderItem, current, orders.date)
-                            // await ClosingSales(orderItem, orderItem.warehouse)
-                            tax = 0
-                        } else {
-                            console.error(`Product Not Found In Warehouse Product ID ${orderItem.productId}`);
-                        }
-                    } else {
-                        console.log("Warehouse Not Found")
-                    }
-                } else {
-                    console.error(`Product with ID ${orderItem.productId} not found`);
-                }
-            }
-            if (orders.status === "completed") {
-                const particular = "SalesInvoice";
-                await ledgerPartyForDebit(orders, particular)
-            }
-        }
-        return res.status(200).json({ message: "Delivery Status Updated Successfully", status: true });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Internal Server Error", status: false });
+  try {
+    let CNUpload;
+    if (req.file) {
+      CNUpload = req.file.filename;
     }
+
+    const {
+      status,
+      otp,
+      partyId,
+      orderId,
+      reason,
+      paymentMode,
+      CNDetails
+    } = req.body;
+
+    // Fetch order
+    const orders = await CreateOrder.findById(orderId);
+    if (!orders) {
+      return res.status(404).json({ message: "Order Not Found", status: false });
+    }
+
+    // ================= CANCEL IN PROCESS =================
+    if (status === "Cancel in process") {
+      const customer = await Customer.findById(partyId);
+      if (!customer) {
+        return res.status(404).json({ message: "Party Not Found", status: false });
+      }
+
+      const user = await User.findById(orders.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User Not Found", status: false });
+      }
+
+      if (user.otpVerify !== parseInt(otp)) {
+        return res.status(400).json({ message: "Incorrect OTP", status: false });
+      }
+
+      user.otpVerify = undefined;
+      customer.remainingLimit += orders.grandTotal;
+
+      const invoiceId = orders.challanNo || orders.invoiceId;
+
+      const commonUpdate = {
+        status,
+        paymentMode,
+        CNUpload,
+        invoiceId,
+        CNDetails
+      };
+
+      if (reason) commonUpdate.reason = reason;
+
+      Object.assign(orders, commonUpdate);
+
+      await Promise.all([
+        orders.save(),
+        user.save(),
+        customer.save()
+      ]);
+
+      if (orders.grandTotal < 50000) {
+        const companyDetails = await CompanyDetails.findOne({ database: orders.database });
+        if (companyDetails) {
+          companyDetails.cancelInvoice.push({ invoice: orders.invoiceId });
+          await companyDetails.save();
+        }
+      }
+
+    // ================= DELIVERY / COMPLETE =================
+    } else {
+      const customer = await Customer.findById(partyId);
+      if (!customer) {
+        return res.status(404).json({ message: "Party Not Found", status: false });
+      }
+
+      if (customer.otpVerify !== parseInt(otp)) {
+        return res.status(400).json({ message: "Incorrect OTP", status: false });
+      }
+
+      customer.otpVerify = undefined;
+
+      const invoiceId = orders.invoiceId || null;
+      const challanNo = orders.challanNo || null;
+
+      const commonUpdate = {
+        status,
+        paymentMode,
+        CNUpload,
+        invoiceId,
+        challanNo,
+        CNDetails
+      };
+
+      if (reason) commonUpdate.reason = reason;
+
+      Object.assign(orders, commonUpdate);
+
+      await Promise.all([
+        orders.save(),
+        customer.save()
+      ]);
+
+      // ===== Stock Update =====
+      for (const orderItem of orders.orderItems) {
+        const product = await Product.findById(orderItem.productId);
+        if (!product) continue;
+
+        const warehouse = await Warehouse.findById(orderItem.warehouse);
+        if (!warehouse) continue;
+
+        const pro = warehouse.productItems.find(
+          item => item.productId.toString() === orderItem.productId.toString()
+        );
+
+        if (!pro) continue;
+
+        const tax =
+          orderItem.igstRate +
+          orderItem.sgstRate +
+          orderItem.cgstRate;
+
+        product.pendingQty -= orderItem.qty;
+
+        pro.sQty += orderItem.qty;
+        pro.sRate = orderItem.price;
+        pro.sBAmount += orderItem.totalPrice;
+        pro.sTaxRate = product.GSTRate;
+        pro.sTotal += orderItem.totalPrice + tax;
+
+        await Promise.all([
+          warehouse.save(),
+          product.save()
+        ]);
+
+        const current = new Date();
+        await addProductInWarehouse7(
+          product,
+          product.warehouse,
+          orderItem,
+          current,
+          orders.date
+        );
+      }
+
+      if (orders.status === "completed") {
+        await ledgerPartyForDebit(orders, "SalesInvoice");
+      }
+    }
+
+    return res.status(200).json({
+      message: "Delivery Status Updated Successfully",
+      status: true
+    });
+
+  } catch (err) {
+    console.error("Update Order Error:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      status: false
+    });
+  }
 };
+
+// export const updateOrderStatusByDeliveryBoy = async (req, res) => {
+//     try {
+//         let CNUpload
+//         if (req.file) {
+//             req.body.CNUpload = req.file.filename;
+//             CNUpload = req.body.CNUpload
+//         }
+//         let CNDetails = req.body.CNDetails
+//         const { status, otp, partyId, orderId, reason, paymentMode } = req.body;
+//         if (status === "Cancel in process") {
+//             const orders = await CreateOrder.findById(orderId);
+//             if (!orders) {
+//                 return res.status(404).json({ message: "Order Not Found", status: false });
+//             }
+//             const customer = await Customer.findById(partyId);
+//             if (!customer) {
+//                 return res.status(404).json({ message: "Party Not Found", status: false })
+//             }
+//             const user = await User.findById(orders.userId);
+//             if (!user) {
+//                 return res.status(404).json({ message: "Party Not Found", status: false })
+//             }
+//             if (user.otpVerify !== parseInt(otp)) {
+//                 return res.status(400).json({ message: "Incorrect OTP", status: false });
+//             }
+//             user.otpVerify = undefined
+//             customer.remainingLimit += orders.grandTotal
+//             let invoiceId = orders.challanNo || orders.invoiceId
+//             const commonUpdate = { status, paymentMode, CNUpload, invoiceId, CNDetails };
+//             if (reason) {
+//                 commonUpdate.reason = reason;
+//             }
+//             if (orders) {
+//                 Object.assign(orders, commonUpdate);
+//                 await orders.save();
+//                 await user.save();
+//                 await customer.save();
+//             }
+//             if (50000 > orders.grandTotal) {
+//                 const companyDetails = await CompanyDetails.findOne({ database: orders.database });
+//                 if (companyDetails) {
+//                     companyDetails.cancelInvoice.push({ invoice: orders.invoiceId })
+//                     await companyDetails.save();
+//                 }
+//             }
+//         } else {
+//             const user = await Customer.findById(partyId);
+//             if (!user) {
+//                 return res.status(404).json({ message: "Party Not Found", status: false })
+//             }
+//             const orders = await CreateOrder.findById(orderId);
+//             if (!orders) {
+//                 return res.status(404).json({ message: "Order Not Found", status: false });
+//             }
+//             if (user.otpVerify !== parseInt(otp)) {
+//                 return res.status(400).json({ message: "Incorrect OTP", status: false });
+//             }
+//             // const result = await generateInvoice(user.database);
+
+//             // let challanNo = result
+//             // let invoiceId = result
+
+//             user.otpVerify = undefined
+
+//             const commonUpdate = { status, paymentMode, CNUpload, invoiceId, challanNo, CNDetails };
+//             if (reason) {
+//                 commonUpdate.reason = reason;
+//             }
+//             if (orders) {
+//                 Object.assign(orders, commonUpdate);
+//                 await orders.save();
+//                 await user.save();
+//             }
+//             for (const orderItem of orders.orderItems) {
+//                 const product = await Product.findById({ _id: orderItem.productId });
+//                 if (product) {
+//                     const warehouse = await Warehouse.findById(orderItem.warehouse)
+//                     if (warehouse) {
+//                         let tax = 0;
+//                         tax = (orderItem.igstRate + orderItem.sgstRate + orderItem.cgstRate)
+//                         const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
+//                         if (pro) {
+//                             // pro.currentStock -= (orderItem.qty)
+//                             const current = new Date()
+//                             product.pendingQty -= (orderItem.qty)
+//                             pro.sQty += (orderItem.qty);
+//                             pro.sRate = (orderItem.price);
+//                             pro.sBAmount += orderItem.totalPrice;
+//                             pro.sTaxRate = (product.GSTRate);
+//                             pro.sTotal += (orderItem.totalPrice + tax)
+//                             await warehouse.save();
+//                             await product.save()
+//                             await addProductInWarehouse7(product, product.warehouse, orderItem, current, orders.date)
+//                             // await ClosingSales(orderItem, orderItem.warehouse)
+//                             tax = 0
+//                         } else {
+//                             console.error(`Product Not Found In Warehouse Product ID ${orderItem.productId}`);
+//                         }
+//                     } else {
+//                         console.log("Warehouse Not Found")
+//                     }
+//                 } else {
+//                     console.error(`Product with ID ${orderItem.productId} not found`);
+//                 }
+//             }
+//             if (orders.status === "completed") {
+//                 const particular = "SalesInvoice";
+//                 await ledgerPartyForDebit(orders, particular)
+//             }
+//         }
+//         return res.status(200).json({ message: "Delivery Status Updated Successfully", status: true });
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).json({ error: "Internal Server Error", status: false });
+//     }
+// };
 export const sendOtp = async (req, res) => {
     try {
         const otp = Math.floor(1000 + Math.random() * 9000);
