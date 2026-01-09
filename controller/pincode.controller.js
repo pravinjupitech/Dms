@@ -52,7 +52,8 @@ export const saveExcelPincode = async (req, res, next) => {
 
 export const viewPincodes = async (req, res, next) => {
     try {
-        const pinCodeList = await Pincode.find().lean(); 
+        const {pincode}=req.body;
+        const pinCodeList = await Pincode.find({pincode:pincode}).lean(); 
 
         if (pinCodeList.length === 0) {
             return res.status(404).json({ message: "No Data Found", status: false });
