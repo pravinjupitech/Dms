@@ -52,10 +52,20 @@ export const saveExcelPincode = async (req, res, next) => {
 
 export const viewPincodes = async (req, res) => {
     try {
-        const { pincode } = req.params;
+        const { pincode } = req.query;
+
+        if (!pincode) {
+            return res.status(400).json({
+                message: "Pincode is required",
+                status: false
+            });
+        }
 
         const pinCode = await Pincode
-            .findOne({ pincode }, { pincode: 1, city: 1, state: 1, _id: 0 })
+            .findOne(
+                { pincode: Number(pincode) }, // convert to number if stored as number
+                { pincode: 1, city: 1, state: 1, _id: 0 }
+            )
             .lean();
 
         if (!pinCode) {
@@ -70,13 +80,16 @@ export const viewPincodes = async (req, res) => {
             status: true,
             pinCode
         });
+
     } catch (error) {
+        console.error(error);
         return res.status(500).json({
             message: "Internal Server Error",
             status: false
         });
     }
 };
+
 
 
 
