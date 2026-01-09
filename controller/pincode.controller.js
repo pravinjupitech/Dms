@@ -50,25 +50,34 @@ export const saveExcelPincode = async (req, res, next) => {
     }
 };
 
-export const viewPincodes = async (req, res, next) => {
+export const viewPincodes = async (req, res) => {
     try {
-        const {pincode}=req.body;
-        const pinCodeList = await Pincode.find({pincode:pincode}).lean(); 
+        const { pincode } = req.params;
 
-        if (pinCodeList.length === 0) {
-            return res.status(404).json({ message: "No Data Found", status: false });
+        const pinCode = await Pincode
+            .findOne({ pincode }, { pincode: 1, city: 1, state: 1, _id: 0 })
+            .lean();
+
+        if (!pinCode) {
+            return res.status(404).json({
+                message: "No Data Found",
+                status: false
+            });
         }
 
-        return res.status(200).json({ message: "Data Found", status: true, pinCodeList });
+        return res.status(200).json({
+            message: "Data Found",
+            status: true,
+            pinCode
+        });
     } catch (error) {
-        console.error(error);
         return res.status(500).json({
             message: "Internal Server Error",
-            error: error.message,
             status: false
         });
     }
 };
+
 
 
 export const viewPincode = async (req, res, next) => {
