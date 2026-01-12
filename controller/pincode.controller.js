@@ -61,14 +61,11 @@ export const viewPincodes = async (req, res) => {
             });
         }
 
-        const pinCode = await Pincode
-            .findOne(
-                { pincode: Number(pincode) }, // convert to number if stored as number
-                { pincode: 1, city: 1, state: 1, _id: 0 }
-            )
+       const pinCodes = await Pincode
+            .find({ pincode })
             .lean();
 
-        if (!pinCode) {
+        if (pinCodes.length===0) {
             return res.status(404).json({
                 message: "No Data Found",
                 status: false
@@ -78,7 +75,7 @@ export const viewPincodes = async (req, res) => {
         return res.status(200).json({
             message: "Data Found",
             status: true,
-            pinCode
+            pinCodes
         });
 
     } catch (error) {

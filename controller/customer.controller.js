@@ -222,26 +222,26 @@ export const UpdateCustomer = async (req, res, next) => {
                 existOver.lockingAmount = req.body.limit
                 await existOver.save()
             }
-            
-            if (req.body.pincode !== existingCustomer.pincode) {
-            const existingUsers = await User.find({ database: existingCustomer?.database, status: "Active" }).populate({ path: "rolename", model: "role" });
 
-            const salesPersons = existingUsers.filter(user =>
-                user?.rolename?.roleName === "Sales Person"
-            );
-            const matchedSalesPerson = salesPersons.find(user => {
-                const services = user?.service;
-                if (!Array.isArray(services)) return false;
-                
-                return services.some(service =>
-                    String(service?.pincode).trim() === String(req.body.pincode).trim()
+            if (req.body.pincode !== existingCustomer.pincode) {
+                const existingUsers = await User.find({ database: existingCustomer?.database, status: "Active" }).populate({ path: "rolename", model: "role" });
+
+                const salesPersons = existingUsers.filter(user =>
+                    user?.rolename?.roleName === "Sales Person"
                 );
-            });
-            if (matchedSalesPerson) {
-                req.body.created_by = matchedSalesPerson._id;
+                const matchedSalesPerson = salesPersons.find(user => {
+                    const services = user?.service;
+                    if (!Array.isArray(services)) return false;
+
+                    return services.some(service =>
+                        String(service?.pincode).trim() === String(req.body.pincode).trim()
+                    );
+                });
+                if (matchedSalesPerson) {
+                    req.body.created_by = matchedSalesPerson._id;
+                }
             }
-        }
-        const updatedCustomer = req.body;
+            const updatedCustomer = req.body;
             await Customer.findByIdAndUpdate(customerId, updatedCustomer, { new: true });
             return res.status(200).json({ message: 'Customer Updated Successfully', status: true });
         }
@@ -328,11 +328,21 @@ export const SuperAdminList = async (req, res, next) => {
 
 export const SignInWithMobile = async (req, res, next) => {
     try {
-        const { mobileNo, email, password } = req.body;
+        const {
+            mobileNo,
+            email,
+            aadharNo,
+            gstNumber,
+            comPanNo,
+            password
+        } = req.body;
         let existingAccount = await Customer.findOne({
             $or: [
                 { mobileNumber: mobileNo },
-                { email: email }
+                { email: email },
+                { aadharNo: aadharNo },
+                { gstNumber: gstNumber },
+                { comPanNo: comPanNo }
             ]
             // , password: password
         }).populate({ path: "rolename", model: "role" });
@@ -1207,8 +1217,8 @@ export const LeadPartyList = async (req, res, next) => {
     }
 }
 
-export const leadPartyCounter=async(req,res,next)=>{
-      try {
+export const leadPartyCounter = async (req, res, next) => {
+    try {
         const party = await Customer.find({ database: req.params.database, leadStatusCheck: "true" }).populate({ path: "created_by", model: "user" });
         if (party.length == 0) {
             return res.status(404).json({ message: "Data Not Found", status: false })
@@ -1467,7 +1477,7 @@ export const ViewDeadParty = async (req, res, next) => {
             // const resultItem = { id, party, lastDays };
             // result.push(resultItem);
         }
-        return Parties.length>0? res.status(200).json({ Parties: Parties, status: true }):res.status(400).json({message:"Not Found",status:false})
+        return Parties.length > 0 ? res.status(200).json({ Parties: Parties, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Internal Server Error", status: false });
@@ -1745,3 +1755,22 @@ export const generateInvoice = async (req, res, next) => {
         await companyDetail.save();
     }
 };
+
+export const findCustomer = async (req, res, next) => {
+    try {
+        const { mobileNumber, aadharNo, gstNumber, comPanNo, database } = req.body;
+        const customer = await Customer.findOne({
+            database,
+            $or: [
+                mobileNumber ? { mobileNumber } : null,
+                aadharNo ? { aadharNo } : null,
+                gstNumber ? { gstNumber } : null,
+                comPanNo ? { comPanNo } : null
+            ].filter(Boolean)
+        });
+        return customer ? res.status(200).json({ message: "Data Found", customerId: customer._id, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error", status: false });
+    }
+}
