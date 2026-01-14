@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 const TabSchemaDashboard = new mongoose.Schema({
     userId: {
         type: String
@@ -26,10 +27,10 @@ const TabSchemaDashboard = new mongoose.Schema({
         }
     }], groupSize: {
         type: String
-    },selectedLayout:{
-        type:String
-    },isCombined:{
-        type:String
+    }, selectedLayout: {
+        type: String
+    }, isCombined: {
+        type: String
     }
 }, { timestamps: true })
 
@@ -37,25 +38,25 @@ const TabSchema = new mongoose.Schema({
     userId: {
         type: String
     },
-    tab: [{
+    role: { type: String },
+    cards: [{
         id: {
             type: String
         },
         title: {
             type: String
         },
-        type: {
+        template: {
             type: String
         },
-        icon: {
+        groupKey: {
             type: String
         },
-        navLink: {
+        groupName: {
             type: String
-        }
-    }], groupSize: {
-        type: String
-    }
+        },
+        boxes: { type: Array }
+    }],
 }, { timestamps: true })
 
 export const Tab = mongoose.model("tab", TabSchema)
