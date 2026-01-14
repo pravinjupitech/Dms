@@ -1,40 +1,5 @@
 import mongoose from "mongoose";
-import { type } from "os";
 const TabSchemaDashboard = new mongoose.Schema({
-    userId: {
-        type: String
-    },
-    tab: [{
-        key: {
-            type: Number
-        },
-        value: [{
-            key: {
-                type: Number
-            },
-            Name: {
-                type: String
-            },
-            show: {
-                type: Boolean
-            }
-        }],
-        Name: {
-            type: String
-        },
-        show: {
-            type: Boolean
-        }
-    }], groupSize: {
-        type: String
-    }, selectedLayout: {
-        type: String
-    }, isCombined: {
-        type: String
-    }
-}, { timestamps: true })
-
-const TabSchema = new mongoose.Schema({
     userId: {
         type: String
     },
@@ -57,6 +22,31 @@ const TabSchema = new mongoose.Schema({
         },
         boxes: { type: Array }
     }],
+}, { timestamps: true })
+
+const TabSchema = new mongoose.Schema({
+    userId: {
+        type: String
+    },
+    tab: [{
+        id: {
+            type: String
+        },
+        title: {
+            type: String
+        },
+        type: {
+            type: String
+        },
+        icon: {
+            type: String
+        },
+        navLink: {
+            type: String
+        }
+    }], groupSize: {
+        type: String
+    }
 }, { timestamps: true })
 
 export const Tab = mongoose.model("tab", TabSchema)
