@@ -198,47 +198,154 @@ export const viewTab = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false })
     }
 }
-export const saveDashboardTabs = async (req, res, next) => {
-    try {
-        console.log("request",req.body)
-        const user = await DashboardTab.findOne({ userId: req.body.userId});
-        if (user) {
-            for (let item of req.body.cards) {
-                const existingTab = user.cards.find(t => t.key === item.key);
-                if (existingTab) {
-                    if (item.Name !== undefined) existingTab.Name = item.Name;
-                    if (item.show !== undefined) existingTab.show = item.show;
+// export const saveDashboardTabs = async (req, res, next) => {
+//     try {
+//         console.log("request",req.body)
+//         const user = await DashboardTab.findOne({ userId: req.body.userId});
+//         if (user) {
+//             for (let item of req.body.cards) {
+//                 const existingTab = user.cards.find(t => t.key === item.key);
+//                 if (existingTab) {
+//                     if (item.Name !== undefined) existingTab.Name = item.Name;
+//                     if (item.show !== undefined) existingTab.show = item.show;
 
-                    if (Array.isArray(item.value)) {
-                        for (let innerItem of item.value) {
-                            const existingValue = existingTab.value.find(v => v.key === innerItem.key);
-                            if (existingValue) {
-                                if (innerItem.Name !== undefined) existingValue.Name = innerItem.Name;
-                                if (innerItem.show !== undefined) existingValue.show = innerItem.show;
-                            } else {
-                                existingTab.value.push(innerItem);
-                            }
+//                     if (Array.isArray(item.value)) {
+//                         for (let innerItem of item.value) {
+//                             const existingValue = existingTab.value.find(v => v.key === innerItem.key);
+//                             if (existingValue) {
+//                                 if (innerItem.Name !== undefined) existingValue.Name = innerItem.Name;
+//                                 if (innerItem.show !== undefined) existingValue.show = innerItem.show;
+//                             } else {
+//                                 existingTab.value.push(innerItem);
+//                             }
+//                         }
+//                     }
+//                 } else {
+//                     user.tab.push(item);
+//                 }
+//             }
+//             user.groupSize = req.body.groupSize;
+//             user.selectedLayout=req.body.selectedLayout;
+//             user.isCombined=req.body.isCombined;
+//             await user.save();
+//             return res.status(200).json({ message: "data save successful", tab: user, status: true });
+
+//         } else {
+//             const tab = await DashboardTab.create(req.body);
+//             return res.status(200).json({ message: "data save successful", tab: tab, status: true });
+//         }
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).json({ error: "Internal Server Error", status: false });
+//     }
+// }
+
+export const saveDashboardTabs = async (req, res) => {
+    try {
+        console.log("request body:", req.body);
+
+        const { userId, cards, groupSize, selectedLayout, isCombined } = req.body;
+
+        // ✅ Basic validation
+        if (!userId) {
+            return res.status(400).json({
+                status: false,
+                message: "userId is required"
+            });
+        }
+
+        if (!Array.isArray(cards)) {
+            return res.status(400).json({
+                status: false,
+                message: "cards must be an array"
+            });
+        }
+
+        // ✅ Find existing dashboard config
+        let user = await DashboardTab.findOne({ userId });
+
+        // =====================================================
+        // CREATE NEW DOCUMENT
+        // =====================================================
+        if (!user) {
+            const newDashboard = await DashboardTab.create({
+                userId,
+                cards,
+                groupSize,
+                selectedLayout,
+                isCombined
+            });
+
+            return res.status(200).json({
+                status: true,
+                message: "Dashboard created successfully",
+                tab: newDashboard
+            });
+        }
+
+        // =====================================================
+        // UPDATE EXISTING DOCUMENT
+        // =====================================================
+
+        // Ensure cards array exists
+        if (!Array.isArray(user.cards)) {
+            user.cards = [];
+        }
+
+        for (const item of cards) {
+            // Match by card id
+            const existingCard = user.cards.find(c => c.id === item.id);
+
+            if (existingCard) {
+                // Update card fields safely
+                existingCard.title = item.title ?? existingCard.title;
+                existingCard.template = item.template ?? existingCard.template;
+                existingCard.groupKey = item.groupKey ?? existingCard.groupKey;
+                existingCard.groupName = item.groupName ?? existingCard.groupName;
+
+                // Handle boxes
+                if (Array.isArray(item.boxes)) {
+                    if (!Array.isArray(existingCard.boxes)) {
+                        existingCard.boxes = [];
+                    }
+
+                    for (const box of item.boxes) {
+                        const existingBox = existingCard.boxes.find(b => b.id === box.id);
+
+                        if (existingBox) {
+                            Object.assign(existingBox, box);
+                        } else {
+                            existingCard.boxes.push(box);
                         }
                     }
-                } else {
-                    user.tab.push(item);
                 }
+            } else {
+                // New card
+                user.cards.push(item);
             }
-            user.groupSize = req.body.groupSize;
-            user.selectedLayout=req.body.selectedLayout;
-            user.isCombined=req.body.isCombined;
-            await user.save();
-            return res.status(200).json({ message: "data save successful", tab: user, status: true });
-
-        } else {
-            const tab = await DashboardTab.create(req.body);
-            return res.status(200).json({ message: "data save successful", tab: tab, status: true });
         }
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Internal Server Error", status: false });
+
+        // Update layout settings
+        user.groupSize = groupSize ?? user.groupSize;
+        user.selectedLayout = selectedLayout ?? user.selectedLayout;
+        user.isCombined = isCombined ?? user.isCombined;
+
+        await user.save();
+
+        return res.status(200).json({
+            status: true,
+            message: "Dashboard updated successfully",
+            tab: user
+        });
+
+    } catch (error) {
+        console.error("saveDashboardTabs error:", error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
     }
-}
+};
 
 export const viewDashboardTab = async (req, res, next) => {
     try {
