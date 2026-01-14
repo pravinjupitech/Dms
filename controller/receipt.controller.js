@@ -1047,6 +1047,9 @@ export const SaveOtp = async (req, res) => {
         } else {
             existing.otp = req.body.otp;
             existing.amount = req.body.amount;
+            if(req.body.otpDateTime){
+                existing.otpDateTime=req.body.otpDateTime;
+            }
             await existing.save()
         }
         return res.status(200).json({ message0: "data saved successfull!", status: true });
