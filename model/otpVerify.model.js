@@ -15,6 +15,9 @@ const otpVerifySchema = new mongoose.Schema({
     },
     amount: {
         type: Number
+    },
+    otpDateTime:{
+        type:String
     }
 }, { timestamps: true })
 

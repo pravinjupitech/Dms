@@ -1768,7 +1768,7 @@ export const findCustomer = async (req, res, next) => {
                 comPanNo ? { comPanNo } : null
             ].filter(Boolean)
         });
-        return customer ? res.status(200).json({ message: "Data Found", customerId: customer._id, status: true }) : res.status(400).json({ message: "Not Found", status: false })
+        return customer ? res.status(200).json({ message: "Data Found", customerId: customer._id, salePersonId: customer.created_by, status: true }) : res.status(400).json({ message: "Not Found", status: false })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error", status: false });
