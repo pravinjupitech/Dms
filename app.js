@@ -77,6 +77,7 @@ import PincodeRouter from "./routes/pincode.route.js"
 import VisitRouter from "./routes/visit.route.js"
 import VisitPointRouter from "./routes/visitPoint.route.js"
 import ActivityRouter from "./routes/activityLog.route.js"
+import CustomerPaymentRouter from "./routes/customerPayment.route.js"
 import mongoose from "mongoose";
 import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
@@ -177,6 +178,7 @@ app.use("/pincode",PincodeRouter)
 app.use("/visit",VisitRouter)
 app.use("/visitpoint",VisitPointRouter)
 app.use("/activity",ActivityRouter)
+app.use("/customer-payment",CustomerPaymentRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
