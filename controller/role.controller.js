@@ -200,6 +200,7 @@ export const viewTab = async (req, res, next) => {
 }
 export const saveDashboardTabs = async (req, res, next) => {
     try {
+        console.log("request",req.body)
         const user = await DashboardTab.findOne({ userId: req.body.userId.toString() });
         if (user) {
             for (let item of req.body.tab) {
