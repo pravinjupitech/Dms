@@ -12,6 +12,9 @@ const customerPaymentSchema = new mongoose.Schema({
     remark:{
         type:String
     },
+     bankDetails:{
+        type:Object
+    },
     date: {
         type: Date
     },
