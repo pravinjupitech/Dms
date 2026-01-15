@@ -74,6 +74,9 @@ const ReceiptSchema = new mongoose.Schema({
     bankDetails:{
         type:Object
     },
+    otpDateTime: {
+        type: String
+    }
 
 }, { timestamps: true })
 
