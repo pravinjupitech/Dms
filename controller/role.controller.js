@@ -251,20 +251,20 @@ export const saveDashboardTabs = async (req, res) => {
             });
         }
 
-        const updatedTab = await DashboardTab.findOneAndUpdate(
+        const dashboardData = {
+            userId,
+            cards,
+            groupSize,
+            selectedLayout,
+            isCombined
+        };
+
+        const updatedTab = await DashboardTab.findOneAndReplace(
             { userId },
-            {
-                $set: {
-                    cards,
-                    groupSize,
-                    selectedLayout,
-                    isCombined
-                }
-            },
+            dashboardData,
             {
                 new: true,
-                upsert: true,          // 🔥 create if not exists
-                overwrite: false
+                upsert: true   // 🔥 create if not exists
             }
         );
 
@@ -282,6 +282,7 @@ export const saveDashboardTabs = async (req, res) => {
         });
     }
 };
+
 
 
 export const viewDashboardTab = async (req, res, next) => {
