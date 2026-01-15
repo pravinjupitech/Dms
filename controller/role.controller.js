@@ -251,42 +251,27 @@ export const saveDashboardTabs = async (req, res) => {
             });
         }
 
-        if (!Array.isArray(cards)) {
-            return res.status(400).json({
-                status: false,
-                message: "cards must be an array"
-            });
-        }
-
-        let user = await DashboardTab.findOne({ userId });
-
-        if (!user) {
-            const newDashboard = await DashboardTab.create({
-                userId,
-                cards,
-                groupSize,
-                selectedLayout,
-                isCombined
-            });
-
-            return res.status(200).json({
-                status: true,
-                message: "Dashboard created successfully",
-                tab: newDashboard
-            });
-        }
-
-        user.cards = cards;              
-        user.groupSize = groupSize;
-        user.selectedLayout = selectedLayout;
-        user.isCombined = isCombined;
-
-        await user.save();
+        const updatedTab = await DashboardTab.findOneAndUpdate(
+            { userId },
+            {
+                $set: {
+                    cards,
+                    groupSize,
+                    selectedLayout,
+                    isCombined
+                }
+            },
+            {
+                new: true,
+                upsert: true,          // 🔥 create if not exists
+                overwrite: false
+            }
+        );
 
         return res.status(200).json({
             status: true,
-            message: "Dashboard updated successfully",
-            tab: user
+            message: "Dashboard saved successfully",
+            tab: updatedTab
         });
 
     } catch (error) {
@@ -297,6 +282,7 @@ export const saveDashboardTabs = async (req, res) => {
         });
     }
 };
+
 
 export const viewDashboardTab = async (req, res, next) => {
     try {
