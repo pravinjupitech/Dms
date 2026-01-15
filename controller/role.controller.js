@@ -242,11 +242,8 @@ export const viewTab = async (req, res, next) => {
 
 export const saveDashboardTabs = async (req, res) => {
     try {
-        console.log("request body:", req.body);
-
         const { userId, cards, groupSize, selectedLayout, isCombined } = req.body;
 
-        // ✅ Basic validation
         if (!userId) {
             return res.status(400).json({
                 status: false,
@@ -261,12 +258,8 @@ export const saveDashboardTabs = async (req, res) => {
             });
         }
 
-        // ✅ Find existing dashboard config
         let user = await DashboardTab.findOne({ userId });
 
-        // =====================================================
-        // CREATE NEW DOCUMENT
-        // =====================================================
         if (!user) {
             const newDashboard = await DashboardTab.create({
                 userId,
@@ -283,52 +276,10 @@ export const saveDashboardTabs = async (req, res) => {
             });
         }
 
-        // =====================================================
-        // UPDATE EXISTING DOCUMENT
-        // =====================================================
-
-        // Ensure cards array exists
-        if (!Array.isArray(user.cards)) {
-            user.cards = [];
-        }
-
-        for (const item of cards) {
-            // Match by card id
-            const existingCard = user.cards.find(c => c.id === item.id);
-
-            if (existingCard) {
-                // Update card fields safely
-                existingCard.title = item.title ?? existingCard.title;
-                existingCard.template = item.template ?? existingCard.template;
-                existingCard.groupKey = item.groupKey ?? existingCard.groupKey;
-                existingCard.groupName = item.groupName ?? existingCard.groupName;
-
-                // Handle boxes
-                if (Array.isArray(item.boxes)) {
-                    if (!Array.isArray(existingCard.boxes)) {
-                        existingCard.boxes = [];
-                    }
-
-                    for (const box of item.boxes) {
-                        const existingBox = existingCard.boxes.find(b => b.id === box.id);
-
-                        if (existingBox) {
-                            Object.assign(existingBox, box);
-                        } else {
-                            existingCard.boxes.push(box);
-                        }
-                    }
-                }
-            } else {
-                // New card
-                user.cards.push(item);
-            }
-        }
-
-        // Update layout settings
-        user.groupSize = groupSize ?? user.groupSize;
-        user.selectedLayout = selectedLayout ?? user.selectedLayout;
-        user.isCombined = isCombined ?? user.isCombined;
+        user.cards = cards;              
+        user.groupSize = groupSize;
+        user.selectedLayout = selectedLayout;
+        user.isCombined = isCombined;
 
         await user.save();
 
