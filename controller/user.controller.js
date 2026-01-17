@@ -622,6 +622,7 @@ export const saveUserWithExcel = async (req, res) => {
                 });
                 if (!existingRecord) {
                   const userLimit = await SubscriptionAdminPlan(document);
+                  console.log("userLimit",userLimit)
                   if (userLimit) {
                     const insertedDocument = await User.create(document);
                     insertedDocuments.push(insertedDocument);
