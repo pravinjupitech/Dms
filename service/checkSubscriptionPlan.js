@@ -13,6 +13,7 @@ export const SubscriptionAdminPlan = async (body)=>{
        if(!existingSuperAdmin){
         console.log("user not found");
        }
+       console.log("existingSuperAdmin",existingSuperAdmin)
        if(existingSuperAdmin.planStatus!=="paid"){
         return false;
        } else{
