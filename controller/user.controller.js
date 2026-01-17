@@ -533,6 +533,154 @@ export const ViewWarehouse = async (req, res, next) => {
   }
 };
 
+// export const saveUserWithExcel = async (req, res) => {
+//   try {
+//     // let code = "code";
+//     let database = "database";
+//     let rolename = "rolename";
+//     let shift = "shift";
+//     let branch = "branch"
+//     const filePath = await req.file.path;
+//     const workbook = new ExcelJS.Workbook();
+//     await workbook.xlsx.readFile(filePath);
+//     const worksheet = workbook.getWorksheet(1);
+//     const headerRow = worksheet.getRow(1);
+//     const headings = [];
+//     headerRow.eachCell((cell) => {
+//       headings.push(cell.value);
+//     });
+//     const insertedDocuments = [];
+//     const existingParts = [];
+//     const panMobile = [];
+//     const existingIds = [];
+//     const dataNotExist = [];
+//     const roles = [];
+//     const shiftss = [];
+//     const branchss = [];
+//     const planLimit = [];
+//     const IdNotExisting = [];
+//     for (let rowIndex = 2; rowIndex <= worksheet.actualRowCount; rowIndex++) {
+//       const dataRow = worksheet.getRow(rowIndex);
+//       const document = {};
+//       for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
+//         const heading = headings[columnIndex - 1];
+//         const cellValue = dataRow.getCell(columnIndex).value;
+//         if (heading === 'email' && typeof cellValue === 'object' && 'text' in cellValue) {
+//           document[heading] = cellValue.text;
+//         } else {
+//           document[heading] = cellValue;
+//         }
+//         // document[heading] = cellValue;
+//       }
+//       document[database] = req.params.database
+//       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
+//         let last4 = '';
+//         let existName = document.firstName.split(" ");
+//         let fname = existName[0];
+//         if (document.Aadhar_No) {
+//           const adhar = document.Aadhar_No.trim();
+//           last4 = adhar.slice(-4);
+//         } else if (document.Pan_No) {
+//           const pan = document.Pan_No.trim();
+//           last4 = pan.slice(-4);
+//         }
+//         document['sId'] = `${fname}${last4}`;
+//       }
+
+//       if (document.database) {
+//         const role = await Role.findOne({ id: document.rolename, database: document.database })
+//         if (!role) {
+//           roles.push(document.id)
+//         } else {
+//           // const shifts = await WorkingHours.findOne({ status: "Active", id: document.shift, database: document.database })
+//           // if (!shifts) {
+//           //   shiftss.push(document.id)
+//           // } else {
+//           // const branchs = await UserBranch.findOne({ id: document.branch, database: document.database })
+//           // if (!branchs) {
+//           //   branchss.push(document.id)
+//           // } else {
+//           document[rolename] = role._id.toString()
+//           // document[shift] = shifts._id.toString()
+//           // document[branch] = branchs._id.toString()
+//           if (document.id) {
+//             const existingId = await User.findOne({ id: document.id, database: document.database, status: "Active" });
+//             console.log("existingId", existingId)
+//             if (existingId) {
+//               existingIds.push(document.id)
+//             } else {
+//               if (document.Pan_No) {
+//                 const existingRecord = await User.findOne({
+//                   Pan_No: document.Pan_No, database: document.database, status: "Active"
+//                 });
+//                 if (!existingRecord) {
+//                   const userLimit = await SubscriptionAdminPlan(document);
+//                   if (userLimit) {
+//                     const insertedDocument = await User.create(document);
+//                     insertedDocuments.push(insertedDocument);
+//                   } else {
+//                     planLimit.push(document.id);
+//                   }
+//                 } else {
+//                   existingParts.push(document.Pan_No);
+//                 }
+//               } else {
+//                 if (document.Aadhar_No) {
+//                   const existingRecord = await User.findOne({
+//                     Aadhar_No: document.Aadhar_No, database: document.database, status: "Active"
+//                   });
+//                   if (!existingRecord) {
+//                     // const userLimit = await SubscriptionAdminPlan(document);
+//                     // if (userLimit) {
+//                     const insertedDocument = await User.create(document);
+//                     insertedDocuments.push(insertedDocument);
+//                     // } else {
+//                     //   planLimit.push(document.id);
+//                     // }
+//                   } else {
+//                     existingParts.push(document.Aadhar_No);
+//                   }
+//                 } else {
+//                   panMobile.push(document.Aadhar_No);
+//                 }
+//               }
+//             }
+//           } else {
+//             IdNotExisting.push(document.firstName)
+//           }
+//           // }
+//           // }
+//         }
+//       } else {
+//         dataNotExist.push(document.firstName)
+//       }
+//     }
+//     let message = 'Data Inserted Successfully';
+//     if (existingParts.length > 0) {
+//       message = `some user already exist: ${existingParts.join(', ')}`;
+//     } else if (panMobile.length > 0) {
+//       message = `Pan Or Aadhar Not Exist : ${panMobile.join(', ')}`;
+//     } else if (existingIds.length > 0) {
+//       message = `this user id already exist: ${existingIds.join(', ')}`;
+//     } else if (dataNotExist.length > 0) {
+//       message = `this user's database not exist: ${dataNotExist.join(', ')}`;
+//     } else if (roles.length > 0) {
+//       message = `this user's rolename not correct: ${roles.join(', ')}`;
+//     } else if (IdNotExisting.length > 0) {
+//       message = `this user's id is required : ${IdNotExisting.join(', ')}`;
+//     } else if (shiftss.length > 0) {
+//       message = `this user's shift id is required : ${shiftss.join(', ')}`;
+//     } else if (branchss.length > 0) {
+//       message = `this user's branch id is required : ${branchss.join(', ')}`;
+//     } if (planLimit.length > 0) {
+//       message = `You may have reached your plan's user limit or may not be subscribed to a plan : ${planLimit.join(', ')}`;
+//     }
+//     return res.status(200).json({ message, status: true });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: 'Internal Server Error', status: false });
+//   }
+// }
 export const saveUserWithExcel = async (req, res) => {
   try {
     let database = "database";
@@ -548,9 +696,7 @@ export const saveUserWithExcel = async (req, res) => {
     const headerRow = worksheet.getRow(1);
 
     const headings = [];
-    headerRow.eachCell(cell => {
-      headings.push(cell.value);
-    });
+    headerRow.eachCell(cell => headings.push(cell.value));
 
     const insertedDocuments = [];
     const existingParts = [];
@@ -567,11 +713,11 @@ export const saveUserWithExcel = async (req, res) => {
       const dataRow = worksheet.getRow(rowIndex);
       const document = {};
 
+      // ✅ SAFE EXCEL CELL READ
       for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
         const heading = headings[columnIndex - 1];
         const cellValue = dataRow.getCell(columnIndex).value;
 
-        // ✅ SAFE CELL VALUE HANDLING
         if (cellValue && typeof cellValue === "object") {
           document[heading] =
             cellValue.text ||
@@ -585,7 +731,12 @@ export const saveUserWithExcel = async (req, res) => {
 
       document[database] = req.params.database;
 
-      // ✅ sId generation
+      // ✅ NORMALIZE SERVICE (PREVENT MONGOOSE ERROR)
+      if (!Array.isArray(document.service)) {
+        document.service = [];
+      }
+
+      // ✅ sId LOGIC (UNCHANGED)
       if (document.firstName && (document.Aadhar_No || document.Pan_No)) {
         let last4 = "";
         let fname = document.firstName.split(" ")[0];
@@ -604,7 +755,7 @@ export const saveUserWithExcel = async (req, res) => {
         continue;
       }
 
-      // ✅ Role validation
+      // ✅ ROLE CHECK
       const role = await Role.findOne({
         id: document.rolename,
         database: document.database
@@ -633,7 +784,7 @@ export const saveUserWithExcel = async (req, res) => {
         continue;
       }
 
-      // ✅ PAN / AADHAR validation
+      // ✅ PAN LOGIC
       if (document.Pan_No) {
         const existingRecord = await User.findOne({
           Pan_No: document.Pan_No,
@@ -654,6 +805,7 @@ export const saveUserWithExcel = async (req, res) => {
 
         insertedDocuments.push(await User.create(document));
 
+      // ✅ AADHAR LOGIC
       } else if (document.Aadhar_No) {
         const existingRecord = await User.findOne({
           Aadhar_No: document.Aadhar_No,
@@ -667,12 +819,13 @@ export const saveUserWithExcel = async (req, res) => {
         }
 
         insertedDocuments.push(await User.create(document));
+
       } else {
         panMobile.push(document.id);
       }
     }
 
-    // ✅ RESPONSE MESSAGE
+    // ✅ FINAL MESSAGE LOGIC (UNCHANGED)
     let message = "Data Inserted Successfully";
 
     if (existingParts.length)
