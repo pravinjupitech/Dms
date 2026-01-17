@@ -9,17 +9,14 @@ export const SubscriptionAdminPlan = async (body)=>{
         console.log("Role Not Found");
        }
        const existingSuperAdmin = await User.findOne({database:body.database,rolename:existRole._id})
-       console.log("database:body.databas",body.database,existRole._id)
        if(!existingSuperAdmin){
         console.log("user not found");
        }
-       console.log("existingSuperAdmin",existingSuperAdmin)
        if(existingSuperAdmin.planStatus!=="paid"){
         return false;
        } else{
-        console.log("existingSuperAdmin", existingSuperAdmin.userRegister,existingSuperAdmin.userAllotted)
         existingSuperAdmin.userRegister += 1;
-        console.log("existingSuperAdmin1111", existingSuperAdmin.userRegister,existingSuperAdmin.userAllotted)
+
         if(existingSuperAdmin.userRegister <=existingSuperAdmin.userAllotted){
 
             await existingSuperAdmin.save();

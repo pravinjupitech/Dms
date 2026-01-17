@@ -565,17 +565,17 @@ export const saveUserWithExcel = async (req, res) => {
       for (let columnIndex = 1; columnIndex <= headings.length; columnIndex++) {
         const heading = headings[columnIndex - 1];
         const cellValue = dataRow.getCell(columnIndex).value;
-      if (
-  heading === 'email' &&
-  cellValue &&
-  typeof cellValue === 'object' &&
-  !Array.isArray(cellValue) &&
-  Object.prototype.hasOwnProperty.call(cellValue, 'text')
-) {
-  document[heading] = cellValue.text;
-} else {
-  document[heading] = cellValue;
-}
+        if (
+          heading === 'email' &&
+          cellValue &&
+          typeof cellValue === 'object' &&
+          !Array.isArray(cellValue) &&
+          Object.prototype.hasOwnProperty.call(cellValue, 'text')
+        ) {
+          document[heading] = cellValue.text;
+        } else {
+          document[heading] = cellValue;
+        }
 
         // document[heading] = cellValue;
       }
@@ -621,7 +621,7 @@ export const saveUserWithExcel = async (req, res) => {
                 });
                 if (!existingRecord) {
                   const userLimit = await SubscriptionAdminPlan(document);
-                  console.log("userLimit",userLimit)
+                  console.log("userLimit", userLimit)
                   if (userLimit) {
                     const insertedDocument = await User.create(document);
                     insertedDocuments.push(insertedDocument);
@@ -1240,7 +1240,7 @@ export const staticUser = async (req, res, next) => {
       .map(item => ({
         database: item.database,
         user_id: item._id,
-        pincode:item.pincode
+        pincode: item.pincode
       }));
 
     for (const item of filterData) {
@@ -1303,8 +1303,8 @@ export const staticUser = async (req, res, next) => {
           dummyAmount: 0,
           remark: [],
           regionType: "Local",
-          created_by:item?.user_id,
-          pincode:item?.pincode
+          created_by: item?.user_id,
+          pincode: item?.pincode
         };
 
         await Customer.create(customerObj);
@@ -1312,6 +1312,6 @@ export const staticUser = async (req, res, next) => {
     }
   } catch (error) {
     console.error(error);
-    
+
   }
 };
