@@ -684,6 +684,7 @@ export const saveExcelFile = async (req, res) => {
         } else if (IdNotExisting.length > 0) {
             message = `this customer id is required : ${IdNotExisting.join(', ')}`;
         }
+        console.log("message",message)
         return res.status(200).json({ message, status: true });
     } catch (err) {
         console.error(err);
