@@ -1613,3 +1613,7 @@ export const dashboardDeadStock=async(req,res,next)=>{
     return res.status(500).json({ error: "Internal Server Error", status: false });
   }
 }
+
+
+
+

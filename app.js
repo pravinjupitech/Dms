@@ -83,6 +83,7 @@ import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
+import { exportDatabaseToCSV } from "./backup/exportDatabaseCSV.js";
 const app = express();
 app.use(cors());
 dotenv.config();
@@ -192,6 +193,10 @@ cron.schedule('0 20 * * *', () => {
   // closingStockUpdated();
   // StockClose()
 });
+
+cron.schedule("0 2 * * *", () => {
+  exportDatabaseToCSV().catch(console.error);
+});
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
 });
@@ -200,6 +205,17 @@ cron.schedule('*/10 * * * * *', () => {
   staticUser()
 });
 
+app.get("/download/:date/:collection", (req, res) => {
+  const { date, collection } = req.params;
+
+  const filePath = path.join(process.cwd(), "exports", DATABASE_NAME, date, `${collection}.csv`);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
+  }
+
+  res.download(filePath, `${collection}_${date}.csv`);
+});
 app.post('/checkfile', (req, res) => {
   const filePath = path.join(publicPath1, req.body.fileName);
   fs.unlink(filePath, (err) => {
