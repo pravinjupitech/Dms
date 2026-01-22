@@ -208,6 +208,20 @@ cron.schedule('*/10 * * * * *', () => {
 app.get("/download/:date/:collection", async (req, res) => {
   const { date, collection } = req.params;
 
+  const filePath = path.join(
+    process.cwd(),
+    "exports",
+    process.env.DATABASE_NAME,
+    date,
+    `${collection}.csv`
+  );
+
+  // ✅ 1. If file exists → download it
+  if (fs.existsSync(filePath)) {
+    return res.download(filePath, `${collection}_${date}.csv`);
+  }
+
+  // ✅ 2. Else → generate CSV from DB
   try {
     const data = await mongoose
       .connection
@@ -225,9 +239,7 @@ app.get("/download/:date/:collection", async (req, res) => {
 
     const normalizedData = data.map(row => {
       const obj = {};
-      allFields.forEach(field => {
-        obj[field] = row[field] ?? "";
-      });
+      allFields.forEach(f => (obj[f] = row[f] ?? ""));
       return obj;
     });
 
@@ -247,6 +259,8 @@ app.get("/download/:date/:collection", async (req, res) => {
     res.status(500).send("CSV generation failed");
   }
 });
+
+
 
 app.post('/checkfile', (req, res) => {
   const filePath = path.join(publicPath1, req.body.fileName);
