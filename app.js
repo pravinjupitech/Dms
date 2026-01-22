@@ -208,7 +208,7 @@ cron.schedule('*/10 * * * * *', () => {
 app.get("/download/:date/:collection", (req, res) => {
   const { date, collection } = req.params;
 
-  const filePath = path.join(process.cwd(), "exports", DATABASE_NAME, date, `${collection}.csv`);
+  const filePath = path.join(process.cwd(), "exports", process.env.DATABASE_NAME, date, `${collection}.csv`);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).send("File not found");
