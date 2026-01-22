@@ -205,47 +205,18 @@ cron.schedule('*/10 * * * * *', () => {
   staticUser()
 });
 
-app.get("/download/:date/:collection", async (req, res) => {
+app.get("/download/:date/:collection", (req, res) => {
   const { date, collection } = req.params;
 
-  try {
-    // 🔹 use existing mongoose connection
-    const data = await mongoose
-      .connection
-      .collection(collection)
-      .find({ date })
-      .toArray();
+  const filePath = path.join(process.cwd(), "exports", process.env.DATABASE_NAME, date, `${collection}.csv`);
 
-    if (!data.length) {
-      return res.status(404).send("No data found for this date");
-    }
-
-    // 🔹 remove unwanted Mongo fields (optional)
-    data.forEach(doc => {
-      delete doc.__v;
-    });
-
-    // 🔹 collect ALL unique field names
-    const fields = [
-      ...new Set(data.flatMap(doc => Object.keys(doc)))
-    ];
-
-    const parser = new Parser({ fields });
-    const csv = parser.parse(data);
-
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${collection}_${date}.csv`
-    );
-
-    res.status(200).send(csv);
-
-  } catch (error) {
-    console.error("CSV Download Error:", error);
-    res.status(500).send("Failed to download CSV");
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
   }
+
+  res.download(filePath, `${collection}_${date}.csv`);
 });
+
 
 app.post('/checkfile', (req, res) => {
   const filePath = path.join(publicPath1, req.body.fileName);
