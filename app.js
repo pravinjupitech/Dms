@@ -247,8 +247,6 @@ app.get("/download/:date/:collection", async (req, res) => {
   }
 });
 
-
-
 app.post('/checkfile', (req, res) => {
   const filePath = path.join(publicPath1, req.body.fileName);
   fs.unlink(filePath, (err) => {
