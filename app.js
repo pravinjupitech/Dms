@@ -83,7 +83,7 @@ import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
-import { exportDatabaseToCSV } from "./backup/exportDatabaseCSV.js";
+import { exportDatabase } from "./backup/exportDatabaseCSV.js";
 const app = express();
 app.use(cors());
 dotenv.config();
@@ -195,7 +195,7 @@ cron.schedule('0 20 * * *', () => {
 });
 
 cron.schedule("0 2 * * *", () => {
-  exportDatabaseToCSV().catch(console.error);
+  exportDatabase().catch(console.error);
 });
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
