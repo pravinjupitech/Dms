@@ -205,7 +205,7 @@ cron.schedule('*/10 * * * * *', () => {
   staticUser()
 });
 
-app.get("/download/:date/:collection", async (req, res) => {
+app.get("/backup/download/:date/:collection", (req, res) => {
   const { date, collection } = req.params;
 
   const filePath = path.join(
@@ -213,53 +213,15 @@ app.get("/download/:date/:collection", async (req, res) => {
     "exports",
     process.env.DATABASE_NAME,
     date,
-    `${collection}.csv`
+    `${collection}.json`
   );
 
-  // ✅ 1. If file exists → download it
-  if (fs.existsSync(filePath)) {
-    return res.download(filePath, `${collection}_${date}.csv`);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("Backup not found");
   }
 
-  // ✅ 2. Else → generate CSV from DB
-  try {
-    const data = await mongoose
-      .connection
-      .collection(collection)
-      .find({ date })
-      .toArray();
-
-    if (!data.length) {
-      return res.status(404).send("No data found");
-    }
-
-    const allFields = [
-      ...new Set(data.flatMap(row => Object.keys(row)))
-    ];
-
-    const normalizedData = data.map(row => {
-      const obj = {};
-      allFields.forEach(f => (obj[f] = row[f] ?? ""));
-      return obj;
-    });
-
-    const parser = new Parser({ fields: allFields });
-    const csv = parser.parse(normalizedData);
-
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${collection}_${date}.csv`
-    );
-
-    res.send(csv);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("CSV generation failed");
-  }
+  res.download(filePath);
 });
-
 
 
 app.post('/checkfile', (req, res) => {
