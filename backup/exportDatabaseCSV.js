@@ -48,19 +48,31 @@ export const SaveBackup = async (req, res) => {
     return res.status(403).send("❌ Forbidden: Your IP is not allowed");
   }
 
-  const { date, collection } = req.params;
+  const backupDir = path.join(process.cwd(), "exports", process.env.DATABASE_NAME);
 
-  const filePath = path.join(
-    process.cwd(),
-    "exports",
-    process.env.DATABASE_NAME,
-    date,
-    `${collection}.json`
-  );
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("Backup not found");
+  if (!fs.existsSync(backupDir)) {
+    return res.status(404).send("No backups found");
   }
+
+  const folders = fs.readdirSync(backupDir)
+    .filter(f => fs.statSync(path.join(backupDir, f)).isDirectory())
+    .sort((a, b) => new Date(b) - new Date(a)); 
+
+  if (!folders.length) {
+    return res.status(404).send("No backup folders found");
+  }
+
+  const latestFolder = folders[0];
+  const latestFolderPath = path.join(backupDir, latestFolder);
+
+  const files = fs.readdirSync(latestFolderPath).filter(f => f.endsWith(".json"));
+
+  if (!files.length) {
+    return res.status(404).send("No backup files found");
+  }
+
+  const filePath = path.join(latestFolderPath, files[0]);
+
 
   res.download(filePath);
 };
