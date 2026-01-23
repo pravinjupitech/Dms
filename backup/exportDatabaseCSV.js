@@ -36,3 +36,32 @@ export async function exportDatabase() {
 
   deleteOldBackups(7);
 }
+
+export const SaveBackup = async (req, res) => {
+  const allowedIP = "152.59.49.216"; 
+
+  let clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  if (clientIP.includes(',')) clientIP = clientIP.split(',')[0].trim();
+  if (clientIP.startsWith('::ffff:')) clientIP = clientIP.replace('::ffff:', '');
+
+  if (clientIP !== allowedIP) {
+    return res.status(403).send("❌ Forbidden: Your IP is not allowed");
+  }
+
+  const { date, collection } = req.params;
+
+  const filePath = path.join(
+    process.cwd(),
+    "exports",
+    process.env.DATABASE_NAME,
+    date,
+    `${collection}.json`
+  );
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("Backup not found");
+  }
+
+  res.download(filePath);
+};
+

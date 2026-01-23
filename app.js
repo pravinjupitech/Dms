@@ -83,7 +83,7 @@ import cors from "cors";
 import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
-import { exportDatabase } from "./backup/exportDatabaseCSV.js";
+import { exportDatabase,SaveBackup } from "./backup/exportDatabaseCSV.js";
 const app = express();
 app.use(cors());
 dotenv.config();
@@ -194,8 +194,9 @@ cron.schedule('0 20 * * *', () => {
   // StockClose()
 });
 
-cron.schedule("0 2 * * *", () => {
-  exportDatabase().catch(console.error);
+cron.schedule("0 2 * * *",async() => {
+  await exportDatabase().catch(console.error);
+  await SaveBackup()
 });
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
@@ -205,23 +206,6 @@ cron.schedule('*/10 * * * * *', () => {
   staticUser()
 });
 
-app.get("/backup/download/:date/:collection", (req, res) => {
-  const { date, collection } = req.params;
-
-  const filePath = path.join(
-    process.cwd(),
-    "exports",
-    process.env.DATABASE_NAME,
-    date,
-    `${collection}.json`
-  );
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("Backup not found");
-  }
-
-  res.download(filePath);
-});
 
 
 app.post('/checkfile', (req, res) => {
