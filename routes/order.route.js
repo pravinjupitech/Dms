@@ -1,0 +1,69 @@
+import express from "express";
+import path from "path"
+import multer from "multer";
+import { BalanceGst, CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, HsnOutput, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, outWardStockReport, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn} from "../controller/order.controller.js";
+
+const router = express.Router();
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/Images/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileExtension = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
+    }
+});
+const upload = multer({ storage: storage });
+
+router.post("/save-create-order", createOrder);
+router.post("/save-sales-invoice-order", createOrderWithInvoice);
+router.get("/view-create-order-history/:id", createOrderHistory);
+router.get("/view-create-order-history-by-id/:id", createOrderHistoryByUserId);
+router.delete("/delete-sales-order/:id", deleteSalesOrder)
+router.get("/view-sales-by-id/:id", createOrderHistoryByPartyId);
+router.put("/update-create-order/:id", updateCreateOrder);
+router.put("/update-create-order-status/:id", updateCreateOrderStatus);
+router.post("/order-billing/:id", OrdertoBilling)
+router.post("/order-dispatch/:id", OrdertoDispatch)
+router.post("/order-dispatch-cancel/:id", DispatchOrderCancelFromWarehouse)
+router.get("/sales-order-by-id/:id", createOrderHistoryById)
+router.get("/view-sales-order/:id/:database", SalesOrderList);
+router.get("/view-order-party/:id", ViewOrderHistoryForPartySalesPerson);
+
+router.get("/check-party-limit/:id", checkPartyOrderLimit)
+router.post("/product-sales-report/:database", ProductWiseSalesReport)
+
+router.delete("/delete-sales/:id", deletedSalesOrder)
+router.delete("/delete-multiple",deletedSalesOrderMultiple)
+router.get("/party-qty/:partyId/:productId", PartyPurchaseqty)
+
+// --------------------------------------------------------------
+router.get("/sales-calculated/:database/:id", SalesOrderCalculate)
+router.get("/debitor-calculate/:database", DebitorCalculate)
+router.get("/testing/:database", CheckPartyPayment)
+router.post("/send-invoice",upload.single("invoice"),invoicePartySend)
+router.put("/update-arn/:id",updateOrderArn)
+router.put("/update-cndetails/:id",upload.single("CNImage"),updateCNDetails)
+router.get("/view-invoice-data/:database/:invoiceId",InvoiceIdFrom)
+router.post("/hsn-wise-sale-reportb2b",hsnWiseSaleReportB2B)
+router.post("/hsn-wise-sale-reportb2c",hsnWiseSaleReportB2C)
+router.get("/gst-output/:database",gstOutputReport)
+router.get("/view-complete-order/:database",completeSalesOrder)
+router.get("/view-dashboard/:database",dashboardSales)
+router.get("/dashboard-gstoutput/:database",dashboardGstOutput)
+router.get("/dashboard-lastmonth/:database",lastMonthSale)
+router.get("/dashboard-currentmonth/:database",currentMonthSale)
+router.get("/dashboard-averagemonth/:database",averageSinceFirstOrder)
+router.get("/dashboard-totalSale/:database",dashboardTotalSales)
+router.get("/dashboard-order/:database",countOrder)
+router.get("/dashboard-pendingorder/:database",countPendingOrder)
+router.get("/dashboard-readytodispatchorder/:database",countReadytoDispatchOrder)
+router.get("/dashboard-outofdeliveryorder/:database",countOutOfDeliveryOrder)
+router.get("/dashboard-completedorder/:database",countCompletedOrder)
+router.get("/dashboard-cancelled/:database",countCancelledOrder)
+router.get("/outward-stock-report/:database",outWardStockReport)
+router.get("/dashboard-balance-gst/:database",BalanceGst)
+router.get("/dashboard-hsn-output/:database",HsnOutput)
+
+export default router;

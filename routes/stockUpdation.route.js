@@ -1,0 +1,38 @@
+import express from "express";
+import { InvertReport, OutwordReport, OverDuePartyCounter, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewDeadPartyCount, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
+
+const router = express.Router();
+
+router.post("/stock-transfer-warehouse", stockTransferToWarehouse)
+router.get("/view-in-ward-stock/:id", viewInWardStockToWarehouse)
+router.get("/view-out-ward-stock/:id", viewOutWardStockToWarehouse)
+
+router.get("/view-warehouse-stock/:database", viewWarehouseStock)
+router.put("/update-warehoue-to-warehouse/:id", updateWarehousetoWarehouse)
+router.get("/product-list/:id", viewProductInWarehouse)
+
+//-------------------------------------
+router.post("/save-damage-item", saveDamageItem);
+router.get("/get-damage-item/:id", getDamageItems);
+router.put("/update-damageItem/:warehouseId/:damageItemId", updateDamageItem)
+router.delete("/delete-item/:warehouseId/:damageItemId", deletedamageItem);
+router.put("/update-status/:id", updateTypeStatus)
+//---------------------------------------------------------
+router.post("/save-short-item", saveShortItem);
+router.get("/get-short-item/:id", getShortItems);
+
+//--------------------------------------------------------
+router.get("/all-warehouse", ViewAllWarehouse)
+router.get("/view-closing-stock/:database", viewStockClosingWarehouse)
+router.get("/view-opening-stock/:database", viewOpeningStockWarehouse)
+router.get("/view-over-due-stock/:database", ViewOverDueStock)
+router.get("/view-dead-party/:id/:database", ViewDeadParty)
+router.get("/stock-data/:database",stockReport)
+router.get("/invert-report/:database",InvertReport)
+router.get("/outword-report/:database",OutwordReport)
+router.get("/testing", ViewAllWarehouse1)
+router.get("/dashboard-stock/:database",dashboardStockReport)
+router.get("/dead-parties-dashboard/:database",ViewDeadPartyCount)
+router.get("/lock-parties-dashboard/:database",OverDuePartyCounter)
+
+export default router;
