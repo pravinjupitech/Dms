@@ -9,6 +9,28 @@ const MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = process.env.DATABASE_NAME;
 const BACKUP_DIR = path.join(process.cwd(), "exports", DB_NAME);
 
+function deleteOldBackups(daysToKeep = 7) {
+  if (!fs.existsSync(BACKUP_DIR)) return;
+
+  const folders = fs.readdirSync(BACKUP_DIR)
+    .map(folder => ({
+      name: folder,
+      path: path.join(BACKUP_DIR, folder),
+      time: new Date(folder).getTime()
+    }))
+    .filter(f => !isNaN(f.time))
+    .sort((a, b) => a.time - b.time);
+
+  const cutoff = Date.now() - daysToKeep * 24 * 60 * 60 * 1000;
+
+  for (const folder of folders) {
+    if (folder.time < cutoff) {
+      fs.rmSync(folder.path, { recursive: true, force: true });
+      console.log(`🗑️ Deleted old backup: ${folder.name}`);
+    }
+  }
+}
+
 export async function exportDatabase() {
   const client = new MongoClient(MONGO_URI);
   await client.connect();
