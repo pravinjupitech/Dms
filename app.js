@@ -84,6 +84,7 @@ import { increasePercentage } from "./controller/targetCreation.controller.js";
 import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
 import { exportDatabase,SaveBackup } from "./backup/exportDatabaseCSV.js";
+import companySalesTargetRouter from "./controller/companyTargetSales.controller.js"
 const app = express();
 app.use(cors());
 dotenv.config();
@@ -180,6 +181,8 @@ app.use("/visit",VisitRouter)
 app.use("/visitpoint",VisitPointRouter)
 app.use("/activity",ActivityRouter)
 app.use("/customer-payment",CustomerPaymentRouter)
+app.use("/company-sales-targets", companySalesTargetRouter);
+
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
