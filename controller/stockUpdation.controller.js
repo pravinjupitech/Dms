@@ -112,6 +112,126 @@ export const viewOutWardStockToWarehouse = async (req, res, next) => {
 //     }
 // };
 
+// export const stockTransferToWarehouse = async (req, res) => {
+//     try {
+//         const {
+//             created_by,
+//             warehouseFromId,
+//             warehouseToId,
+//             stockTransferDate,
+//             productItems,
+//             grandTotal,
+//             transferStatus,
+//             InwardStatus,
+//             OutwardStatus
+//         } = req.body;
+
+//         const warehouseFrom = await Warehouse.findById(warehouseFromId);
+//         if (!warehouseFrom) {
+//             return res.status(400).json({
+//                 message: "Warehouse From Not Found",
+//                 status: false
+//             });
+//         }
+
+//         const warehouseTo = await Warehouse.findById(warehouseToId);
+//         if (!warehouseTo) {
+//             return res.status(400).json({
+//                 message: "Warehouse To Not Found",
+//                 status: false
+//             });
+//         }
+
+//         const warehouseno = await warehouseNo(warehouseFrom.database);
+//         warehouseFrom.warehouseNo = warehouseFrom.id + warehouseno;
+
+//         for (const item of productItems) {
+
+//             const fromProduct = warehouseFrom.productItems.find(
+//                 (p) => p.productId?.toString() === item.fromProductId?.toString()
+//             );
+
+//             if (!fromProduct) {
+//                 return res.status(400).json({
+//                     error: "Product not found in source warehouse"
+//                 });
+//             }
+
+//             if (fromProduct.currentStock < item.transferQty) {
+//                 return res.status(400).json({
+//                     error: "Insufficient stock"
+//                 });
+//             }
+//             const product = await Product.findById(item?.fromProductId)
+//             if (product) {
+//                 product.qty -= item.transferQty;
+//                 await product.save()
+//             }
+//             fromProduct.currentStock -= item.transferQty;
+//             fromProduct.pendingStock += item.transferQty;
+//             fromProduct.totalPrice -= item.totalPrice;
+
+//             let toProduct = warehouseTo.productItems.find(
+//                 (p) => p.productId?.toString() === item.toProductId?.toString()
+//             );
+
+//             if (toProduct) {
+//                 const product = await Product.findById(item?.toProductId)
+//                 if (product) {
+//                     product.qty += item.transferQty;
+//                     await product.save()
+//                 }
+//                 toProduct.currentStock += item.transferQty;
+//                 toProduct.totalPrice += item.totalPrice;
+//                 toProduct.price = item.price;
+//             } else {
+//                 warehouseTo.productItems.push({
+//                     productId: item.toProductId,
+//                     currentStock: item.transferQty,
+//                     pendingStock: 0,
+//                     price: item.price,
+//                     totalPrice: item.totalPrice,
+//                     primaryUnit: item.primaryUnit
+//                 });
+//             }
+//         }
+
+//         warehouseFrom.markModified("productItems");
+//         warehouseTo.markModified("productItems");
+
+//         await warehouseFrom.save();
+//         await warehouseTo.save();
+
+//         const stockTransfer = new StockUpdation({
+//             created_by,
+//             warehouseFromId,
+//             warehouseToId,
+//             stockTransferDate,
+//             productItems,
+//             grandTotal,
+//             transferStatus,
+//             InwardStatus,
+//             OutwardStatus,
+//             database: warehouseFrom.database,
+//             warehouseNo: warehouseFrom.warehouseNo
+//         });
+
+//         await stockTransfer.save();
+
+//         return res.status(201).json({
+//             message: "Stock transferred successfully",
+//             status: true
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             error: "Internal Server Error",
+//             status: false
+//         });
+//     }
+// };
+
 export const stockTransferToWarehouse = async (req, res) => {
   try {
     const {
@@ -119,14 +239,25 @@ export const stockTransferToWarehouse = async (req, res) => {
       warehouseFromId,
       warehouseToId,
       stockTransferDate,
-      productItems,
+      productItems = [],
       grandTotal,
       transferStatus,
       InwardStatus,
       OutwardStatus
     } = req.body;
 
-    const warehouseFrom = await Warehouse.findById(warehouseFromId);
+    if (!warehouseFromId || !warehouseToId || !productItems.length) {
+      return res.status(400).json({
+        message: "Missing required fields",
+        status: false
+      });
+    }
+
+    const [warehouseFrom, warehouseTo] = await Promise.all([
+      Warehouse.findById(warehouseFromId),
+      Warehouse.findById(warehouseToId)
+    ]);
+
     if (!warehouseFrom) {
       return res.status(400).json({
         message: "Warehouse From Not Found",
@@ -134,7 +265,6 @@ export const stockTransferToWarehouse = async (req, res) => {
       });
     }
 
-    const warehouseTo = await Warehouse.findById(warehouseToId);
     if (!warehouseTo) {
       return res.status(400).json({
         message: "Warehouse To Not Found",
@@ -143,12 +273,20 @@ export const stockTransferToWarehouse = async (req, res) => {
     }
 
     const warehouseno = await warehouseNo(warehouseFrom.database);
-    warehouseFrom.warehouseNo = warehouseFrom.id + warehouseno;
+    warehouseFrom.warehouseNo = `${warehouseFrom.id}${warehouseno}`;
 
     for (const item of productItems) {
+      const {
+        fromProductId,
+        toProductId,
+        transferQty,
+        totalPrice,
+        price,
+        primaryUnit
+      } = item;
 
       const fromProduct = warehouseFrom.productItems.find(
-        (p) => p.productId?.toString() === item.fromProductId?.toString()
+        p => p.productId?.toString() === fromProductId?.toString()
       );
 
       if (!fromProduct) {
@@ -157,32 +295,48 @@ export const stockTransferToWarehouse = async (req, res) => {
         });
       }
 
-      if (fromProduct.currentStock < item.transferQty) {
+      if (fromProduct.currentStock < transferQty) {
         return res.status(400).json({
           error: "Insufficient stock"
         });
       }
 
-      fromProduct.currentStock -= item.transferQty;
-      fromProduct.pendingStock += item.transferQty;
-      fromProduct.totalPrice -= item.totalPrice;
+      /** Update main product (FROM) */
+      const fromMainProduct = await Product.findById(fromProductId);
+      if (fromMainProduct) {
+        fromMainProduct.qty -= transferQty;
+        await fromMainProduct.save();
+      }
 
+      /** Update source warehouse stock */
+      fromProduct.currentStock -= transferQty;
+      fromProduct.pendingStock += transferQty;
+      fromProduct.totalPrice -= totalPrice;
+
+      /** Handle destination warehouse product */
       let toProduct = warehouseTo.productItems.find(
-        (p) => p.productId?.toString() === item.toProductId?.toString()
+        p => p.productId?.toString() === toProductId?.toString()
       );
 
+      /** Update main product (TO) */
+      const toMainProduct = await Product.findById(toProductId);
+      if (toMainProduct) {
+        toMainProduct.qty += transferQty;
+        await toMainProduct.save();
+      }
+
       if (toProduct) {
-        toProduct.currentStock += item.transferQty;
-        toProduct.totalPrice += item.totalPrice;
-        toProduct.price = item.price;
+        toProduct.currentStock += transferQty;
+        toProduct.totalPrice += totalPrice;
+        toProduct.price = price;
       } else {
         warehouseTo.productItems.push({
-          productId: item.toProductId,
-          currentStock: item.transferQty,
+          productId: toProductId,
+          currentStock: transferQty,
           pendingStock: 0,
-          price: item.price,
-          totalPrice: item.totalPrice,
-          primaryUnit: item.primaryUnit
+          price,
+          totalPrice,
+          primaryUnit
         });
       }
     }
@@ -190,8 +344,10 @@ export const stockTransferToWarehouse = async (req, res) => {
     warehouseFrom.markModified("productItems");
     warehouseTo.markModified("productItems");
 
-    await warehouseFrom.save();
-    await warehouseTo.save();
+    await Promise.all([
+      warehouseFrom.save(),
+      warehouseTo.save()
+    ]);
 
     const stockTransfer = new StockUpdation({
       created_by,
@@ -215,14 +371,13 @@ export const stockTransferToWarehouse = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Stock Transfer Error:", error);
     return res.status(500).json({
       error: "Internal Server Error",
       status: false
     });
   }
 };
-
 
 export const viewWarehouseStock = async (req, res) => {
     try {
@@ -814,110 +969,110 @@ export const ViewDeadParty = async (req, res, next) => {
 
 
 export const OverDuePartyCounter = async (req, res) => {
-  try {
-    const database = req.params.database;
-    const today = new Date();
+    try {
+        const database = req.params.database;
+        const today = new Date();
 
-    const customers = await Customer.find({
-      database,
-      status: "Active"
-    }).select("_id OpeningBalance Type lockInTime");
+        const customers = await Customer.find({
+            database,
+            status: "Active"
+        }).select("_id OpeningBalance Type lockInTime");
 
-    let overDueCount = 0;
+        let overDueCount = 0;
 
-    for (const customer of customers) {
-      const partyId = customer._id;
+        for (const customer of customers) {
+            const partyId = customer._id;
 
-      if (!partyId || !mongoose.Types.ObjectId.isValid(partyId)) continue;
+            if (!partyId || !mongoose.Types.ObjectId.isValid(partyId)) continue;
 
-      const ledgerRes = await Ledger.find({ partyId }).sort({ date: 1 });
+            const ledgerRes = await Ledger.find({ partyId }).sort({ date: 1 });
 
-      let totalDebit = 0;
-      let totalCredit = 0;
+            let totalDebit = 0;
+            let totalCredit = 0;
 
-      for (const entry of ledgerRes) {
-        if (entry.debit) totalDebit += entry.debit;
-        if (entry.credit) totalCredit += entry.credit;
-      }
+            for (const entry of ledgerRes) {
+                if (entry.debit) totalDebit += entry.debit;
+                if (entry.credit) totalCredit += entry.credit;
+            }
 
-      const openingBalance = Number(customer.OpeningBalance) || 0;
-      const openingType = customer.Type?.toLowerCase();
+            const openingBalance = Number(customer.OpeningBalance) || 0;
+            const openingType = customer.Type?.toLowerCase();
 
-      if (openingBalance > 0) {
-        if (openingType === "debit") totalDebit += openingBalance;
-        else if (openingType === "credit") totalCredit += openingBalance;
-      }
+            if (openingBalance > 0) {
+                if (openingType === "debit") totalDebit += openingBalance;
+                else if (openingType === "credit") totalCredit += openingBalance;
+            }
 
-      const closingBalance = totalDebit - totalCredit;
+            const closingBalance = totalDebit - totalCredit;
 
-      const { overDueDays } = await calculateDueAndOverdueDays(ledgerRes, customer.lockInTime || 0, closingBalance);
+            const { overDueDays } = await calculateDueAndOverdueDays(ledgerRes, customer.lockInTime || 0, closingBalance);
 
-      if (overDueDays > 0) {
-        overDueCount++;
-      }
+            if (overDueDays > 0) {
+                overDueCount++;
+            }
+        }
+
+        return res.status(200).json({
+            status: true,
+            count: overDueCount
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error"
+        });
     }
-
-    return res.status(200).json({
-      status: true,
-      count: overDueCount
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      status: false,
-      message: "Internal Server Error"
-    });
-  }
 };
 
 async function calculateDueAndOverdueDays(ledgerRes, lockInTime, closing) {
-  const today = new Date();
+    const today = new Date();
 
-  if (closing < 0) return { dueDays: 0, overDueDays: 0 };
+    if (closing < 0) return { dueDays: 0, overDueDays: 0 };
 
-  const debits = [];
-  const credits = [];
+    const debits = [];
+    const credits = [];
 
-  if (Array.isArray(ledgerRes)) {
-    ledgerRes.forEach(entry => {
-      const entryDate = entry.date ? new Date(entry.date) : null;
-      if (entry.debit && entryDate) debits.push({ amount: entry.debit, date: entryDate });
-      if (entry.credit && entryDate) credits.push({ amount: entry.credit, date: entryDate });
-    });
-  }
-
-  debits.sort((a, b) => a.date - b.date);
-  credits.sort((a, b) => a.date - b.date);
-
-  let unpaidDebits = [...debits];
-
-  for (const credit of credits) {
-    let creditAmount = credit.amount;
-    while (creditAmount > 0 && unpaidDebits.length > 0) {
-      const firstDebit = unpaidDebits[0];
-      if (creditAmount >= firstDebit.amount) {
-        creditAmount -= firstDebit.amount;
-        unpaidDebits.shift();
-      } else {
-        firstDebit.amount -= creditAmount;
-        creditAmount = 0;
-      }
+    if (Array.isArray(ledgerRes)) {
+        ledgerRes.forEach(entry => {
+            const entryDate = entry.date ? new Date(entry.date) : null;
+            if (entry.debit && entryDate) debits.push({ amount: entry.debit, date: entryDate });
+            if (entry.credit && entryDate) credits.push({ amount: entry.credit, date: entryDate });
+        });
     }
-  }
 
-  if (unpaidDebits.length > 0) {
-    const lastUnpaid = unpaidDebits[0];
-    const dueDate = new Date(lastUnpaid.date);
-    dueDate.setDate(dueDate.getDate() + lockInTime);
+    debits.sort((a, b) => a.date - b.date);
+    credits.sort((a, b) => a.date - b.date);
 
-    const diff = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
-    const dueDays = diff > 0 ? diff : 0;
-    const overDueDays = diff < 0 ? Math.abs(diff) : 0;
-    return { dueDays, overDueDays };
-  }
+    let unpaidDebits = [...debits];
 
-  return { dueDays: 0, overDueDays: 0 };
+    for (const credit of credits) {
+        let creditAmount = credit.amount;
+        while (creditAmount > 0 && unpaidDebits.length > 0) {
+            const firstDebit = unpaidDebits[0];
+            if (creditAmount >= firstDebit.amount) {
+                creditAmount -= firstDebit.amount;
+                unpaidDebits.shift();
+            } else {
+                firstDebit.amount -= creditAmount;
+                creditAmount = 0;
+            }
+        }
+    }
+
+    if (unpaidDebits.length > 0) {
+        const lastUnpaid = unpaidDebits[0];
+        const dueDate = new Date(lastUnpaid.date);
+        dueDate.setDate(dueDate.getDate() + lockInTime);
+
+        const diff = Math.floor((dueDate - today) / (1000 * 60 * 60 * 24));
+        const dueDays = diff > 0 ? diff : 0;
+        const overDueDays = diff < 0 ? Math.abs(diff) : 0;
+        return { dueDays, overDueDays };
+    }
+
+    return { dueDays: 0, overDueDays: 0 };
 }
 
 
