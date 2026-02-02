@@ -85,6 +85,7 @@ import customerCheckRouter from "./routes/customerCheck.route.js";
 import { StockClose } from "./controller/warehouse.controller.js";
 import { exportDatabase,SaveBackup } from "./backup/exportDatabaseCSV.js";
 import companyTargetSalesRouter from "./routes/companyTargetSales.route.js"
+import combinedTargetRouter from "./routes/combinedTarget.route.js"
 const app = express();
 app.use(cors());
 dotenv.config();
@@ -182,7 +183,7 @@ app.use("/visitpoint",VisitPointRouter)
 app.use("/activity",ActivityRouter)
 app.use("/customer-payment",CustomerPaymentRouter)
 app.use("/company-sales-targets", companyTargetSalesRouter);
-
+app.use("/hierarchy-wise-targets",combinedTargetRouter)
 mongoose.connect(process.env.DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, })
   .then(() => {
     console.log("DB CONNECTED SUCCEFULLY");
