@@ -1,6 +1,5 @@
 
 import { CompanySalesTarget } from "../model/companyTargetSales.model.js";
-
 export const getCompanySalesTarget = async (req, res) => {
   try {
     const fy = req.query.fy;
