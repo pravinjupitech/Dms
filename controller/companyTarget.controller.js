@@ -29,7 +29,8 @@ export const saveCompanyTarget = async (req, res) => {
 
     const salesManagerss = await User.find({ database }).populate({ path: "rolename", model: "role" });
     const salesManagers=salesManagerss.filter((item)=>item?.rolename?.roleName==="Sales Manager")
-    if (salesManagers.length>0) {
+    console.log(salesManagers)
+    if (!salesManagers.length) {
       return res.status(400).json({
         success: false,
         message: "No Sales Managers found"
