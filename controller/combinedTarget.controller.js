@@ -291,18 +291,103 @@
 
 
 // controllers/customerTargetController.js
+import { AssignRole } from "../model/assignRoleToDepartment.model.js";
 import CustomerTarget from "../model/combinedTarget.model.js";
-import {Customer} from "../model/customer.model.js";
-import {User} from "../model/user.model.js";
+import { Customer } from "../model/customer.model.js";
+import { User } from "../model/user.model.js";
 import { FY_MONTHS } from "../utils/fyMonths.js";
 import mongoose from "mongoose";
 
 const FY_MONTHS_ORDER = [
-  "April", "May", "June",
-  "July", "August", "September",
-  "October", "November", "December",
-  "January", "February", "March"
+    "April", "May", "June",
+    "July", "August", "September",
+    "October", "November", "December",
+    "January", "February", "March"
 ];
+
+// export const setCustomerTarget = async (req, res) => {
+//     try {
+//         const { customerId, financialYear, startMonth, products, database } = req.body;
+
+//         if (!customerId || !financialYear || !startMonth || !products || !database) {
+//             return res.status(400).json({ message: "All fields are required" });
+//         }
+
+//         const customer = await Customer.findById(customerId);
+//         if (!customer) return res.status(404).json({ message: "Customer not found" });
+//         const department = await AssignRole.find({ database })
+//             .populate({ path: "departmentName", model: "department" })
+//             .populate({ path: "roles.roleId", model: "role" })
+//             .sort({ sortorder: -1 });
+
+//        const salesRoles =
+//   department.find(
+//     item => item?.departmentName?.departmentName?.toLowerCase() === "sales"
+//   )?.roles || [];
+//   console.log("sales",salesRoles)
+
+//         const salesPersonId = customer.created_by;
+//         const salesPerson = await User.findById(salesPersonId);
+//         if (!salesPerson) return res.status(404).json({ message: "Sales person not found" });
+
+//         const salesManagerId = salesPerson.created_by;
+
+//         // Delete existing target for this customer, database & year
+//         await CustomerTarget.deleteMany({ customerId, financialYear, database });
+
+//         // Initialize grandTotal map and product monthly totals
+//         let amount = 0;
+//         const grandTotalPerMonth = {};
+//         const productData = products.map(p => ({
+//             productId: p.productId,
+//             monthlyQty: {},
+//             monthlyPrice: {},
+//             monthlyTotal: {}
+//         }));
+
+//         const startIndex = FY_MONTHS.indexOf(startMonth);
+
+//         for (let i = startIndex; i < FY_MONTHS.length; i++) {
+//             const month = FY_MONTHS[i];
+
+//             // Calculate total for this month
+//             let monthTotal = 0;
+//             productData.forEach((prod, idx) => {
+//                 const qty = products[idx].qtyAssign;
+//                 const price = products[idx].price;
+//                 const total = qty * price;
+//                 prod.monthlyQty[month] = qty;
+//                 prod.monthlyPrice[month] = price;
+//                 prod.monthlyTotal[month] = total;
+//                 monthTotal += total;
+//             });
+
+//             grandTotalPerMonth[month] = Math.round(monthTotal);
+
+//             // Increase amount by 10% for next month
+//             products.forEach((p) => (p.price = p.price * 1.1));
+//         }
+
+//         // Create single document
+//         // await CustomerTarget.create({
+//         //     customerId,
+//         //     salesPersonId,
+//         //     salesManagerId,
+//         //     financialYear,
+//         //     database,
+//         //     products: productData,
+//         //     grandTotalPerMonth,
+//         //     //   created_by: req.user._id
+//         // });
+
+//         res.status(200).json({ message: "Customer target saved in a single document successfully" });
+
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
+
+
 
 export const setCustomerTarget = async (req, res) => {
   try {
@@ -315,18 +400,34 @@ export const setCustomerTarget = async (req, res) => {
     const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    const salesPersonId = customer.created_by;
-    const salesPerson = await User.findById(salesPersonId);
-    if (!salesPerson) return res.status(404).json({ message: "Sales person not found" });
+    // Fetch sales roles
+    const departments = await AssignRole.find({ database })
+      .populate({ path: "departmentName", model: "department" })
+      .populate({ path: "roles.roleId", model: "role" });
 
-    const salesManagerId = salesPerson.created_by;
+    const salesRoles = departments.find(
+      dep => dep?.departmentName?.departmentName?.toLowerCase() === "sales"
+    )?.roles || [];
 
-    // Delete existing target for this customer, database & year
-    await CustomerTarget.deleteMany({ customerId, financialYear, database });
+    // Sort roles from bottom to top (higher rolePosition = closer to bottom)
+    salesRoles.sort((a, b) => b.rolePosition - a.rolePosition);
 
-    // Initialize grandTotal map and product monthly totals
-    let amount = 0;
-    const grandTotalPerMonth = {};
+    // Prepare dynamic role keys
+    const roleKeys = salesRoles.map(r =>
+      r.roleId.roleName.replace(/\s+/g, '').replace(/^\w/, c => c.toLowerCase()) + 'Id'
+    );
+
+    // Assign roles dynamically bottom-to-top, skipping the customer itself
+    const rolesObj = {};
+    let currentUser = customer.created_by ? await User.findById(customer.created_by) : null;
+
+    // Skip the first roleKey if it represents the customer itself
+    for (let i = 1; i < roleKeys.length; i++) {
+      rolesObj[roleKeys[i]] = currentUser?._id || null;
+      currentUser = currentUser?.created_by ? await User.findById(currentUser.created_by) : null;
+    }
+
+    // Prepare product and monthly totals
     const productData = products.map(p => ({
       productId: p.productId,
       monthlyQty: {},
@@ -334,122 +435,329 @@ export const setCustomerTarget = async (req, res) => {
       monthlyTotal: {}
     }));
 
+    const grandTotalPerMonth = {};
     const startIndex = FY_MONTHS.indexOf(startMonth);
 
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const month = FY_MONTHS[i];
-
-      // Calculate total for this month
       let monthTotal = 0;
+
       productData.forEach((prod, idx) => {
         const qty = products[idx].qtyAssign;
         const price = products[idx].price;
         const total = qty * price;
+
         prod.monthlyQty[month] = qty;
         prod.monthlyPrice[month] = price;
         prod.monthlyTotal[month] = total;
+
         monthTotal += total;
       });
 
       grandTotalPerMonth[month] = Math.round(monthTotal);
 
-      // Increase amount by 10% for next month
-      products.forEach((p) => (p.price = p.price * 1.1));
+      // Increase price by 10% for next month
+      products.forEach(p => p.price = p.price * 1.1);
     }
 
-    // Create single document
-    await CustomerTarget.create({
-      customerId,
-      salesPersonId,
-      salesManagerId,
-      financialYear,
-      database,
-      products: productData,
-      grandTotalPerMonth,
-    //   created_by: req.user._id
+    // ✅ Upsert without including customerId inside roles
+    const customerTarget = await CustomerTarget.findOneAndUpdate(
+      { customerId, financialYear, database },
+      {
+        $set: {
+          products: productData,
+          grandTotalPerMonth,
+          roles: rolesObj, // only upper roles
+          created_by: req.user?._id
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({
+      message: "Customer target saved/updated successfully with only upper hierarchy roles",
+      data: customerTarget
     });
 
-    res.status(200).json({ message: "Customer target saved in a single document successfully" });
-
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
+
+
+// export const updateCustomerTarget = async (req, res) => {
+//     try {
+//         const { customerId, financialYear, products, database } = req.body;
+
+//         if (!customerId || !financialYear || !products || !database) {
+//             return res.status(400).json({ message: "All fields are required" });
+//         }
+
+//         const customer = await Customer.findById(customerId);
+//         if (!customer) return res.status(404).json({ message: "Customer not found" });
+
+//         const salesPersonId = customer.created_by;
+//         const salesPerson = await User.findById(salesPersonId);
+//         if (!salesPerson) return res.status(404).json({ message: "Sales person not found" });
+
+//         const salesManagerId = salesPerson.created_by;
+
+//         // Find existing target
+//         let customerTarget = await CustomerTarget.findOne({ customerId, financialYear, database });
+//         if (!customerTarget) {
+//             return res.status(404).json({ message: "Customer target not found. Create it first." });
+//         }
+
+//         // Determine current month automatically
+//         const now = new Date();
+//         const currentMonthName = FY_MONTHS_ORDER[now.getMonth()]; // JS months 0-11
+//         const startIndex = FY_MONTHS_ORDER.indexOf(currentMonthName);
+
+//         const grandTotalPerMonth = { ...customerTarget.grandTotalPerMonth };
+
+//         // Update product data
+//         const productData = customerTarget.products.map((prod) => {
+//             const updatedProduct = products.find(p => p.productId.toString() === prod.productId.toString());
+//             if (!updatedProduct) return prod;
+
+//             FY_MONTHS_ORDER.forEach((month, idx) => {
+//                 if (idx < startIndex) {
+//                     // Past months remain unchanged
+//                     prod.monthlyQty[month] = prod.monthlyQty[month];
+//                     prod.monthlyPrice[month] = prod.monthlyPrice[month];
+//                     prod.monthlyTotal[month] = prod.monthlyTotal[month];
+//                     grandTotalPerMonth[month] = customerTarget.grandTotalPerMonth[month];
+//                 } else {
+//                     // Current and future months
+//                     const prevPrice = idx === startIndex
+//                         ? updatedProduct.price
+//                         : prod.monthlyPrice[FY_MONTHS_ORDER[idx - 1]] * 1.1;
+
+//                     const qty = updatedProduct.qtyAssign;
+//                     const total = qty * prevPrice;
+
+//                     prod.monthlyQty[month] = qty;
+//                     prod.monthlyPrice[month] = parseFloat(prevPrice.toFixed(2)); // keep 2 decimals
+//                     prod.monthlyTotal[month] = Math.round(total);
+
+//                     grandTotalPerMonth[month] = Math.round(total); // replace, not add
+//                 }
+//             });
+
+//             return prod;
+//         });
+
+//         customerTarget.products = productData;
+//         customerTarget.grandTotalPerMonth = grandTotalPerMonth;
+//         customerTarget.salesManagerId = salesManagerId;
+//         // customerTarget.updated_by = req.user._id;
+
+//         await customerTarget.save();
+
+//         res.status(200).json({ message: "Customer target updated successfully" });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
 export const updateCustomerTarget = async (req, res) => {
   try {
-    const { customerId, financialYear, products, database } = req.body;
+    const { customerId, financialYear, startMonth, products, database } = req.body;
 
-    if (!customerId || !financialYear || !products || !database) {
+    if (!customerId || !financialYear || !products || !database || !startMonth) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    // Fetch customer
     const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    const salesPersonId = customer.created_by;
-    const salesPerson = await User.findById(salesPersonId);
-    if (!salesPerson) return res.status(404).json({ message: "Sales person not found" });
+    // Fetch sales roles
+    const departments = await AssignRole.find({ database })
+      .populate({ path: "departmentName", model: "department" })
+      .populate({ path: "roles.roleId", model: "role" });
 
-    const salesManagerId = salesPerson.created_by;
+    const salesRoles = departments.find(
+      dep => dep?.departmentName?.departmentName?.toLowerCase() === "sales"
+    )?.roles || [];
 
-    // Find existing target
-    let customerTarget = await CustomerTarget.findOne({ customerId, financialYear, database });
-    if (!customerTarget) {
-      return res.status(404).json({ message: "Customer target not found. Create it first." });
+    // Sort roles bottom-to-top (higher rolePosition = bottom)
+    salesRoles.sort((a, b) => b.rolePosition - a.rolePosition);
+
+    // Prepare dynamic role keys
+    const roleKeys = salesRoles.map(r =>
+      r.roleId.roleName.replace(/\s+/g, '').replace(/^\w/, c => c.toLowerCase()) + 'Id'
+    );
+
+    // Assign roles dynamically (skip customer itself)
+    const rolesObj = {};
+    let currentUser = customer.created_by ? await User.findById(customer.created_by) : null;
+    for (let i = 1; i < roleKeys.length; i++) {
+      rolesObj[roleKeys[i]] = currentUser?._id || null;
+      currentUser = currentUser?.created_by ? await User.findById(currentUser.created_by) : null;
     }
 
-    // Determine current month automatically
-    const now = new Date();
-    const currentMonthName = FY_MONTHS_ORDER[now.getMonth()]; // JS months 0-11
-    const startIndex = FY_MONTHS_ORDER.indexOf(currentMonthName);
+    // Fetch existing target
+    let customerTarget = await CustomerTarget.findOne({ customerId, financialYear, database });
 
-    const grandTotalPerMonth = { ...customerTarget.grandTotalPerMonth };
+    const startIndex = FY_MONTHS.indexOf(startMonth);
 
-    // Update product data
-    const productData = customerTarget.products.map((prod) => {
-      const updatedProduct = products.find(p => p.productId.toString() === prod.productId.toString());
-      if (!updatedProduct) return prod;
+    // Prepare updated product data
+    const productData = (products || []).map(p => ({
+      productId: p.productId,
+      monthlyQty: {},
+      monthlyPrice: {},
+      monthlyTotal: {}
+    }));
 
-      FY_MONTHS_ORDER.forEach((month, idx) => {
-        if (idx < startIndex) {
-          // Past months remain unchanged
-          prod.monthlyQty[month] = prod.monthlyQty[month];
-          prod.monthlyPrice[month] = prod.monthlyPrice[month];
-          prod.monthlyTotal[month] = prod.monthlyTotal[month];
-          grandTotalPerMonth[month] = customerTarget.grandTotalPerMonth[month];
-        } else {
-          // Current and future months
-          const prevPrice = idx === startIndex 
-            ? updatedProduct.price 
-            : prod.monthlyPrice[FY_MONTHS_ORDER[idx - 1]] * 1.1;
+    const grandTotalPerMonth = {};
 
-          const qty = updatedProduct.qtyAssign;
-          const total = qty * prevPrice;
+    for (let i = startIndex; i < FY_MONTHS.length; i++) {
+      const month = FY_MONTHS[i];
+      let monthTotal = 0;
 
-          prod.monthlyQty[month] = qty;
-          prod.monthlyPrice[month] = parseFloat(prevPrice.toFixed(2)); // keep 2 decimals
-          prod.monthlyTotal[month] = Math.round(total);
+      productData.forEach((prod, idx) => {
+        const qty = products[idx].qtyAssign;
+        const price = products[idx].price;
+        const total = qty * price;
 
-          grandTotalPerMonth[month] = Math.round(total); // replace, not add
-        }
+        prod.monthlyQty[month] = qty;
+        prod.monthlyPrice[month] = price;
+        prod.monthlyTotal[month] = total;
+
+        monthTotal += total;
       });
 
-      return prod;
+      grandTotalPerMonth[month] = Math.round(monthTotal);
+
+      // Increase price 10% for next month
+      products.forEach(p => p.price = p.price * 1.1);
+    }
+
+    // Upsert target
+    customerTarget = await CustomerTarget.findOneAndUpdate(
+      { customerId, financialYear, database },
+      {
+        $set: {
+          products: productData,
+          grandTotalPerMonth,
+          roles: rolesObj, // only upper hierarchy roles
+          created_by: req.user?._id
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({
+      message: "Customer target updated successfully with upper hierarchy roles",
+      data: customerTarget
     });
 
-    customerTarget.products = productData;
-    customerTarget.grandTotalPerMonth = grandTotalPerMonth;
-    customerTarget.salesManagerId = salesManagerId;
-    // customerTarget.updated_by = req.user._id;
-
-    await customerTarget.save();
-
-    res.status(200).json({ message: "Customer target updated successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
+
+// export const getHierarchyByDatabase = async (req, res) => {
+//     try {
+//         const { database, financialYear } = req.body;
+
+//         if (!database || !financialYear) {
+//             return res.status(400).json({ message: "database and financialYear are required" });
+//         }
+
+//         const targets = await CustomerTarget.find({ database, financialYear })
+//             .populate({ path: "customerId", select: "name _id" })
+//             .populate({ path: "salesPersonId", select: "name _id" })
+//             .populate({ path: "salesManagerId", select: "name _id" })
+//             .lean();
+
+//         const hierarchy = {};
+
+//         targets.forEach(t => {
+//             const smId = t.salesManagerId._id.toString();
+//             const spId = t.salesPersonId._id.toString();
+//             const cId = t.customerId._id.toString();
+
+//             if (!hierarchy[smId]) {
+//                 hierarchy[smId] = {
+//                     salesManagerId: smId,
+//                     salesManagerName: t.salesManagerId.name,
+//                     salesManagerTotal: 0,
+//                     salesPersons: {}
+//                 };
+//             }
+
+//             if (!hierarchy[smId].salesPersons[spId]) {
+//                 hierarchy[smId].salesPersons[spId] = {
+//                     salesPersonId: spId,
+//                     salesPersonName: t.salesPersonId.name,
+//                     salesPersonTotal: 0,
+//                     customers: {}
+//                 };
+//             }
+
+//             if (!hierarchy[smId].salesPersons[spId].customers[cId]) {
+//                 // Map month numbers to names
+//                 const monthlyTargetsUnsorted = Object.entries(t.grandTotalPerMonth || {}).map(([m, total]) => {
+//                     const monthName = (() => {
+//                         const num = parseInt(m);
+//                         if (num === 1) return "January";
+//                         if (num === 2) return "February";
+//                         if (num === 3) return "March";
+//                         if (num === 4) return "April";
+//                         if (num === 5) return "May";
+//                         if (num === 6) return "June";
+//                         if (num === 7) return "July";
+//                         if (num === 8) return "August";
+//                         if (num === 9) return "September";
+//                         if (num === 10) return "October";
+//                         if (num === 11) return "November";
+//                         if (num === 12) return "December";
+//                     })();
+//                     return { month: monthName, totalTarget: total };
+//                 });
+
+//                 const monthlyTargets = monthlyTargetsUnsorted.sort((a, b) => {
+//                     return FY_MONTHS_ORDER.indexOf(a.month) - FY_MONTHS_ORDER.indexOf(b.month);
+//                 });
+
+//                 const customerTotal = monthlyTargets.reduce((sum, item) => sum + item.totalTarget, 0);
+
+//                 hierarchy[smId].salesPersons[spId].customers[cId] = {
+//                     customerId: cId,
+//                     customerName: t.customerId.name,
+//                     customerTotal,
+//                     monthlyTargets
+//                 };
+//             }
+
+//             const cust = hierarchy[smId].salesPersons[spId].customers[cId];
+//             hierarchy[smId].salesPersons[spId].salesPersonTotal += cust.customerTotal;
+//             hierarchy[smId].salesManagerTotal += cust.customerTotal;
+//         });
+
+//         const result = Object.values(hierarchy).map(manager => ({
+//             salesManagerId: manager.salesManagerId,
+//             salesManagerName: manager.salesManagerName,
+//             salesManagerTotal: manager.salesManagerTotal,
+//             salesPersons: Object.values(manager.salesPersons).map(person => ({
+//                 salesPersonId: person.salesPersonId,
+//                 salesPersonName: person.salesPersonName,
+//                 salesPersonTotal: person.salesPersonTotal,
+//                 customers: Object.values(person.customers)
+//             }))
+//         }));
+
+//         res.status(200).json(result);
+
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
 
 
 export const getHierarchyByDatabase = async (req, res) => {
@@ -460,178 +768,201 @@ export const getHierarchyByDatabase = async (req, res) => {
       return res.status(400).json({ message: "database and financialYear are required" });
     }
 
+    // 1️⃣ Fetch sales roles
+    const departments = await AssignRole.find({ database })
+      .populate({ path: "departmentName", model: "department" })
+      .populate({ path: "roles.roleId", model: "role" });
+
+    const salesRoles = departments.find(
+      dep => dep?.departmentName?.departmentName?.toLowerCase() === "sales"
+    )?.roles || [];
+
+    // Sort bottom-to-top
+    salesRoles.sort((a, b) => b.rolePosition - a.rolePosition);
+    const roleKeysInOrder = salesRoles.map(r =>
+        r.roleId.roleName.replace(/\s+/g, '').replace(/^\w/, c => c.toLowerCase()) + 'Id'
+    );
+    console.log(roleKeysInOrder)
+
+    // 2️⃣ Fetch all targets
     const targets = await CustomerTarget.find({ database, financialYear })
       .populate({ path: "customerId", select: "name _id" })
-      .populate({ path: "salesPersonId", select: "name _id" })
-      .populate({ path: "salesManagerId", select: "name _id" })
       .lean();
 
-    const hierarchy = {};
-
+    // 3️⃣ Collect unique user IDs
+    const allUserIds = [];
     targets.forEach(t => {
-      const smId = t.salesManagerId._id.toString();
-      const spId = t.salesPersonId._id.toString();
-      const cId = t.customerId._id.toString();
-
-      if (!hierarchy[smId]) {
-        hierarchy[smId] = {
-          salesManagerId: smId,
-          salesManagerName: t.salesManagerId.name,
-          salesManagerTotal: 0,
-          salesPersons: {}
-        };
-      }
-
-      if (!hierarchy[smId].salesPersons[spId]) {
-        hierarchy[smId].salesPersons[spId] = {
-          salesPersonId: spId,
-          salesPersonName: t.salesPersonId.name,
-          salesPersonTotal: 0,
-          customers: {}
-        };
-      }
-
-      if (!hierarchy[smId].salesPersons[spId].customers[cId]) {
-        // Map month numbers to names
-        const monthlyTargetsUnsorted = Object.entries(t.grandTotalPerMonth || {}).map(([m, total]) => {
-          const monthName = (() => {
-            const num = parseInt(m);
-            if (num === 1) return "January";
-            if (num === 2) return "February";
-            if (num === 3) return "March";
-            if (num === 4) return "April";
-            if (num === 5) return "May";
-            if (num === 6) return "June";
-            if (num === 7) return "July";
-            if (num === 8) return "August";
-            if (num === 9) return "September";
-            if (num === 10) return "October";
-            if (num === 11) return "November";
-            if (num === 12) return "December";
-          })();
-          return { month: monthName, totalTarget: total };
-        });
-
-        const monthlyTargets = monthlyTargetsUnsorted.sort((a, b) => {
-          return FY_MONTHS_ORDER.indexOf(a.month) - FY_MONTHS_ORDER.indexOf(b.month);
-        });
-
-        const customerTotal = monthlyTargets.reduce((sum, item) => sum + item.totalTarget, 0);
-
-        hierarchy[smId].salesPersons[spId].customers[cId] = {
-          customerId: cId,
-          customerName: t.customerId.name,
-          customerTotal,
-          monthlyTargets
-        };
-      }
-
-      const cust = hierarchy[smId].salesPersons[spId].customers[cId];
-      hierarchy[smId].salesPersons[spId].salesPersonTotal += cust.customerTotal;
-      hierarchy[smId].salesManagerTotal += cust.customerTotal;
+      roleKeysInOrder.forEach(key => {
+        if (t.roles?.[key]) allUserIds.push(t.roles[key].toString());
+      });
     });
 
-    const result = Object.values(hierarchy).map(manager => ({
-      salesManagerId: manager.salesManagerId,
-      salesManagerName: manager.salesManagerName,
-      salesManagerTotal: manager.salesManagerTotal,
-      salesPersons: Object.values(manager.salesPersons).map(person => ({
-        salesPersonId: person.salesPersonId,
-        salesPersonName: person.salesPersonName,
-        salesPersonTotal: person.salesPersonTotal,
-        customers: Object.values(person.customers)
-      }))
-    }));
+    const users = await User.find({ _id: { $in: allUserIds } }).select("name _id").lean();
+    const userMap = {};
+    users.forEach(u => { userMap[u._id.toString()] = u; });
 
-    res.status(200).json(result);
+    // 4️⃣ Build hierarchy
+    const hierarchy = {};
+    const processedCustomerProducts = {}; // track customer-product pairs globally
+
+    targets.forEach(t => {
+      const customer = t.customerId;
+      if (!customer) return;
+
+      let currentLevel = hierarchy;
+
+      roleKeysInOrder.forEach((roleKey, idx) => {
+        const userId = t.roles?.[roleKey]?.toString();
+        if (!userId) return;
+
+        const user = userMap[userId];
+        if (!user) return;
+
+        if (!currentLevel[userId]) {
+          currentLevel[userId] = {
+            userId,
+            name: user.name,
+            role: roleKey,
+            total: 0,
+            children: {}
+          };
+        }
+
+        currentLevel = currentLevel[userId].children;
+
+        // Bottom-most role → attach customer
+        if (idx === roleKeysInOrder.length - 1) {
+          // Build unique key per customer-product
+          const products = t.products || [];
+          let customerTotal = 0;
+          const monthlyTargets = {};
+
+          products.forEach(prod => {
+            const prodKey = `${customer._id.toString()}_${prod.productId}`;
+            if (!processedCustomerProducts[prodKey]) {
+              // Sum monthly totals for this product
+              Object.entries(prod.monthlyTotal || {}).forEach(([month, total]) => {
+                monthlyTargets[month] = (monthlyTargets[month] || 0) + total;
+                customerTotal += total;
+              });
+              processedCustomerProducts[prodKey] = true; // mark as processed
+            }
+          });
+
+          if (!currentLevel[customer._id.toString()]) {
+            currentLevel[customer._id.toString()] = {
+              customerId: customer._id.toString(),
+              customerName: customer.name,
+              total: customerTotal,
+              monthlyTargets: Object.entries(monthlyTargets).map(([month, total]) => ({ month, totalTarget: total }))
+                .sort((a, b) => FY_MONTHS.indexOf(a.month) - FY_MONTHS.indexOf(b.month))
+            };
+          }
+
+          // Update totals up the hierarchy
+          let tempLevel = hierarchy;
+          roleKeysInOrder.forEach(rk => {
+            const uid = t.roles?.[rk]?.toString();
+            if (!uid) return;
+            tempLevel[uid].total += customerTotal;
+            tempLevel = tempLevel[uid].children;
+          });
+        }
+      });
+    });
+
+    res.status(200).json(hierarchy);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
+
+
 export const getSalesPersonTarget = async (req, res) => {
-  try {
-    const { salesPersonId, financialYear } = req.body;
+    try {
+        const { salesPersonId, financialYear } = req.body;
 
-    if (!salesPersonId || !financialYear) {
-      return res.status(400).json({
-        message: "salesPersonId and financialYear are required"
-      });
-    }
+        if (!salesPersonId || !financialYear) {
+            return res.status(400).json({
+                message: "salesPersonId and financialYear are required"
+            });
+        }
 
-    const data = await CustomerTarget.aggregate([
-      {
-        $match: {
-          salesPersonId: new mongoose.Types.ObjectId(salesPersonId),
-          financialYear
-        }
-      },
-      {
-        $group: {
-          _id: "$month",
-          totalTarget: { $sum: "$grandTotal" }
-        }
-      },
-      {
-        // Convert month number to month name
-        $addFields: {
-          monthName: {
-            $switch: {
-              branches: [
-                { case: { $eq: ["$_id", 1] }, then: "January" },
-                { case: { $eq: ["$_id", 2] }, then: "February" },
-                { case: { $eq: ["$_id", 3] }, then: "March" },
-                { case: { $eq: ["$_id", 4] }, then: "April" },
-                { case: { $eq: ["$_id", 5] }, then: "May" },
-                { case: { $eq: ["$_id", 6] }, then: "June" },
-                { case: { $eq: ["$_id", 7] }, then: "July" },
-                { case: { $eq: ["$_id", 8] }, then: "August" },
-                { case: { $eq: ["$_id", 9] }, then: "September" },
-                { case: { $eq: ["$_id", 10] }, then: "October" },
-                { case: { $eq: ["$_id", 11] }, then: "November" },
-                { case: { $eq: ["$_id", 12] }, then: "December" }
-              ],
-              default: "Unknown"
+        const data = await CustomerTarget.aggregate([
+            {
+                $match: {
+                    salesPersonId: new mongoose.Types.ObjectId(salesPersonId),
+                    financialYear
+                }
+            },
+            {
+                $group: {
+                    _id: "$month",
+                    totalTarget: { $sum: "$grandTotal" }
+                }
+            },
+            {
+                // Convert month number to month name
+                $addFields: {
+                    monthName: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ["$_id", 1] }, then: "January" },
+                                { case: { $eq: ["$_id", 2] }, then: "February" },
+                                { case: { $eq: ["$_id", 3] }, then: "March" },
+                                { case: { $eq: ["$_id", 4] }, then: "April" },
+                                { case: { $eq: ["$_id", 5] }, then: "May" },
+                                { case: { $eq: ["$_id", 6] }, then: "June" },
+                                { case: { $eq: ["$_id", 7] }, then: "July" },
+                                { case: { $eq: ["$_id", 8] }, then: "August" },
+                                { case: { $eq: ["$_id", 9] }, then: "September" },
+                                { case: { $eq: ["$_id", 10] }, then: "October" },
+                                { case: { $eq: ["$_id", 11] }, then: "November" },
+                                { case: { $eq: ["$_id", 12] }, then: "December" }
+                            ],
+                            default: "Unknown"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    month: "$monthName",
+                    totalTarget: 1
+                }
+            },
+            {
+                // Financial year sorting (April → March)
+                $sort: {
+                    month: 1
+                }
             }
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          month: "$monthName",
-          totalTarget: 1
-        }
-      },
-      {
-        // Financial year sorting (April → March)
-        $sort: {
-          month: 1
-        }
-      }
-    ]);
+        ]);
 
-    res.status(200).json(data);
+        res.status(200).json(data);
 
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 export const getSalesManagerTarget = async (req, res) => {
-  const { salesManagerId, financialYear } = req.params;
+    const { salesManagerId, financialYear } = req.params;
 
-  const data = await CustomerTarget.aggregate([
-    { $match: { salesManagerId, financialYear } },
-    {
-      $group: {
-        _id: "$month",
-        totalTarget: { $sum: "$grandTotal" },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
+    const data = await CustomerTarget.aggregate([
+        { $match: { salesManagerId, financialYear } },
+        {
+            $group: {
+                _id: "$month",
+                totalTarget: { $sum: "$grandTotal" },
+            },
+        },
+        { $sort: { _id: 1 } },
+    ]);
 
-  res.json(data);
+    res.json(data);
 };
