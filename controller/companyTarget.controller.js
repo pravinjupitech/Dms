@@ -1,0 +1,215 @@
+import { CompanyTarget } from "../model/companyTarget.model.js";
+import { User } from "../model/user.model.js";
+
+const FY_MONTHS = [
+  "April", "May", "June", "July", "August", "September",
+  "October", "November", "December", "January", "February", "March"
+];
+
+export const saveCompanyTarget = async (req, res) => {
+  try {
+    const {
+      database,
+      fyear,
+      month,           
+      incrementper,
+      productItem,
+      created_by
+    } = req.body;
+
+    const incrementPercent = Number(incrementper);
+
+    const startIndex = FY_MONTHS.indexOf(month);
+    if (startIndex === -1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid start month"
+      });
+    }
+
+    const salesManagerss = await User.find({ database }).populate({ path: "rolename", model: "role" });
+    const salesManagers=salesManagerss.filter((item)=>item?.rolename?.roleName==="Sales Manager")
+    if (salesManagers.length>0) {
+      return res.status(400).json({
+        success: false,
+        message: "No Sales Managers found"
+      });
+    }
+
+    const managerCount = salesManagers.length;
+
+    let currentCompanyTotal = productItem.reduce(
+      (sum, item) => sum + (item.total || 0),
+      0
+    );
+
+    let currentProductItem = JSON.parse(JSON.stringify(productItem));
+
+    const savedTargets = [];
+
+    for (let i = startIndex; i < FY_MONTHS.length; i++) {
+      const currentMonth = FY_MONTHS[i];
+
+      if (i !== startIndex) {
+        currentCompanyTotal +=
+          (currentCompanyTotal * incrementPercent) / 100;
+
+        currentProductItem = currentProductItem.map((item) => ({
+          ...item,
+          pQty: item.pQty + (item.pQty * incrementPercent) / 100,
+          sQty: item.sQty + (item.sQty * incrementPercent) / 100,
+          total: item.total + (item.total * incrementPercent) / 100
+        }));
+      }
+
+      const dividedTargets = {};
+
+      salesManagers.forEach((manager) => {
+        dividedTargets[manager._id] = {
+          total: currentCompanyTotal / managerCount,
+          products: currentProductItem.map((item) => ({
+            productId: item.productId,
+            pQty: item.pQty / managerCount,
+            sQty: item.sQty / managerCount,
+            price: item.price,
+            total: item.total / managerCount
+          }))
+        };
+      });
+
+      const companyTarget = new CompanyTarget({
+        database,
+        fyear,
+        month: currentMonth,
+        incrementper,
+        companyTotal: currentCompanyTotal,
+        productItem: currentProductItem,
+        dividedTargets,
+        created_by
+      });
+
+      await companyTarget.save();
+      savedTargets.push(companyTarget);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Targets saved from ${month} to March`,
+      totalMonths: savedTargets.length,
+      data: savedTargets
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+
+export const getCompanyTarget = async (req, res) => {
+  try {
+    const { fyear, database } = req.params;
+
+    const companyTargets = await CompanyTarget.find({ database, fyear }).sort({ createdAt: 1 });
+
+    if (!companyTargets.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Company targets not found for this financial year"
+      });
+    }
+
+    const result = [];
+
+    for (let target of companyTargets) {
+      const dividedTargetsObj = Object.fromEntries(target.dividedTargets || []);
+
+      const managerIds = Object.keys(dividedTargetsObj);
+      const managers = await User.find({ _id: { $in: managerIds } }, { name: 1 });
+
+      const managerMap = {};
+      managers.forEach((m) => {
+        managerMap[m._id] = m.name;
+      });
+
+      const salesManagerTargets = managerIds.map((id) => ({
+        salesManagerId: id,
+        salesManagerName: managerMap[id] || "Unknown",
+        totalTarget: dividedTargetsObj[id].total,
+        products: dividedTargetsObj[id].products
+      }));
+
+      result.push({
+        month: target.month,
+        companyTotal: target.companyTotal,
+        productItem: target.productItem,
+        salesManagerTargets
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      fyear,
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+
+export const getSalesManagerTarget = async (req, res) => {
+  try {
+    const { fyear, salesManagerId } = req.params;
+
+    const companyTargets = await CompanyTarget.find({ fyear }).sort({ createdAt: 1 });
+
+    if (!companyTargets.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Targets not found for this financial year"
+      });
+    }
+
+    const result = [];
+
+    for (let target of companyTargets) {
+      const managerTarget = target.dividedTargets?.get(salesManagerId.toString());
+
+      if (managerTarget) {
+        result.push({
+          month: target.month,
+          totalTarget: managerTarget.total,
+          products: managerTarget.products
+        });
+      }
+    }
+
+    if (!result.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No target assigned to this sales manager in this financial year"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      fyear,
+      salesManagerId,
+      monthlyTargets: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
