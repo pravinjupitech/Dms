@@ -1,65 +1,75 @@
 import mongoose from "mongoose";
+import { Category } from "./category.model";
 
 const productSchema = new mongoose.Schema(
-  {
-    productId: {
-      type: String
+    {
+        productId: {
+            type: String
+        },
+        Category: {
+            type: String
+        },
+        subCategory: {
+            type: String
+        },
+        productName: {
+            type: String
+        },
+        pQty: {
+            type: Number
+        },
+        sQty: {
+            type: Number
+        },
+        price: {
+            type: Number
+        },
+        total: {
+            type: Number
+        }
     },
-    pQty: {
-      type: Number
-    },
-    sQty: {
-      type: Number
-    },
-    price: {
-      type: Number
-    },
-    total: {
-      type: Number
-    }
-  },
-  { _id: false }
+    { _id: false }
 );
 
 const managerTargetSchema = new mongoose.Schema(
-  {
-    total: {
-      type: Number
+    {
+        total: {
+            type: Number
+        },
+        products: [productSchema]
     },
-    products: [productSchema]
-  },
-  { _id: false }
+    { _id: false }
 );
 
 const companyTargetSchema = new mongoose.Schema(
-  {
-    database: String,
+    {
+        database: String,
 
-    fyear: String,
+        fyear: String,
 
-    month: String,
+        month: String,
 
-    incrementper: String,
+        incrementper: String,
 
-    companyTotal: {
-      type: Number,
-      required: true
+        companyTotal: {
+            type: Number,
+            required: true
+        },
+
+        productItem: [productSchema],
+
+        dividedTargets: {
+            type: Map,
+            of: managerTargetSchema,
+            default: {}
+        },
+
+        created_by: String
     },
-
-    productItem: [productSchema],
-
-    dividedTargets: {
-      type: Map,
-      of: managerTargetSchema,
-      default: {}
-    },
-
-    created_by: String
-  },
-  { timestamps: true }
+    { timestamps: true }
 );
 
 export const CompanyTarget = mongoose.model(
-  "companytarget",
-  companyTargetSchema
+    "companytarget",
+    companyTargetSchema
 );
