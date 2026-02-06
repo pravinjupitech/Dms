@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { CompanyTarget } from "../model/companyTarget.model.js";
 import { User } from "../model/user.model.js";
 
@@ -109,37 +110,103 @@ export const saveCompanyTarget = async (req, res) => {
 };
 
 
+// export const getCompanyTarget = async (req, res) => {
+//   try {
+//     const { fyear, database } = req.params;
+
+//     const companyTargets = await CompanyTarget.find({ database, fyear }).sort({ createdAt: 1 });
+
+//     if (!companyTargets.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company targets not found for this financial year"
+//       });
+//     }
+
+//     const result = [];
+
+//     for (let target of companyTargets) {
+//       const dividedTargetsObj = Object.fromEntries(target.dividedTargets || []);
+
+//       const managerIds = Object.keys(dividedTargetsObj);
+//       const managers = await User.find({ _id: { $in: managerIds } }, { name: 1 });
+
+//       const managerMap = {};
+//       managers.forEach((m) => {
+//         managerMap[m._id] = m.name;
+//       });
+
+//       const salesManagerTargets = managerIds.map((id) => ({
+//         salesManagerId: id,
+//         salesManagerName: managerMap[id] || "Unknown",
+//         totalTarget: dividedTargetsObj[id].total,
+//         products: dividedTargetsObj[id].products
+//       }));
+
+//       result.push({
+//         month: target.month,
+//         companyTotal: target.companyTotal,
+//         productItem: target.productItem,
+//         salesManagerTargets
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       fyear,
+//       data: result
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: error.message
+//     });
+//   }
+// };
+
+
 export const getCompanyTarget = async (req, res) => {
   try {
     const { fyear, database } = req.params;
 
-    const companyTargets = await CompanyTarget.find({ database, fyear }).sort({ createdAt: 1 });
+    const companyTargets = await CompanyTarget
+      .find({ database, fyear })
+      .sort({ createdAt: 1 })
+      .lean();
 
     if (!companyTargets.length) {
       return res.status(404).json({
         success: false,
-        message: "Company targets not found for this financial year"
+        message: "Company targets not found"
       });
     }
 
     const result = [];
 
-    for (let target of companyTargets) {
-      const dividedTargetsObj = Object.fromEntries(target.dividedTargets || []);
-
+    for (const target of companyTargets) {
+      const dividedTargetsObj = target.dividedTargets || {};
       const managerIds = Object.keys(dividedTargetsObj);
-      const managers = await User.find({ _id: { $in: managerIds } }, { name: 1 });
+
+      const objectManagerIds = managerIds
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+
+      const managers = await User.find(
+        { _id: { $in: objectManagerIds } },
+        { firstName: 1 } // ✅ CORRECT FIELD
+      ).lean();
 
       const managerMap = {};
-      managers.forEach((m) => {
-        managerMap[m._id] = m.name;
+      managers.forEach(m => {
+        managerMap[m._id.toString()] = m.firstName;
       });
 
-      const salesManagerTargets = managerIds.map((id) => ({
+      const salesManagerTargets = managerIds.map(id => ({
         salesManagerId: id,
         salesManagerName: managerMap[id] || "Unknown",
-        totalTarget: dividedTargetsObj[id].total,
-        products: dividedTargetsObj[id].products
+        totalTarget: dividedTargetsObj[id]?.total || 0,
+        products: dividedTargetsObj[id]?.products || []
       }));
 
       result.push({
@@ -157,12 +224,15 @@ export const getCompanyTarget = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       success: false,
       error: error.message
     });
   }
 };
+
+
 
 
 export const getSalesManagerTarget = async (req, res) => {
