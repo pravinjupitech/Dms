@@ -1296,3 +1296,19 @@ export const gstPaymentDashboard = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
+export const ledgerCheck=async(req,res,next)=>{
+    try {
+        const {id}=req.params;
+        const orders=await CreateOrder.find({partyId:id,status:"completed"})
+        const receipts=await Receipt.find({partyId:id,status:"Active"})
+        let obj={
+            orders:orders.length,
+            receipts:receipts.length
+        }
+        return res.status(200).json(obj)
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({message:"Internal Server Error",status:false})
+    }
+}
