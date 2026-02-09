@@ -284,3 +284,152 @@ export const getSalesManagerTarget = async (req, res) => {
   }
 };
 
+export const deleteCompanyTargetById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        status: false,
+        message: "Target ID is required"
+      });
+    }
+
+    const deletedTarget = await CompanyTarget.findByIdAndDelete(id);
+
+    if (!deletedTarget) {
+      return res.status(404).json({
+        status: false,
+        message: "Company target not found"
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Company target deleted successfully",
+      data: deletedTarget
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      error: error.message
+    });
+  }
+};
+
+
+export const updateCompanyTarget = async (req, res) => {
+  try {
+    const {
+      database,
+      fyear,
+      month,
+      incrementper,
+      productItem,
+      created_by
+    } = req.body;
+
+    const incrementPercent = Number(incrementper);
+
+    const startIndex = FY_MONTHS.indexOf(month);
+    if (startIndex === -1) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid start month"
+      });
+    }
+
+    const monthsToUpdate = FY_MONTHS.slice(startIndex);
+
+    await CompanyTarget.deleteMany({
+      database,
+      fyear,
+      month: { $in: monthsToUpdate }
+    });
+
+    const users = await User.find({ database }).populate({
+      path: "rolename",
+      model: "role"
+    });
+
+    const salesManagers = users.filter(
+      (u) => u?.rolename?.roleName === "Sales Manager"
+    );
+
+    if (!salesManagers.length) {
+      return res.status(400).json({
+        status: false,
+        message: "No Sales Managers found"
+      });
+    }
+
+    const managerCount = salesManagers.length;
+
+    let currentCompanyTotal = productItem.reduce(
+      (sum, item) => sum + (item.total || 0),
+      0
+    );
+
+    let currentProductItem = JSON.parse(JSON.stringify(productItem));
+    const savedTargets = [];
+
+    for (let i = startIndex; i < FY_MONTHS.length; i++) {
+      const currentMonth = FY_MONTHS[i];
+
+      if (i !== startIndex) {
+        currentCompanyTotal +=
+          (currentCompanyTotal * incrementPercent) / 100;
+
+        currentProductItem = currentProductItem.map((item) => ({
+          ...item,
+          pQty: item.pQty + (item.pQty * incrementPercent) / 100,
+          sQty: item.sQty + (item.sQty * incrementPercent) / 100,
+          total: item.total + (item.total * incrementPercent) / 100
+        }));
+      }
+
+      const dividedTargets = {};
+
+      salesManagers.forEach((manager) => {
+        dividedTargets[manager._id] = {
+          total: currentCompanyTotal / managerCount,
+          products: currentProductItem.map((item) => ({
+            productId: item.productId,
+            pQty: item.pQty / managerCount,
+            sQty: item.sQty / managerCount,
+            price: item.price,
+            total: item.total / managerCount
+          }))
+        };
+      });
+
+      const companyTarget = new CompanyTarget({
+        database,
+        fyear,
+        month: currentMonth,
+        incrementper,
+        companyTotal: currentCompanyTotal,
+        productItem: currentProductItem,
+        dividedTargets,
+        created_by
+      });
+
+      await companyTarget.save();
+      savedTargets.push(companyTarget);
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: `Targets updated from ${month} to March`,
+      totalMonths: savedTargets.length,
+      data: savedTargets
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
