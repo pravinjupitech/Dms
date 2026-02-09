@@ -284,18 +284,22 @@ export const getSalesManagerTarget = async (req, res) => {
   }
 };
 
-export const deleteCompanyTargetById = async (req, res) => {
+export const deleteCompanyTarget = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { month, database, fyear } = req.body;
 
-    if (!id) {
+    if (!month || !database || !fyear) {
       return res.status(400).json({
-        status: false,
-        message: "Target ID is required"
+        success: false,
+        message: "month, database and fyear are required"
       });
     }
 
-    const deletedTarget = await CompanyTarget.findByIdAndDelete(id);
+    const deletedTarget = await CompanyTarget.findOneAndDelete({
+      month,
+      database,
+      fyear
+    });
 
     if (!deletedTarget) {
       return res.status(404).json({
@@ -304,19 +308,19 @@ export const deleteCompanyTargetById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
-      message: "Company target deleted successfully",
-      data: deletedTarget
+      message: "Company target deleted successfully"
     });
 
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       status: false,
       error: error.message
     });
   }
 };
+
 
 
 export const updateCompanyTarget = async (req, res) => {
