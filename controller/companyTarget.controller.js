@@ -334,7 +334,7 @@ export const updateCompanyTarget = async (req, res) => {
       created_by
     } = req.body;
 
-    const incrementPercent = Number(incrementper);
+    const incrementPercent = Number(incrementper) || 0;
 
     const startIndex = FY_MONTHS.indexOf(month);
     if (startIndex === -1) {
@@ -344,14 +344,17 @@ export const updateCompanyTarget = async (req, res) => {
       });
     }
 
+    // Update from selected month till March
     const monthsToUpdate = FY_MONTHS.slice(startIndex);
 
+    // Delete existing records for those months
     await CompanyTarget.deleteMany({
       database,
       fyear,
       month: { $in: monthsToUpdate }
     });
 
+    // Fetch users
     const users = await User.find({ database }).populate({
       path: "rolename",
       model: "role"
@@ -370,26 +373,30 @@ export const updateCompanyTarget = async (req, res) => {
 
     const managerCount = salesManagers.length;
 
+    // Calculate initial company total
     let currentCompanyTotal = productItem.reduce(
-      (sum, item) => sum + (item.total || 0),
+      (sum, item) => sum + (Number(item.total) || 0),
       0
     );
 
+    // Deep copy product items
     let currentProductItem = JSON.parse(JSON.stringify(productItem));
+
     const savedTargets = [];
 
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const currentMonth = FY_MONTHS[i];
 
-      if (i !== startIndex) {
+      // Apply increment ONLY if incrementPercent > 0
+      if (i !== startIndex && incrementPercent > 0) {
         currentCompanyTotal +=
           (currentCompanyTotal * incrementPercent) / 100;
 
         currentProductItem = currentProductItem.map((item) => ({
           ...item,
-          pQty: item.pQty + (item.pQty * incrementPercent) / 100,
-          sQty: item.sQty + (item.sQty * incrementPercent) / 100,
-          total: item.total + (item.total * incrementPercent) / 100
+          pQty: Number(item.pQty) + (Number(item.pQty) * incrementPercent) / 100,
+          sQty: Number(item.sQty) + (Number(item.sQty) * incrementPercent) / 100,
+          total: Number(item.total) + (Number(item.total) * incrementPercent) / 100
         }));
       }
 
@@ -400,10 +407,10 @@ export const updateCompanyTarget = async (req, res) => {
           total: currentCompanyTotal / managerCount,
           products: currentProductItem.map((item) => ({
             productId: item.productId,
-            pQty: item.pQty / managerCount,
-            sQty: item.sQty / managerCount,
+            pQty: Number(item.pQty) / managerCount,
+            sQty: Number(item.sQty) / managerCount,
             price: item.price,
-            total: item.total / managerCount
+            total: Number(item.total) / managerCount
           }))
         };
       });
@@ -412,7 +419,7 @@ export const updateCompanyTarget = async (req, res) => {
         database,
         fyear,
         month: currentMonth,
-        incrementper,
+        incrementper: incrementPercent,
         companyTotal: currentCompanyTotal,
         productItem: currentProductItem,
         dividedTargets,
@@ -431,9 +438,12 @@ export const updateCompanyTarget = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
+    return res.status(500).json({
+      status: false,
+      message: error.message
     });
   }
 };
+
+
+
