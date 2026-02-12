@@ -337,6 +337,7 @@ export const updateCompanyTarget = async (req, res) => {
     const incrementPercent = Number(incrementper) || 0;
 
     const startIndex = FY_MONTHS.indexOf(month);
+
     if (startIndex === -1) {
       return res.status(400).json({
         status: false,
@@ -344,17 +345,9 @@ export const updateCompanyTarget = async (req, res) => {
       });
     }
 
-    // Update from selected month till March
     const monthsToUpdate = FY_MONTHS.slice(startIndex);
 
-    // Delete existing records for those months
-    await CompanyTarget.deleteMany({
-      database,
-      fyear,
-      month: { $in: monthsToUpdate }
-    });
-
-    // Fetch users
+    // Get Sales Managers
     const users = await User.find({ database }).populate({
       path: "rolename",
       model: "role"
@@ -373,33 +366,39 @@ export const updateCompanyTarget = async (req, res) => {
 
     const managerCount = salesManagers.length;
 
-    // Calculate initial company total
+    // Initial values from payload
     let currentCompanyTotal = productItem.reduce(
       (sum, item) => sum + (Number(item.total) || 0),
       0
     );
 
-    // Deep copy product items
     let currentProductItem = JSON.parse(JSON.stringify(productItem));
 
-    const savedTargets = [];
+    const updatedMonths = [];
 
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const currentMonth = FY_MONTHS[i];
 
-      // Apply increment ONLY if incrementPercent > 0
+      // Apply increment only if incrementPercent > 0
       if (i !== startIndex && incrementPercent > 0) {
         currentCompanyTotal +=
           (currentCompanyTotal * incrementPercent) / 100;
 
         currentProductItem = currentProductItem.map((item) => ({
           ...item,
-          pQty: Number(item.pQty) + (Number(item.pQty) * incrementPercent) / 100,
-          sQty: Number(item.sQty) + (Number(item.sQty) * incrementPercent) / 100,
-          total: Number(item.total) + (Number(item.total) * incrementPercent) / 100
+          pQty:
+            Number(item.pQty) +
+            (Number(item.pQty) * incrementPercent) / 100,
+          sQty:
+            Number(item.sQty) +
+            (Number(item.sQty) * incrementPercent) / 100,
+          total:
+            Number(item.total) +
+            (Number(item.total) * incrementPercent) / 100
         }));
       }
 
+      // Prepare divided targets
       const dividedTargets = {};
 
       salesManagers.forEach((manager) => {
@@ -415,26 +414,35 @@ export const updateCompanyTarget = async (req, res) => {
         };
       });
 
-      const companyTarget = new CompanyTarget({
-        database,
-        fyear,
-        month: currentMonth,
-        incrementper: incrementPercent,
-        companyTotal: currentCompanyTotal,
-        productItem: currentProductItem,
-        dividedTargets,
-        created_by
-      });
+      // 🔹 UPDATE ONLY (No create, no delete)
+      const updated = await CompanyTarget.findOneAndUpdate(
+        {
+          database,
+          fyear,
+          month: currentMonth
+        },
+        {
+          $set: {
+            incrementper: incrementPercent,
+            companyTotal: currentCompanyTotal,
+            productItem: currentProductItem,
+            dividedTargets,
+            created_by
+          }
+        },
+        { new: true }
+      );
 
-      await companyTarget.save();
-      savedTargets.push(companyTarget);
+      if (updated) {
+        updatedMonths.push(updated);
+      }
     }
 
     return res.status(200).json({
       status: true,
       message: `Targets updated from ${month} to March`,
-      totalMonths: savedTargets.length,
-      data: savedTargets
+      totalMonthsUpdated: updatedMonths.length,
+      data: updatedMonths
     });
 
   } catch (error) {
@@ -444,6 +452,7 @@ export const updateCompanyTarget = async (req, res) => {
     });
   }
 };
+
 
 
 
