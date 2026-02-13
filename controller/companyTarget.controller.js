@@ -211,6 +211,7 @@ export const getCompanyTarget = async (req, res) => {
 
       result.push({
         month: target.month,
+        incrementper: target.incrementper || 0, 
         companyTotal: target.companyTotal,
         productItem: target.productItem,
         salesManagerTargets
