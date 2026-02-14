@@ -324,7 +324,8 @@ export const deleteCompanyTarget = async (req, res) => {
 
 const round = (num) => Math.round(num * 100) / 100;
 
-export const updateCompanyTarget = async (req, res) => {
+export const 
+updateCompanyTarget = async (req, res) => {
   try {
     const {
       database,
@@ -346,7 +347,11 @@ export const updateCompanyTarget = async (req, res) => {
     }
 
     // 🔹 Get Sales Managers
-    const users = await User.find({ database }).populate("rolename");
+ const users = await User.find({ database }).populate({
+      path: "rolename",
+      model: "role"
+    });
+
     const salesManagers = users.filter(
       (u) => u?.rolename?.roleName === "Sales Manager"
     );
