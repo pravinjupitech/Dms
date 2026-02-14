@@ -322,6 +322,7 @@ export const deleteCompanyTarget = async (req, res) => {
   }
 };
 
+const round = (num) => Math.round(num * 100) / 100;
 
 export const updateCompanyTarget = async (req, res) => {
   try {
@@ -340,18 +341,14 @@ export const updateCompanyTarget = async (req, res) => {
     if (startIndex === -1) {
       return res.status(400).json({
         success: false,
-        message: "Invalid start month"
+        message: "Invalid month"
       });
     }
 
     // 🔹 Get Sales Managers
-    const users = await User.find({ database }).populate({
-      path: "rolename",
-      model: "role"
-    });
-
+    const users = await User.find({ database }).populate("rolename");
     const salesManagers = users.filter(
-      (item) => item?.rolename?.roleName === "Sales Manager"
+      (u) => u?.rolename?.roleName === "Sales Manager"
     );
 
     if (!salesManagers.length) {
@@ -363,65 +360,68 @@ export const updateCompanyTarget = async (req, res) => {
 
     const managerCount = salesManagers.length;
 
-    // 🔥 NEW companyTotal based on request body values
-    let currentCompanyTotal = productItem.reduce(
-      (sum, item) => sum + Number(item.total || 0),
-      0
+    // 🔥 BASE = Only payload value (February)
+    let currentCompanyTotal = round(
+      productItem.reduce((sum, item) => sum + Number(item.total || 0), 0)
     );
 
-    let currentProductItem = JSON.parse(JSON.stringify(productItem));
+    let currentProductItem = productItem.map((item) => ({
+      ...item,
+      pQty: round(Number(item.pQty)),
+      sQty: round(Number(item.sQty)),
+      total: round(Number(item.total))
+    }));
 
     const updatedTargets = [];
 
-    // 🔥 Loop from selected month till end of FY
+    // 🔥 Loop only from selected month forward
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const currentMonth = FY_MONTHS[i];
 
       // Apply increment AFTER selected month
       if (i > startIndex && incrementPercent > 0) {
-        currentCompanyTotal +=
-          (currentCompanyTotal * incrementPercent) / 100;
+        currentCompanyTotal = round(
+          currentCompanyTotal +
+            (currentCompanyTotal * incrementPercent) / 100
+        );
 
         currentProductItem = currentProductItem.map((item) => ({
           ...item,
-          pQty: Number(item.pQty) + (Number(item.pQty) * incrementPercent) / 100,
-          sQty: Number(item.sQty) + (Number(item.sQty) * incrementPercent) / 100,
-          total: Number(item.total) + (Number(item.total) * incrementPercent) / 100
+          pQty: round(item.pQty + (item.pQty * incrementPercent) / 100),
+          sQty: round(item.sQty + (item.sQty * incrementPercent) / 100),
+          total: round(item.total + (item.total * incrementPercent) / 100)
         }));
       }
 
-      // 🔹 Divide target equally
+      // 🔹 Divide targets
       const dividedTargets = {};
 
       salesManagers.forEach((manager) => {
         dividedTargets[manager._id] = {
-          total: currentCompanyTotal / managerCount,
+          total: round(currentCompanyTotal / managerCount),
           products: currentProductItem.map((item) => ({
             productId: item.productId,
-            pQty: item.pQty / managerCount,
-            sQty: item.sQty / managerCount,
+            pQty: round(item.pQty / managerCount),
+            sQty: round(item.sQty / managerCount),
             price: item.price,
-            total: item.total / managerCount
+            total: round(item.total / managerCount)
           }))
         };
       });
 
-      // 🔥 UPDATE instead of NEW
+      // 🔥 Update only this month and forward
       const updated = await CompanyTarget.findOneAndUpdate(
         { database, fyear, month: currentMonth },
         {
           $set: {
-            incrementper,
+            incrementper: incrementPercent,
             companyTotal: currentCompanyTotal,
             productItem: currentProductItem,
             dividedTargets,
             created_by
           }
         },
-        {
-          new: true,
-          upsert: true   // remove this if you want STRICT update only
-        }
+        { new: true, upsert: true }
       );
 
       updatedTargets.push(updated);
@@ -429,7 +429,7 @@ export const updateCompanyTarget = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Targets updated from ${month} to March`,
+      message: `Updated ${month} and forward months only`,
       totalMonths: updatedTargets.length,
       data: updatedTargets
     });
@@ -441,6 +441,7 @@ export const updateCompanyTarget = async (req, res) => {
     });
   }
 };
+
 
 
 
