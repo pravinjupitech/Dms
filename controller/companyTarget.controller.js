@@ -183,8 +183,12 @@ export const getCompanyTarget = async (req, res) => {
     }
 
     const result = [];
+    let yearlyTarget = 0; // ✅ ONLY ADD THIS
 
     for (const target of companyTargets) {
+
+      yearlyTarget += target.companyTotal || 0; // ✅ accumulate yearly total
+
       const dividedTargetsObj = target.dividedTargets || {};
       const managerIds = Object.keys(dividedTargetsObj);
 
@@ -194,7 +198,7 @@ export const getCompanyTarget = async (req, res) => {
 
       const managers = await User.find(
         { _id: { $in: objectManagerIds } },
-        { firstName: 1 } // ✅ CORRECT FIELD
+        { firstName: 1 }
       ).lean();
 
       const managerMap = {};
@@ -211,16 +215,18 @@ export const getCompanyTarget = async (req, res) => {
 
       result.push({
         month: target.month,
-        incrementper: target.incrementper || 0, 
+        incrementper: target.incrementper || 0,
         companyTotal: target.companyTotal,
         productItem: target.productItem,
         salesManagerTargets
       });
     }
 
+    // ✅ ONLY ADD yearlyTarget here
     res.status(200).json({
       success: true,
       fyear,
+      yearlyTarget,   // ✅ Added key (nothing else changed)
       data: result
     });
 
@@ -232,8 +238,6 @@ export const getCompanyTarget = async (req, res) => {
     });
   }
 };
-
-
 
 
 export const getSalesManagerTarget = async (req, res) => {
