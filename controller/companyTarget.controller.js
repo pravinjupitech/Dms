@@ -9,122 +9,6 @@ const FY_MONTHS = [
     "October", "November", "December", "January", "February", "March"
 ];
 
-// export const saveCompanyTarget = async (req, res) => {
-//     try {
-//         const {
-//             database,
-//             fyear,
-//             month,
-//             incrementper,
-//             productItem,
-//             created_by
-//         } = req.body;
-
-//         const incrementPercent = Number(incrementper);
-
-//         const startIndex = FY_MONTHS.indexOf(month);
-//         if (startIndex === -1) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Invalid start month"
-//             });
-//         }
-//         const departments = await AssignRole.find({ database })
-//             .populate({ path: "departmentName", model: "department" })
-//             .populate({ path: "roles.roleId", model: "role" });
-
-//         const salesRoles = departments.find(
-//             dep => dep?.departmentName?.departmentName?.toLowerCase() === "sales"
-//         )?.roles || [];
-
-//         const salesManagerss = await User.find({ database }).populate({ path: "rolename", model: "role" });
-//         const salesManagers = salesManagerss.filter((item) => item?.rolename?.roleName === "Sales Manager")
-//         if (!salesManagers.length) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "No Sales Managers found"
-//             });
-//         }
-//         for (let item of salesManagers) {
-//             // console.log("item",item)
-
-//             const adminDetail = await getUserHierarchyDetails(item._id, database);
-
-//             const salespersons = await adminDetail.filter((item) => item?.rolename?.roleName === "Sales Person")
-//             // console.log("salespersons",salespersons);
-//         }
-
-//         const managerCount = salesManagers.length;
-
-//         let currentCompanyTotal = productItem.reduce(
-//             (sum, item) => sum + (item.total || 0),
-//             0
-//         );
-
-//         let currentProductItem = JSON.parse(JSON.stringify(productItem));
-
-//         const savedTargets = [];
-
-//         for (let i = startIndex; i < FY_MONTHS.length; i++) {
-//             const currentMonth = FY_MONTHS[i];
-
-//             if (i !== startIndex) {
-//                 currentCompanyTotal +=
-//                     (currentCompanyTotal * incrementPercent) / 100;
-
-//                 currentProductItem = currentProductItem.map((item) => ({
-//                     ...item,
-//                     pQty: item.pQty + (item.pQty * incrementPercent) / 100,
-//                     sQty: item.sQty + (item.sQty * incrementPercent) / 100,
-//                     total: item.total + (item.total * incrementPercent) / 100
-//                 }));
-//             }
-
-//             const dividedTargets = {};
-
-//             salesManagers.forEach((manager) => {
-//                 dividedTargets[manager._id] = {
-//                     total: currentCompanyTotal / managerCount,
-//                     products: currentProductItem.map((item) => ({
-//                         productId: item.productId,
-//                         pQty: item.pQty / managerCount,
-//                         sQty: item.sQty / managerCount,
-//                         price: item.price,
-//                         total: item.total / managerCount
-//                     }))
-//                 };
-//             });
-
-//             // const companyTarget = new CompanyTarget({
-//             //     database,
-//             //     fyear,
-//             //     month: currentMonth,
-//             //     incrementper,
-//             //     companyTotal: currentCompanyTotal,
-//             //     productItem: currentProductItem,
-//             //     dividedTargets,
-//             //     created_by
-//             // });
-
-//             // await companyTarget.save();
-//             // savedTargets.push(companyTarget);
-//         }
-
-//         res.status(201).json({
-//             success: true,
-//             message: `Targets saved from ${month} to March`,
-//             totalMonths: savedTargets.length,
-//             data: savedTargets
-//         });
-
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             error: error.message
-//         });
-//     }
-// };
-
 export const saveCompanyTarget = async (req, res) => {
     try {
         const {
@@ -136,14 +20,7 @@ export const saveCompanyTarget = async (req, res) => {
             created_by
         } = req.body;
 
-        if (!database || !fyear || !month || !productItem?.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Missing required fields"
-            });
-        }
-
-        const incrementPercent = Number(incrementper || 0);
+        const incrementPercent = Number(incrementper);
 
         const startIndex = FY_MONTHS.indexOf(month);
         if (startIndex === -1) {
@@ -152,44 +29,50 @@ export const saveCompanyTarget = async (req, res) => {
                 message: "Invalid start month"
             });
         }
+        const departments = await AssignRole.find({ database })
+            .populate({ path: "departmentName", model: "department" })
+            .populate({ path: "roles.roleId", model: "role" });
 
-        // ✅ Get Sales Department With Roles
-        const salesDepartment = await AssignRole.findOne({ database });
+        const salesRoles = departments.find(
+            dep => dep?.departmentName?.departmentName?.toLowerCase() === "sales"
+        )?.roles || [];
 
-        if (!salesDepartment || !salesDepartment.roles?.length) {
+        const salesManagerss = await User.find({ database }).populate({ path: "rolename", model: "role" });
+        const salesManagers = salesManagerss.filter((item) => item?.rolename?.roleName === "Sales Manager")
+        if (!salesManagers.length) {
             return res.status(400).json({
                 success: false,
-                message: "Sales department roles not configured"
+                message: "No Sales Managers found"
             });
         }
+        for (let item of salesManagers) {
+            // console.log("item",item)
 
-        // ✅ Sort roles by rolePosition ASC
-        const sortedRoles = salesDepartment.roles.sort(
-            (a, b) => a.rolePosition - b.rolePosition
+            const adminDetail = await getUserHierarchyDetails(item._id, database);
+
+            const salespersons = await adminDetail.filter((item) => item?.rolename?.roleName === "Sales Person")
+            // console.log("salespersons",salespersons);
+        }
+
+        const managerCount = salesManagers.length;
+
+        let currentCompanyTotal = productItem.reduce(
+            (sum, item) => sum + (item.total || 0),
+            0
         );
 
-        const savedMonths = [];
+        let currentProductItem = JSON.parse(JSON.stringify(productItem));
 
-        // 🔥 Loop Financial Year From Selected Month
+        const savedTargets = [];
+
         for (let i = startIndex; i < FY_MONTHS.length; i++) {
-
             const currentMonth = FY_MONTHS[i];
 
-            // 🔥 Prevent Duplicate Month Entry
-            const alreadyExists = await CompanyTarget.findOne({
-                database,
-                fyear,
-                month: currentMonth
-            });
+            if (i !== startIndex) {
+                currentCompanyTotal +=
+                    (currentCompanyTotal * incrementPercent) / 100;
 
-            if (alreadyExists) continue;
-
-            // ✅ Deep copy base product
-            let monthProductItem = JSON.parse(JSON.stringify(productItem));
-
-            // ✅ Apply Increment If Not First Month
-            if (i !== startIndex && incrementPercent > 0) {
-                monthProductItem = monthProductItem.map(item => ({
+                currentProductItem = currentProductItem.map((item) => ({
                     ...item,
                     pQty: item.pQty + (item.pQty * incrementPercent) / 100,
                     sQty: item.sQty + (item.sQty * incrementPercent) / 100,
@@ -197,118 +80,235 @@ export const saveCompanyTarget = async (req, res) => {
                 }));
             }
 
-            // ✅ Calculate Company Total (Backend Calculated)
-            const companyTotal = monthProductItem.reduce(
-                (sum, item) => sum + (item.total || 0),
-                0
-            );
+            const dividedTargets = {};
 
-            const hierarchyTargets = [];
-
-            // 🔥 Recursive Role Division Function
-            const divideHierarchy = async ({
-                parentUsers,
-                roleIndex,
-                totalTarget,
-                productTarget
-            }) => {
-
-                const currentRole = sortedRoles[roleIndex];
-                if (!currentRole) return;
-
-                let users = [];
-
-                // 🔹 First Role (Top Level)
-                if (roleIndex === 0) {
-                    users = await User.find({
-                        database,
-                        rolename: currentRole.roleId
-                    });
-                } else {
-                    for (let parent of parentUsers) {
-                        const children = await getUserHierarchyDetails(parent._id, database);
-
-                        const filtered = children.filter(
-                            u => String(u.rolename) === String(currentRole.roleId)
-                        );
-
-                        users.push(...filtered);
-                    }
-                }
-
-                if (!users.length) return;
-
-                const userCount = users.length;
-
-                for (let user of users) {
-
-                    const dividedTotal = totalTarget / userCount;
-
-                    const dividedProducts = productTarget.map(item => ({
-                        ...item,
-                        pQty: item.pQty / userCount,
-                        sQty: item.sQty / userCount,
-                        total: item.total / userCount
-                    }));
-
-                    // 🔥 Store Every Role Level
-                    hierarchyTargets.push({
-                        roleId: currentRole.roleId,
-                        rolePosition: currentRole.rolePosition,
-                        userId: user._id,
-                        total: dividedTotal,
-                        products: dividedProducts
-                    });
-
-                    // 🔁 Go Deeper If Not Last Role
-                    if (roleIndex < sortedRoles.length - 1) {
-                        await divideHierarchy({
-                            parentUsers: [user],
-                            roleIndex: roleIndex + 1,
-                            totalTarget: dividedTotal,
-                            productTarget: dividedProducts
-                        });
-                    }
-                }
-            };
-
-            // 🔥 Start Hierarchy Division
-            await divideHierarchy({
-                parentUsers: [],
-                roleIndex: 0,
-                totalTarget: companyTotal,
-                productTarget: monthProductItem
+            salesManagers.forEach((manager) => {
+                dividedTargets[manager._id] = {
+                    total: currentCompanyTotal / managerCount,
+                    products: currentProductItem.map((item) => ({
+                        productId: item.productId,
+                        pQty: item.pQty / managerCount,
+                        sQty: item.sQty / managerCount,
+                        price: item.price,
+                        total: item.total / managerCount
+                    }))
+                };
             });
 
-            // ✅ Save Final Company Target Document
-            const companyTargetDoc = new CompanyTarget({
-                database,
-                fyear,
-                month: currentMonth,
-                incrementper,
-                companyTotal,
-                productItem: monthProductItem,
-                hierarchyTargets,
-                created_by
-            });
+            // const companyTarget = new CompanyTarget({
+            //     database,
+            //     fyear,
+            //     month: currentMonth,
+            //     incrementper,
+            //     companyTotal: currentCompanyTotal,
+            //     productItem: currentProductItem,
+            //     dividedTargets,
+            //     created_by
+            // });
 
-            await companyTargetDoc.save();
-            savedMonths.push(companyTargetDoc);
+            // await companyTarget.save();
+            // savedTargets.push(companyTarget);
         }
 
-        return res.status(201).json({
+        res.status(201).json({
             success: true,
             message: `Targets saved from ${month} to March`,
-            totalMonthsSaved: savedMonths.length
+            totalMonths: savedTargets.length,
+            data: savedTargets
         });
 
     } catch (error) {
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
-            message: error.message
+            error: error.message
         });
     }
 };
+
+// export const saveCompanyTarget = async (req, res) => {
+//     try {
+//         const {
+//             database,
+//             fyear,
+//             month,
+//             incrementper,
+//             productItem,
+//             created_by
+//         } = req.body;
+
+//         if (!database || !fyear || !month || !productItem?.length) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Missing required fields"
+//             });
+//         }
+
+//         const incrementPercent = Number(incrementper || 0);
+
+//         const startIndex = FY_MONTHS.indexOf(month);
+//         if (startIndex === -1) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Invalid start month"
+//             });
+//         }
+
+//         // ✅ Get Sales Department With Roles
+//         const salesDepartment = await AssignRole.findOne({ database });
+
+//         if (!salesDepartment || !salesDepartment.roles?.length) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Sales department roles not configured"
+//             });
+//         }
+
+//         // ✅ Sort roles by rolePosition ASC
+//         const sortedRoles = salesDepartment.roles.sort(
+//             (a, b) => a.rolePosition - b.rolePosition
+//         );
+
+//         const savedMonths = [];
+
+//         // 🔥 Loop Financial Year From Selected Month
+//         for (let i = startIndex; i < FY_MONTHS.length; i++) {
+
+//             const currentMonth = FY_MONTHS[i];
+
+//             // 🔥 Prevent Duplicate Month Entry
+//             const alreadyExists = await CompanyTarget.findOne({
+//                 database,
+//                 fyear,
+//                 month: currentMonth
+//             });
+
+//             if (alreadyExists) continue;
+
+//             // ✅ Deep copy base product
+//             let monthProductItem = JSON.parse(JSON.stringify(productItem));
+
+//             // ✅ Apply Increment If Not First Month
+//             if (i !== startIndex && incrementPercent > 0) {
+//                 monthProductItem = monthProductItem.map(item => ({
+//                     ...item,
+//                     pQty: item.pQty + (item.pQty * incrementPercent) / 100,
+//                     sQty: item.sQty + (item.sQty * incrementPercent) / 100,
+//                     total: item.total + (item.total * incrementPercent) / 100
+//                 }));
+//             }
+
+//             // ✅ Calculate Company Total (Backend Calculated)
+//             const companyTotal = monthProductItem.reduce(
+//                 (sum, item) => sum + (item.total || 0),
+//                 0
+//             );
+
+//             const hierarchyTargets = [];
+
+//             // 🔥 Recursive Role Division Function
+//             const divideHierarchy = async ({
+//                 parentUsers,
+//                 roleIndex,
+//                 totalTarget,
+//                 productTarget
+//             }) => {
+
+//                 const currentRole = sortedRoles[roleIndex];
+//                 if (!currentRole) return;
+
+//                 let users = [];
+
+//                 // 🔹 First Role (Top Level)
+//                 if (roleIndex === 0) {
+//                     users = await User.find({
+//                         database,
+//                         rolename: currentRole.roleId
+//                     });
+//                 } else {
+//                     for (let parent of parentUsers) {
+//                         const children = await getUserHierarchyDetails(parent._id, database);
+
+//                         const filtered = children.filter(
+//                             u => String(u.rolename) === String(currentRole.roleId)
+//                         );
+
+//                         users.push(...filtered);
+//                     }
+//                 }
+
+//                 if (!users.length) return;
+
+//                 const userCount = users.length;
+
+//                 for (let user of users) {
+
+//                     const dividedTotal = totalTarget / userCount;
+
+//                     const dividedProducts = productTarget.map(item => ({
+//                         ...item,
+//                         pQty: item.pQty / userCount,
+//                         sQty: item.sQty / userCount,
+//                         total: item.total / userCount
+//                     }));
+
+//                     // 🔥 Store Every Role Level
+//                     hierarchyTargets.push({
+//                         roleId: currentRole.roleId,
+//                         rolePosition: currentRole.rolePosition,
+//                         userId: user._id,
+//                         total: dividedTotal,
+//                         products: dividedProducts
+//                     });
+
+//                     // 🔁 Go Deeper If Not Last Role
+//                     if (roleIndex < sortedRoles.length - 1) {
+//                         await divideHierarchy({
+//                             parentUsers: [user],
+//                             roleIndex: roleIndex + 1,
+//                             totalTarget: dividedTotal,
+//                             productTarget: dividedProducts
+//                         });
+//                     }
+//                 }
+//             };
+
+//             // 🔥 Start Hierarchy Division
+//             await divideHierarchy({
+//                 parentUsers: [],
+//                 roleIndex: 0,
+//                 totalTarget: companyTotal,
+//                 productTarget: monthProductItem
+//             });
+
+//             // ✅ Save Final Company Target Document
+//             const companyTargetDoc = new CompanyTarget({
+//                 database,
+//                 fyear,
+//                 month: currentMonth,
+//                 incrementper,
+//                 companyTotal,
+//                 productItem: monthProductItem,
+//                 hierarchyTargets,
+//                 created_by
+//             });
+
+//             await companyTargetDoc.save();
+//             savedMonths.push(companyTargetDoc);
+//         }
+
+//         return res.status(201).json({
+//             success: true,
+//             message: `Targets saved from ${month} to March`,
+//             totalMonthsSaved: savedMonths.length
+//         });
+
+//     } catch (error) {
+//         return res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
 
 export const getCompanyTarget = async (req, res) => {
     try {
