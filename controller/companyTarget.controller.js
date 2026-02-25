@@ -184,6 +184,7 @@ export const saveCompanyTarget = async (req, res) => {
             if (!customersByParent[c.created_by]) customersByParent[c.created_by] = [];
             customersByParent[c.created_by].push(c);
         });
+        
 
         // 🔹 Get all sales managers
         const salesManagers = allUsers.filter(u => u.rolename === firstRole.roleId);
