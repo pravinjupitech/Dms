@@ -78,30 +78,14 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-    productId: {
-      type: String
-    },
-    category: {
-      type: String
-    },
-    subCategory: {
-      type: String
-    },
-    productName: {
-      type: String
-    },
-    pQty: {
-      type: Number
-    },
-    sQty: {
-      type: Number
-    },
-    price: {
-      type: Number
-    },
-    total: {
-      type: Number
-    }
+    productId: String,
+    category: String,
+    subCategory: String,
+    productName: String,
+    pQty: Number,
+    sQty: Number,
+    price: Number,
+    total: Number
   },
   { _id: false }
 );
@@ -112,19 +96,13 @@ const roleTargetSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "role"
     },
-    rolePosition: {
-      type: Number
-    },
+    rolePosition: Number,
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     },
-     firstName: {           
-      type: String
-    },
-    total: {
-      type: Number
-    },
+    firstName: String,
+    total: Number,
     products: [productSchema]
   },
   { _id: false }
@@ -147,19 +125,23 @@ const companyTargetSchema = new mongoose.Schema(
       required: true
     },
 
-    incrementper: {
-      type: String
+    /* 🔥 NEW FIELDS (IMPORTANT) */
+    managerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
 
-    // 🔥 Calculated in backend
-    companyTotal: {
-      type: Number
-    },
+    managerName: String,
 
-    // 🔥 Original company product target
+    managerTotal: Number,
+
+    incrementper: String,
+
+    companyTotal: Number,
+
     productItem: [productSchema],
 
-    // 🔥 Dynamic hierarchy division
     hierarchyTargets: [roleTargetSchema],
 
     created_by: {
@@ -170,9 +152,9 @@ const companyTargetSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🔥 Prevent duplicate month entry
+/* 🔥 Updated Unique Index */
 companyTargetSchema.index(
-  { database: 1, fyear: 1, month: 1 },
+  { database: 1, fyear: 1, month: 1, managerId: 1 },
   { unique: true }
 );
 
