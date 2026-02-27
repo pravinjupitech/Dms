@@ -774,6 +774,7 @@ export const updateCustomerTarget = async (req, res) => {
 
     const incrementPercent = Number(incrementper);
     const startIndex = FY_MONTHS.indexOf(month);
+
     if (startIndex === -1) {
       return res.status(400).json({
         success: false,
@@ -785,22 +786,25 @@ export const updateCustomerTarget = async (req, res) => {
     let updatedMonths = 0;
 
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
+
       const currentMonth = FY_MONTHS[i];
 
       const doc = await CompanyTarget.findOne({
         database,
         fyear,
-        month: currentMonth
+        month: currentMonth,
+        "hierarchyTargets.userId": customerId
       });
 
-      if (!doc || !doc.hierarchyTargets?.length) continue;
+      if (!doc) continue;
 
-      // 🔹 Detect LAST rolePosition dynamically (Customer level)
       const maxRolePosition = Math.max(
         ...doc.hierarchyTargets.map(h => h.rolePosition || 0)
       );
 
-      // 🔹 Prepare products
+      /* -----------------------------
+         PREPARE PRODUCTS
+      -----------------------------*/
       let monthProducts;
 
       if (i === startIndex) {
@@ -812,27 +816,28 @@ export const updateCustomerTarget = async (req, res) => {
         const multiplier = 1 + incrementPercent / 100;
 
         monthProducts = previousMonthProducts.map(item => {
-          const newPQty = round(item.pQty * multiplier);
+          const newQty = round(item.pQty * multiplier);
           return {
             ...item,
-            pQty: newPQty,
-            total: round(newPQty * item.price)
+            pQty: newQty,
+            total: round(newQty * item.price)
           };
         });
       }
 
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
 
-      // 🔹 Find customer (last rolePosition)
       const customerIndex = doc.hierarchyTargets.findIndex(
         h =>
-          h?.userId?.toString() === customerId &&
-          h?.rolePosition === maxRolePosition
+          h.userId?.toString() === customerId &&
+          h.rolePosition === maxRolePosition
       );
 
       if (customerIndex === -1) continue;
 
-      // 🔹 Update customer
+      /* -----------------------------
+         UPDATE ONLY THIS CUSTOMER
+      -----------------------------*/
       const customerTotal = monthProducts.reduce(
         (sum, item) => sum + item.total,
         0
@@ -841,39 +846,39 @@ export const updateCustomerTarget = async (req, res) => {
       doc.hierarchyTargets[customerIndex].products = monthProducts;
       doc.hierarchyTargets[customerIndex].total = round(customerTotal);
 
-      // 🔹 Recalculate totals LEVEL BY LEVEL upward
+      /* -----------------------------
+         RECALCULATE UPWARD BY SUM
+      -----------------------------*/
       for (let level = maxRolePosition - 1; level >= 1; level--) {
 
-        const currentLevelUsers = doc.hierarchyTargets.filter(
+        const parentUsers = doc.hierarchyTargets.filter(
           h => h.rolePosition === level
         );
 
-        const nextLevelUsers = doc.hierarchyTargets.filter(
-          h => h.rolePosition === level + 1
-        );
+        parentUsers.forEach(parent => {
 
-        if (!currentLevelUsers.length) continue;
+          const children = doc.hierarchyTargets.filter(
+            h => h.rolePosition === level + 1
+          );
 
-        const totalOfNextLevel = nextLevelUsers.reduce(
-          (sum, item) => sum + (item.total || 0),
-          0
-        );
+          const total = children.reduce(
+            (sum, child) => sum + (child.total || 0),
+            0
+          );
 
-        const distributedTotal = round(
-          totalOfNextLevel / currentLevelUsers.length
-        );
-
-        currentLevelUsers.forEach(user => {
-          user.total = distributedTotal;
+          parent.total = round(total);
         });
       }
 
-      // 🔹 Recalculate company total (rolePosition = 1)
-      const companyTotal = doc.hierarchyTargets
+      /* -----------------------------
+         UPDATE MANAGER & COMPANY TOTAL
+      -----------------------------*/
+      const managerTotal = doc.hierarchyTargets
         .filter(h => h.rolePosition === 1)
         .reduce((sum, item) => sum + (item.total || 0), 0);
 
-      doc.companyTotal = round(companyTotal);
+      doc.managerTotal = round(managerTotal);
+      doc.companyTotal = round(managerTotal);
       doc.incrementper = incrementper;
       doc.created_by = created_by;
 
@@ -883,7 +888,7 @@ export const updateCustomerTarget = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Customer target updated till FY end successfully",
+      message: "Customer updated individually with increment till FY end",
       totalMonthsUpdated: updatedMonths
     });
 
