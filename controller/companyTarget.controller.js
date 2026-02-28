@@ -430,7 +430,6 @@ export const deleteCompanyTarget = async (req, res) => {
       database,
       fyear
     });
-console.log("deletedResult",deletedResult.deletedCount);
 
     if (deletedResult.deletedCount === 0) {
       return res.status(404).json({
