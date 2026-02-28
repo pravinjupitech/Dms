@@ -431,7 +431,7 @@ export const deleteCompanyTarget = async (req, res) => {
       fyear
     });
 
-    if (deletedResult.deletedCount === 0) {
+    if (deletedResult) {
       return res.status(404).json({
         success: false,
         message: "No company targets found to delete"
