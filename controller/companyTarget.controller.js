@@ -416,40 +416,40 @@ export const getSalesManagerTarget = async (req, res) => {
 };
 
 export const deleteCompanyTarget = async (req, res) => {
-    try {
-        const { month, database, fyear } = req.body;
+  try {
+    const {database, fyear } = req.body;
 
-        if (!month || !database || !fyear) {
-            return res.status(400).json({
-                success: false,
-                message: "month, database and fyear are required"
-            });
-        }
-
-        const deletedTarget = await CompanyTarget.findOneAndDelete({
-            month,
-            database,
-            fyear
-        });
-
-        if (!deletedTarget) {
-            return res.status(404).json({
-                status: false,
-                message: "Company target not found"
-            });
-        }
-
-        res.status(200).json({
-            status: true,
-            message: "Company target deleted successfully"
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            status: false,
-            error: error.message
-        });
+    if (!month || !database || !fyear) {
+      return res.status(400).json({
+        success: false,
+        message: "month, database and fyear are required"
+      });
     }
+
+    const deletedResult = await CompanyTarget.deleteMany({
+      database,
+      fyear
+    });
+
+    if (deletedResult.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No company targets found to delete"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Company targets deleted successfully",
+      deletedCount: deletedResult.deletedCount
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 export const updateCompanyTarget = async (req, res) => {
