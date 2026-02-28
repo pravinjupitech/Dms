@@ -419,10 +419,10 @@ export const deleteCompanyTarget = async (req, res) => {
   try {
     const {database, fyear } = req.body;
 
-    if (!month || !database || !fyear) {
+    if (!database || !fyear) {
       return res.status(400).json({
         success: false,
-        message: "month, database and fyear are required"
+        message: " database and fyear are required"
       });
     }
 
