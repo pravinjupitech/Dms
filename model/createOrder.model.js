@@ -50,17 +50,17 @@ const orderItemsSchema = new mongoose.Schema({
     grandTotal: {
         type: Number
     },
-    newGrandTotal:{
-type:Number
+    newGrandTotal: {
+        type: Number
     },
-    newIgstAmount:{
-        type:Number
+    newIgstAmount: {
+        type: Number
     },
-    newCgstAmount:{
-        type:Number
+    newCgstAmount: {
+        type: Number
     },
-    newSgstAmount:{
-        type:Number
+    newSgstAmount: {
+        type: Number
     },
     unitType: {
         type: String
@@ -437,7 +437,27 @@ const createOrderSchema = new mongoose.Schema({
     },
     otp: {
         type: Number
-    }
+    },
+    upiId: {
+        type: String
+    },
+    upiLink: {
+        type: String
+    },
+    qrCode: {
+        type: String
+    },
+    utrNumber: {
+        type: String
+    },
+    paymentVerified: {
+        type: Boolean,
+        default: false
+    },
+    paidAmount: {
+        type: Number,
+        default: 0
+    },
 }, { timestamps: true })
 
 export const CreateOrder = mongoose.model("createOrder", createOrderSchema)

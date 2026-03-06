@@ -26,6 +26,8 @@ import { CompanyDetails } from "../model/companyDetails.model.js";
 import nodemailer from "nodemailer";
 import { Role } from "../model/role.model.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
+import QRCode from "qrcode";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -122,86 +124,202 @@ export const createOrder = async (req, res, next) => {
     }
 };
 
+// export const createOrderWithInvoice = async (req, res, next) => {
+//     try {
+//         console.log("req.body", req.body);
+//         const orderItems = req.body.orderItems;
+//         const date1 = new Date();
+//         const date2 = new Date(req.body.date);
+//         const party = await Customer.findById({ _id: req.body.partyId })
+//         const user = await User.findOne({ _id: party.created_by });
+//         if (!user) {
+//             return res.status(401).json({ message: "No user found", status: false });
+//         } else {
+//             if (date1.toDateString() === date2.toDateString()) {
+//                 for (const orderItem of orderItems) {
+//                     const product = await Product.findById({ _id: orderItem.productId });
+//                     if (product) {
+//                         const warehouse = await Warehouse.findById(product.warehouse)
+//                         if (warehouse) {
+//                             const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
+//                             // pro.currentStock -= (orderItem.qty);
+//                             product.qty -= orderItem.qty;
+//                             await warehouse.save();
+//                             await product.save()
+//                             await addProductInWarehouse5(product, product.warehouse, orderItem, req.body.date)
+//                         }
+//                     } else {
+//                         console.error(`Product with ID ${orderItem.productId} not found`);
+//                     }
+//                 }
+//                 req.body.status = "completed"
+//                 req.body.userId = party.created_by
+//                 req.body.database = user.database
+//                 // console.log("party after",party.remainingLimit)
+//                 // console.log("req.body.grandTotal",req.body.grandTotal)
+//                 party.remainingLimit -= req.body.grandTotal;
+//                 await party.save()
+//                 // console.log("party before",party.remainingLimit)
+
+//                 const savedOrder = await CreateOrder.create(req.body)
+//                 if (savedOrder) {
+//                     const particular = "SalesInvoice";
+//                     await ledgerPartyForDebit(savedOrder, particular)
+//                 }
+//                 return res.status(200).json({ orderDetail: savedOrder, status: true });
+//             } else if (date1 > date2) {
+//                 for (const orderItem of orderItems) {
+//                     const product = await Product.findById({ _id: orderItem.productId });
+//                     if (product) {
+//                         const warehouse = await Warehouse.findById(product.warehouse)
+//                         if (warehouse) {
+//                             const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
+//                             product.qty -= orderItem.qty;
+//                             await warehouse.save();
+//                             await product.save()
+//                             await addProductInWarehouse5(product, product.warehouse, orderItem, req.body.date)
+//                         }
+//                     } else {
+//                         console.error(`Product with ID ${orderItem.productId} not found`);
+//                     }
+//                 }
+//                 req.body.status = "completed"
+//                 req.body.userId = party.created_by
+//                 req.body.database = user.database
+//                 req.body.paymentStatus = true;
+//                 party.remainingLimit -= req.body.grandTotal;
+//                 await party.save()
+//                 const savedOrder = await CreateOrder.create(req.body)
+//                 if (savedOrder) {
+//                     const particular = "SalesInvoice";
+//                     await ledgerPartyForDebit(savedOrder, particular)
+//                 }
+//                 return res.status(200).json({ orderDetail: savedOrder, status: true });
+//             } else {
+//                 return res.status(400).json({ message: "can not purchaseOrder of next date", status: false })
+//             }
+//         }
+//     } catch (err) {
+//         console.log(err);
+//         return res.status(500).json({ error: "Internal Server Error", status: false });
+//     }
+// };
+
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
-        console.log("req.body", req.body);
+
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
-        const party = await Customer.findById({ _id: req.body.partyId })
+
+        const party = await Customer.findById({ _id: req.body.partyId });
+        if (!party) {
+            return res.status(404).json({ message: "Customer not found", status: false });
+        }
+
         const user = await User.findOne({ _id: party.created_by });
         if (!user) {
             return res.status(401).json({ message: "No user found", status: false });
-        } else {
-            if (date1.toDateString() === date2.toDateString()) {
-                for (const orderItem of orderItems) {
-                    const product = await Product.findById({ _id: orderItem.productId });
-                    if (product) {
-                        const warehouse = await Warehouse.findById(product.warehouse)
-                        if (warehouse) {
-                            const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
-                            // pro.currentStock -= (orderItem.qty);
-                            product.qty -= orderItem.qty;
-                            await warehouse.save();
-                            await product.save()
-                            await addProductInWarehouse5(product, product.warehouse, orderItem, req.body.date)
-                        }
-                    } else {
-                        console.error(`Product with ID ${orderItem.productId} not found`);
-                    }
-                }
-                req.body.status = "completed"
-                req.body.userId = party.created_by
-                req.body.database = user.database
-                // console.log("party after",party.remainingLimit)
-                // console.log("req.body.grandTotal",req.body.grandTotal)
-                party.remainingLimit -= req.body.grandTotal;
-                await party.save()
-                // console.log("party before",party.remainingLimit)
+        }
 
-                const savedOrder = await CreateOrder.create(req.body)
-                if (savedOrder) {
-                    const particular = "SalesInvoice";
-                    await ledgerPartyForDebit(savedOrder, particular)
+        if (date2 > date1) {
+            return res.status(400).json({
+                message: "can not purchaseOrder of next date",
+                status: false
+            });
+        }
+
+        for (const orderItem of orderItems) {
+
+            const product = await Product.findById({ _id: orderItem.productId });
+
+            if (product) {
+
+                const warehouse = await Warehouse.findById(product.warehouse);
+
+                if (warehouse) {
+
+                    product.qty -= orderItem.qty;
+
+                    await warehouse.save();
+                    await product.save();
+
+                    await addProductInWarehouse5(
+                        product,
+                        product.warehouse,
+                        orderItem,
+                        req.body.date
+                    );
                 }
-                return res.status(200).json({ orderDetail: savedOrder, status: true });
-            } else if (date1 > date2) {
-                for (const orderItem of orderItems) {
-                    const product = await Product.findById({ _id: orderItem.productId });
-                    if (product) {
-                        const warehouse = await Warehouse.findById(product.warehouse)
-                        if (warehouse) {
-                            const pro = warehouse.productItems.find((item) => item.productId.toString() === orderItem.productId.toString())
-                            product.qty -= orderItem.qty;
-                            await warehouse.save();
-                            await product.save()
-                            await addProductInWarehouse5(product, product.warehouse, orderItem, req.body.date)
-                        }
-                    } else {
-                        console.error(`Product with ID ${orderItem.productId} not found`);
-                    }
-                }
-                req.body.status = "completed"
-                req.body.userId = party.created_by
-                req.body.database = user.database
-                req.body.paymentStatus = true;
-                party.remainingLimit -= req.body.grandTotal;
-                await party.save()
-                const savedOrder = await CreateOrder.create(req.body)
-                if (savedOrder) {
-                    const particular = "SalesInvoice";
-                    await ledgerPartyForDebit(savedOrder, particular)
-                }
-                return res.status(200).json({ orderDetail: savedOrder, status: true });
+
             } else {
-                return res.status(400).json({ message: "can not purchaseOrder of next date", status: false })
+                console.error(`Product with ID ${orderItem.productId} not found`);
             }
         }
+
+
+        req.body.status = "completed";
+        req.body.userId = party.created_by;
+        req.body.database = user.database;
+
+        if (date1 > date2) {
+            req.body.paymentStatus = true;
+        }
+
+
+        party.remainingLimit -= req.body.grandTotal;
+        await party.save();
+
+
+
+        const upiId = "9575892923@ybl";
+        const merchantName = "EKOPACK INDIA";
+
+        const amount = req.body.grandTotal;
+        const orderNo = req.body.orderNo || `INV${Date.now()}`;
+        const partyName = party.CompanyName;
+
+        const invoiceDate = new Date(req.body.date).toLocaleDateString();
+
+        const invoiceTime = new Date().toLocaleTimeString();
+
+        const note = `Party:${partyName}, Invoice:${orderNo}, Date:${invoiceDate}, Time:${invoiceTime}, Amount:${amount}`;
+
+        const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+        const qrCode = await QRCode.toDataURL(upiLink);
+
+        req.body.upiId = upiId;
+        req.body.upiLink = upiLink;
+        req.body.qrCode = qrCode;
+        req.body.invoiceTime = invoiceTime;
+        req.body.invoiceDate = invoiceDate;
+
+        req.body.paidAmount = 0;
+        req.body.paymentVerified = false;
+
+
+        const savedOrder = await CreateOrder.create(req.body);
+
+        if (savedOrder) {
+            const particular = "SalesInvoice";
+            await ledgerPartyForDebit(savedOrder, particular);
+        }
+
+        return res.status(200).json({
+            orderDetail: savedOrder,
+            status: true
+        });
+
     } catch (err) {
         console.log(err);
-        return res.status(500).json({ error: "Internal Server Error", status: false });
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false
+        });
     }
 };
+
 export const createOrderHistoryByUserId = async (req, res, next) => {
     try {
         const userId = req.params.id;
