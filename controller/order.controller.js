@@ -211,7 +211,6 @@ export const createOrderWithInvoice = async (req, res, next) => {
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
-
         const party = await Customer.findById({ _id: req.body.partyId });
         if (!party) {
             return res.status(404).json({ message: "Customer not found", status: false });
