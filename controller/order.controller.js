@@ -205,8 +205,6 @@ export const createOrder = async (req, res, next) => {
 //     }
 // };
 
-
-
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
 
@@ -214,9 +212,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
         const date1 = new Date();
         const date2 = new Date(req.body.date);
 
-        // =========================
-        // CHECK CUSTOMER
-        // =========================
+       
         const party = await Customer.findById(req.body.partyId);
 
         if (!party) {
@@ -238,9 +234,6 @@ export const createOrderWithInvoice = async (req, res, next) => {
             });
         }
 
-        // =========================
-        // FUTURE DATE VALIDATION
-        // =========================
         if (date2 > date1) {
             return res.status(400).json({
                 message: "Cannot create invoice for future date",
@@ -248,9 +241,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
             });
         }
 
-        // =========================
-        // STOCK UPDATE
-        // =========================
+
         for (const orderItem of orderItems) {
 
             const product = await Product.findById(orderItem.productId);
@@ -277,9 +268,6 @@ export const createOrderWithInvoice = async (req, res, next) => {
             );
         }
 
-        // =========================
-        // ORDER META DATA
-        // =========================
         req.body.status = "completed";
         req.body.userId = party.created_by;
         req.body.database = user.database;
@@ -288,44 +276,38 @@ export const createOrderWithInvoice = async (req, res, next) => {
             req.body.paymentStatus = true;
         }
 
-        // =========================
-        // UPDATE CUSTOMER LIMIT
-        // =========================
         party.remainingLimit -= req.body.grandTotal;
         await party.save();
 
-        // =========================
-        // QR CODE GENERATION
-        // =========================
-        const upiId = "9575892923@ybl";
-        const merchantName = "EKOPACK INDIA";
+   
 
-        const amount = req.body.grandTotal;
-        const orderNo = req.body.orderNo || `INV${Date.now()}`;
-        const partyName = party.CompanyName;
 
-        const invoiceDate = new Date(req.body.date).toISOString().split("T")[0];
-        const invoiceTime = new Date().toLocaleTimeString();
+const upiId = "9575892923@ybl";
+const merchantName = "EKOPACK INDIA";
 
-        const note = `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
+const amount = req.body.grandTotal;
+const orderNo = req.body.orderNo || `INV${Date.now()}`;
+const partyName = party.CompanyName;
 
-        const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+const invoiceDate = new Date(req.body.date).toISOString().split("T")[0];
+const invoiceTime = new Date().toLocaleTimeString();
 
-        // create uploads folder if not exists
-        const qrFolder = path.join(process.cwd(), "uploads");
+const note = `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
 
-        if (!fs.existsSync(qrFolder)) {
-            fs.mkdirSync(qrFolder);
-        }
+const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
 
-        const qrFileName = `invoice-${orderNo}.png`;
-        const qrPath = path.join(qrFolder, qrFileName);
+const qrFolder = path.join(process.cwd(), "public/Images");
 
-        await QRCode.toFile(qrPath, upiLink);
+if (!fs.existsSync(qrFolder)) {
+    fs.mkdirSync(qrFolder, { recursive: true });
+}
 
-        // =========================
-        // SAVE QR DATA
-        // =========================
+const qrFileName = `invoice-${orderNo}.png`;
+const qrPath = path.join(qrFolder, qrFileName);
+
+await QRCode.toFile(qrPath, upiLink);
+
+      
         req.body.upiId = upiId;
         req.body.upiLink = upiLink;
         req.body.qrCode = qrFileName;
