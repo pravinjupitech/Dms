@@ -316,9 +316,6 @@ await QRCode.toFile(qrPath, upiLink);
         req.body.paidAmount = 0;
         req.body.paymentVerified = false;
 
-        // =========================
-        // SAVE ORDER
-        // =========================
         const savedOrder = await CreateOrder.create(req.body);
 
         if (savedOrder) {
