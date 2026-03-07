@@ -205,58 +205,81 @@ export const createOrder = async (req, res, next) => {
 //     }
 // };
 
+
+
 export const createOrderWithInvoice = async (req, res, next) => {
     try {
 
         const orderItems = req.body.orderItems;
         const date1 = new Date();
         const date2 = new Date(req.body.date);
-        const party = await Customer.findById({ _id: req.body.partyId });
+
+        // =========================
+        // CHECK CUSTOMER
+        // =========================
+        const party = await Customer.findById(req.body.partyId);
+
         if (!party) {
-            return res.status(404).json({ message: "Customer not found", status: false });
-        }
-
-        const user = await User.findOne({ _id: party.created_by });
-        if (!user) {
-            return res.status(401).json({ message: "No user found", status: false });
-        }
-
-        if (date2 > date1) {
-            return res.status(400).json({
-                message: "can not purchaseOrder of next date",
+            return res.status(404).json({
+                message: "Customer not found",
                 status: false
             });
         }
 
-        for (const orderItem of orderItems) {
+        // =========================
+        // CHECK USER
+        // =========================
+        const user = await User.findById(party.created_by);
 
-            const product = await Product.findById({ _id: orderItem.productId });
-
-            if (product) {
-
-                const warehouse = await Warehouse.findById(product.warehouse);
-
-                if (warehouse) {
-
-                    product.qty -= orderItem.qty;
-
-                    await warehouse.save();
-                    await product.save();
-
-                    await addProductInWarehouse5(
-                        product,
-                        product.warehouse,
-                        orderItem,
-                        req.body.date
-                    );
-                }
-
-            } else {
-                console.error(`Product with ID ${orderItem.productId} not found`);
-            }
+        if (!user) {
+            return res.status(401).json({
+                message: "No user found",
+                status: false
+            });
         }
 
+        // =========================
+        // FUTURE DATE VALIDATION
+        // =========================
+        if (date2 > date1) {
+            return res.status(400).json({
+                message: "Cannot create invoice for future date",
+                status: false
+            });
+        }
 
+        // =========================
+        // STOCK UPDATE
+        // =========================
+        for (const orderItem of orderItems) {
+
+            const product = await Product.findById(orderItem.productId);
+
+            if (!product) {
+                console.error(`Product with ID ${orderItem.productId} not found`);
+                continue;
+            }
+
+            const warehouse = await Warehouse.findById(product.warehouse);
+
+            if (!warehouse) continue;
+
+            product.qty -= orderItem.qty;
+
+            await product.save();
+            await warehouse.save();
+
+            await addProductInWarehouse5(
+                product,
+                product.warehouse,
+                orderItem,
+                req.body.date
+            );
+        }
+
+        // =========================
+        // ORDER META DATA
+        // =========================
         req.body.status = "completed";
         req.body.userId = party.created_by;
         req.body.database = user.database;
@@ -265,12 +288,15 @@ export const createOrderWithInvoice = async (req, res, next) => {
             req.body.paymentStatus = true;
         }
 
-
+        // =========================
+        // UPDATE CUSTOMER LIMIT
+        // =========================
         party.remainingLimit -= req.body.grandTotal;
         await party.save();
 
-
-
+        // =========================
+        // QR CODE GENERATION
+        // =========================
         const upiId = "9575892923@ybl";
         const merchantName = "EKOPACK INDIA";
 
@@ -278,26 +304,39 @@ export const createOrderWithInvoice = async (req, res, next) => {
         const orderNo = req.body.orderNo || `INV${Date.now()}`;
         const partyName = party.CompanyName;
 
-        const invoiceDate = new Date(req.body.date).toLocaleDateString();
-
+        const invoiceDate = new Date(req.body.date).toISOString().split("T")[0];
         const invoiceTime = new Date().toLocaleTimeString();
 
-        const note = `Party:${partyName}, Invoice:${orderNo}, Date:${invoiceDate}, Time:${invoiceTime}, Amount:${amount}`;
+        const note = `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
 
         const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
 
-        const qrCode = await QRCode.toDataURL(upiLink);
+        // create uploads folder if not exists
+        const qrFolder = path.join(process.cwd(), "uploads");
 
+        if (!fs.existsSync(qrFolder)) {
+            fs.mkdirSync(qrFolder);
+        }
+
+        const qrFileName = `invoice-${orderNo}.png`;
+        const qrPath = path.join(qrFolder, qrFileName);
+
+        await QRCode.toFile(qrPath, upiLink);
+
+        // =========================
+        // SAVE QR DATA
+        // =========================
         req.body.upiId = upiId;
         req.body.upiLink = upiLink;
-        req.body.qrCode = qrCode;
+        req.body.qrCode = qrFileName;
         req.body.invoiceTime = invoiceTime;
         req.body.invoiceDate = invoiceDate;
-
         req.body.paidAmount = 0;
         req.body.paymentVerified = false;
 
-
+        // =========================
+        // SAVE ORDER
+        // =========================
         const savedOrder = await CreateOrder.create(req.body);
 
         if (savedOrder) {
@@ -311,14 +350,16 @@ export const createOrderWithInvoice = async (req, res, next) => {
         });
 
     } catch (err) {
-        console.log(err);
+
+        console.error(err);
+
         return res.status(500).json({
             error: "Internal Server Error",
             status: false
         });
+
     }
 };
-
 export const createOrderHistoryByUserId = async (req, res, next) => {
     try {
         const userId = req.params.id;
