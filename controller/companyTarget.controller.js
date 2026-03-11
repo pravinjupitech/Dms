@@ -11,6 +11,247 @@ const FY_MONTHS = [
     "October", "November", "December", "January", "February", "March"
 ];
 
+// const round = (num) => Number(num.toFixed(2));
+
+// export const saveCompanyTarget = async (req, res) => {
+//   try {
+//     const {
+//       database,
+//       fyear,
+//       month,
+//       incrementper = 0,
+//       productItem,
+//       created_by
+//     } = req.body;
+
+//     if (!database || !fyear || !month || !productItem?.length || !created_by) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Missing required fields"
+//       });
+//     }
+
+//     const incrementPercent = Number(incrementper);
+//     const startIndex = FY_MONTHS.indexOf(month);
+
+//     if (startIndex === -1) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid start month"
+//       });
+//     }
+
+    
+//     const departmentData = await AssignRole.find({ database }).populate({
+//       path: "departmentName",
+//       model: "department"
+//     });
+
+//     const salesDepartment = departmentData.find(
+//       d => d?.departmentName?.departmentName?.toLowerCase() === "sales"
+//     );
+
+//     if (!salesDepartment?.roles?.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Sales department not configured"
+//       });
+//     }
+
+//     const sortedRoles = [...salesDepartment.roles].sort(
+//       (a, b) => a.rolePosition - b.rolePosition
+//     );
+
+//     const firstRole = sortedRoles[0]; 
+
+//     const allUsers = await User.find({ database,status:"Active" }).lean();
+//     const allCustomers = await Customer.find({ database,status:"Active" }).lean();
+
+//     const usersByParent = {};
+//     const customersByParent = {};
+
+//     allUsers.forEach(user => {
+//       const parent = String(user.created_by || "");
+//       if (!usersByParent[parent]) usersByParent[parent] = [];
+//       usersByParent[parent].push(user);
+//     });
+
+//     allCustomers.forEach(customer => {
+//       const parent = String(customer.created_by || "");
+//       if (!customersByParent[parent]) customersByParent[parent] = [];
+//       customersByParent[parent].push(customer);
+//     });
+
+  
+//     const salesManagers = allUsers.filter(
+//       u =>
+//         u.rolename === firstRole.roleId &&
+//         String(u.created_by) === String(created_by)
+//     );
+
+//     if (!salesManagers.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "No sales managers found under this hierarchy"
+//       });
+//     }
+
+//     let previousMonthProducts = null;
+
+//     for (let i = startIndex; i < FY_MONTHS.length; i++) {
+//       const currentMonth = FY_MONTHS[i];
+
+//       let monthProducts;
+
+//       if (i === startIndex) {
+//         monthProducts = JSON.parse(JSON.stringify(productItem));
+//       } else {
+//         const multiplier = 1 + incrementPercent / 100;
+
+//         monthProducts = previousMonthProducts.map(p => ({
+//           ...p,
+//           pQty: round(p.pQty * multiplier),
+//           sQty: round(p.sQty * multiplier),
+//           total: round(p.total * multiplier)
+//         }));
+//       }
+
+//       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
+
+//       const companyTotal = round(
+//         monthProducts.reduce((sum, p) => sum + (p.total || 0), 0)
+//       );
+
+//       const managerCount = salesManagers.length;
+//       let remainingTotal = companyTotal;
+
+//       for (let idx = 0; idx < managerCount; idx++) {
+//         const manager = salesManagers[idx];
+
+//         const managerTotal =
+//           idx === managerCount - 1
+//             ? round(remainingTotal)
+//             : round(companyTotal / managerCount);
+
+//         remainingTotal -= managerTotal;
+
+//         const managerProducts = monthProducts.map(p => ({
+//           ...p,
+//           pQty: round(p.pQty / managerCount),
+//           sQty: round(p.sQty / managerCount),
+//           total: round(p.total / managerCount)
+//         }));
+
+//         const hierarchyTargets = [];
+
+//         hierarchyTargets.push({
+//           roleId: firstRole.roleId,
+//           roleName: firstRole.roleName,
+//           rolePosition: firstRole.rolePosition,
+//           userId: manager._id,
+//           firstName: manager.firstName,
+//           total: managerTotal,
+//           products: managerProducts
+//         });
+
+     
+//         const divideHierarchy = (
+//           roleIndex,
+//           totalTarget,
+//           productTarget,
+//           parentUserId
+//         ) => {
+//           if (roleIndex >= sortedRoles.length) return;
+
+//           const currentRole = sortedRoles[roleIndex];
+
+//           let users = [];
+
+//           if (currentRole.roleName.toLowerCase() === "customer") {
+//             users = customersByParent[String(parentUserId)] || [];
+//           } else {
+//             users =
+//               (usersByParent[String(parentUserId)] || []).filter(
+//                 u => u.rolename === currentRole.roleId
+//               );
+//           }
+
+//           if (!users.length) return;
+
+//           const count = users.length;
+
+//           users.forEach(user => {
+//             const dividedTotal = round(totalTarget / count);
+
+//             const dividedProducts = productTarget.map(p => ({
+//               ...p,
+//               pQty: round(p.pQty / count),
+//               sQty: round(p.sQty / count),
+//               total: round(p.total / count)
+//             }));
+
+//             hierarchyTargets.push({
+//               roleId: currentRole.roleId,
+//               roleName: currentRole.roleName,
+//               rolePosition: currentRole.rolePosition,
+//               userId: user._id,
+//               firstName:
+//                 currentRole.roleName.toLowerCase() === "customer"
+//                   ? user.CompanyName || "Unknown"
+//                   : user.firstName || "Unknown",
+//               total: dividedTotal,
+//               products: dividedProducts
+//             });
+
+//             divideHierarchy(
+//               roleIndex + 1,
+//               dividedTotal,
+//               dividedProducts,
+//               user._id
+//             );
+//           });
+//         };
+
+//         divideHierarchy(1, managerTotal, managerProducts, manager._id);
+
+//         await CompanyTarget.findOneAndUpdate(
+//           {
+//             database,
+//             fyear,
+//             month: currentMonth,
+//             managerId: manager._id
+//           },
+//           {
+//             $set: {
+//               incrementper,
+//               companyTotal,
+//               managerId: manager._id,
+//               managerName: manager.firstName,
+//               managerTotal,
+//               productItem: managerProducts,
+//               hierarchyTargets,
+//               created_by
+//             }
+//           },
+//           { upsert: true, new: true }
+//         );
+//       }
+//     }
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Manager-wise hierarchy targets saved successfully"
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
 const round = (num) => Number(num.toFixed(2));
 
 export const saveCompanyTarget = async (req, res) => {
@@ -41,9 +282,8 @@ export const saveCompanyTarget = async (req, res) => {
       });
     }
 
-    /* ------------------------------------
-       GET SALES DEPARTMENT ROLES
-    ------------------------------------ */
+    /* ---------------- GET SALES DEPARTMENT ---------------- */
+
     const departmentData = await AssignRole.find({ database }).populate({
       path: "departmentName",
       model: "department"
@@ -60,55 +300,50 @@ export const saveCompanyTarget = async (req, res) => {
       });
     }
 
-    const sortedRoles = [...salesDepartment.roles].sort(
+    /* ---------------- SORT ROLES ---------------- */
+
+    const roles = [...salesDepartment.roles].sort(
       (a, b) => a.rolePosition - b.rolePosition
     );
 
-    const firstRole = sortedRoles[0]; // Sales Manager Role
+    const bottomRole = roles[roles.length - 1];
+    const topRole = roles[0];
 
-    /* ------------------------------------
-       FETCH USERS & CUSTOMERS
-    ------------------------------------ */
-    const allUsers = await User.find({ database,status:"Active" }).lean();
-    const allCustomers = await Customer.find({ database,status:"Active" }).lean();
+    /* ---------------- USERS & CUSTOMERS ---------------- */
 
-    const usersByParent = {};
-    const customersByParent = {};
+    const allUsers = await User.find({
+      database,
+      status: "Active"
+    }).lean();
 
-    allUsers.forEach(user => {
-      const parent = String(user.created_by || "");
-      if (!usersByParent[parent]) usersByParent[parent] = [];
-      usersByParent[parent].push(user);
+    const allCustomers = await Customer.find({
+      database,
+      status: "Active"
+    }).lean();
+
+    /* ---------------- MAPS FOR FAST LOOKUP ---------------- */
+
+    const userMap = new Map();
+    allUsers.forEach(u => userMap.set(String(u._id), u));
+
+    const customerMap = new Map();
+    allCustomers.forEach(c => customerMap.set(String(c._id), c));
+
+    /* ---------------- GROUP USERS BY ROLE ---------------- */
+
+    const usersByRole = {};
+    roles.forEach(r => {
+      usersByRole[r.roleId] = allUsers.filter(
+        u => u.rolename === r.roleId
+      );
     });
 
-    allCustomers.forEach(customer => {
-      const parent = String(customer.created_by || "");
-      if (!customersByParent[parent]) customersByParent[parent] = [];
-      customersByParent[parent].push(customer);
-    });
-
-    /* ------------------------------------
-       GET SALES MANAGERS UNDER created_by
-    ------------------------------------ */
-    const salesManagers = allUsers.filter(
-      u =>
-        u.rolename === firstRole.roleId &&
-        String(u.created_by) === String(created_by)
-    );
-
-    if (!salesManagers.length) {
-      return res.status(400).json({
-        success: false,
-        message: "No sales managers found under this hierarchy"
-      });
-    }
+    /* ---------------- MONTH LOOP ---------------- */
 
     let previousMonthProducts = null;
 
-    /* ====================================
-       MONTH LOOP
-    ==================================== */
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
+
       const currentMonth = FY_MONTHS[i];
 
       let monthProducts;
@@ -116,6 +351,7 @@ export const saveCompanyTarget = async (req, res) => {
       if (i === startIndex) {
         monthProducts = JSON.parse(JSON.stringify(productItem));
       } else {
+
         const multiplier = 1 + incrementPercent / 100;
 
         monthProducts = previousMonthProducts.map(p => ({
@@ -124,6 +360,7 @@ export const saveCompanyTarget = async (req, res) => {
           sQty: round(p.sQty * multiplier),
           total: round(p.total * multiplier)
         }));
+
       }
 
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
@@ -132,107 +369,126 @@ export const saveCompanyTarget = async (req, res) => {
         monthProducts.reduce((sum, p) => sum + (p.total || 0), 0)
       );
 
-      const managerCount = salesManagers.length;
-      let remainingTotal = companyTotal;
+      /* ---------------- BOTTOM LEVEL USERS ---------------- */
 
-      /* ====================================
-         MANAGER LOOP (SAVE SEPARATELY)
-      ==================================== */
-      for (let idx = 0; idx < managerCount; idx++) {
-        const manager = salesManagers[idx];
+      let bottomUsers;
 
-        const managerTotal =
-          idx === managerCount - 1
-            ? round(remainingTotal)
-            : round(companyTotal / managerCount);
+      if (bottomRole.roleName.toLowerCase() === "customer") {
+        bottomUsers = allCustomers;
+      } else {
+        bottomUsers = usersByRole[bottomRole.roleId];
+      }
 
-        remainingTotal -= managerTotal;
+      const bottomCount = bottomUsers.length;
 
-        const managerProducts = monthProducts.map(p => ({
-          ...p,
-          pQty: round(p.pQty / managerCount),
-          sQty: round(p.sQty / managerCount),
-          total: round(p.total / managerCount)
-        }));
-
-        const hierarchyTargets = [];
-
-        // Push Manager
-        hierarchyTargets.push({
-          roleId: firstRole.roleId,
-          roleName: firstRole.roleName,
-          rolePosition: firstRole.rolePosition,
-          userId: manager._id,
-          firstName: manager.firstName,
-          total: managerTotal,
-          products: managerProducts
+      if (!bottomCount) {
+        return res.status(400).json({
+          success: false,
+          message: "No bottom hierarchy users found"
         });
+      }
 
-        /* ------------------------------------
-           RECURSIVE DIVISION
-        ------------------------------------ */
-        const divideHierarchy = (
-          roleIndex,
-          totalTarget,
-          productTarget,
-          parentUserId
-        ) => {
-          if (roleIndex >= sortedRoles.length) return;
+      /* ---------------- INITIAL TARGET MAP ---------------- */
 
-          const currentRole = sortedRoles[roleIndex];
+      const targetMap = {};
 
-          let users = [];
+      const bottomTotal = round(companyTotal / bottomCount);
 
-          if (currentRole.roleName.toLowerCase() === "customer") {
-            users = customersByParent[String(parentUserId)] || [];
-          } else {
-            users =
-              (usersByParent[String(parentUserId)] || []).filter(
-                u => u.rolename === currentRole.roleId
-              );
-          }
+      const bottomProducts = monthProducts.map(p => ({
+        ...p,
+        pQty: round(p.pQty / bottomCount),
+        sQty: round(p.sQty / bottomCount),
+        total: round(p.total / bottomCount)
+      }));
 
-          if (!users.length) return;
+      bottomUsers.forEach(u => {
 
-          const count = users.length;
+        const id = String(u._id);
 
-          users.forEach(user => {
-            const dividedTotal = round(totalTarget / count);
-
-            const dividedProducts = productTarget.map(p => ({
-              ...p,
-              pQty: round(p.pQty / count),
-              sQty: round(p.sQty / count),
-              total: round(p.total / count)
-            }));
-
-            hierarchyTargets.push({
-              roleId: currentRole.roleId,
-              roleName: currentRole.roleName,
-              rolePosition: currentRole.rolePosition,
-              userId: user._id,
-              firstName:
-                currentRole.roleName.toLowerCase() === "customer"
-                  ? user.CompanyName || "Unknown"
-                  : user.firstName || "Unknown",
-              total: dividedTotal,
-              products: dividedProducts
-            });
-
-            divideHierarchy(
-              roleIndex + 1,
-              dividedTotal,
-              dividedProducts,
-              user._id
-            );
-          });
+        targetMap[id] = {
+          userId: id,
+          firstName: u.firstName || u.CompanyName || "Unknown",
+          roleId: bottomRole.roleId,
+          roleName: bottomRole.roleName,
+          rolePosition: bottomRole.rolePosition,
+          total: bottomTotal,
+          products: bottomProducts
         };
 
-        divideHierarchy(1, managerTotal, managerProducts, manager._id);
+      });
 
-        /* ------------------------------------
-           SAVE PER MANAGER PER MONTH
-        ------------------------------------ */
+      /* ---------------- BOTTOM → TOP AGGREGATION ---------------- */
+
+      for (let r = roles.length - 2; r >= 0; r--) {
+
+        const role = roles[r];
+        const users = usersByRole[role.roleId] || [];
+
+        users.forEach(user => {
+
+          const children = Object.values(targetMap).filter(t => {
+
+            const child =
+              userMap.get(t.userId) || customerMap.get(t.userId);
+
+            return String(child?.created_by) === String(user._id);
+
+          });
+
+          if (!children.length) return;
+
+          const total = children.reduce(
+            (sum, c) => sum + c.total,
+            0
+          );
+
+          targetMap[String(user._id)] = {
+            userId: String(user._id),
+            firstName: user.firstName || "Unknown",
+            roleId: role.roleId,
+            roleName: role.roleName,
+            rolePosition: role.rolePosition,
+            total: round(total),
+            products: monthProducts
+          };
+
+        });
+
+      }
+
+      /* ---------------- SAVE MANAGER DATA ---------------- */
+
+      const managers = usersByRole[topRole.roleId] || [];
+
+      for (const manager of managers) {
+
+        const managerId = String(manager._id);
+
+        const hierarchyTargets = Object.values(targetMap).filter(t => {
+
+          const user =
+            userMap.get(t.userId) || customerMap.get(t.userId);
+
+          let parent = user?.created_by;
+
+          while (parent) {
+
+            if (String(parent) === managerId) return true;
+
+            const parentUser = userMap.get(String(parent));
+            parent = parentUser?.created_by;
+
+          }
+
+          return false;
+
+        });
+
+        const managerTotal =
+          targetMap[managerId]?.total || 0;
+
+        hierarchyTargets.push(targetMap[managerId]);
+
         await CompanyTarget.findOneAndUpdate(
           {
             database,
@@ -247,27 +503,32 @@ export const saveCompanyTarget = async (req, res) => {
               managerId: manager._id,
               managerName: manager.firstName,
               managerTotal,
-              productItem: managerProducts,
+              productItem: monthProducts,
               hierarchyTargets,
               created_by
             }
           },
           { upsert: true, new: true }
         );
+
       }
+
     }
 
     return res.status(201).json({
       success: true,
-      message: "Manager-wise hierarchy targets saved successfully"
+      message: "Hierarchy targets saved successfully"
     });
 
   } catch (error) {
+
     console.error(error);
+
     return res.status(500).json({
       success: false,
       message: error.message
     });
+
   }
 };
 export const getCompanyTarget = async (req, res) => {
@@ -278,7 +539,6 @@ export const getCompanyTarget = async (req, res) => {
             return res.status(400).json({ success: false, message: "database and fyear required" });
         }
 
-        // 1️⃣ Fetch all company targets for the given financial year
         const companyTargets = await CompanyTarget.find({ database, fyear })
             .sort({ createdAt: 1 })
             .lean();
@@ -287,7 +547,6 @@ export const getCompanyTarget = async (req, res) => {
             return res.status(404).json({ success: false, message: "Company targets not found" });
         }
 
-        // 2️⃣ Collect all unique userIds and roleIds across months
         const allUserIds = new Set();
         const allRoleIds = new Set();
 
@@ -298,7 +557,6 @@ export const getCompanyTarget = async (req, res) => {
             });
         });
 
-        // 3️⃣ Prefetch Users and Roles
         const [users, roles] = await Promise.all([
             User.find({ _id: { $in: Array.from(allUserIds) } }).select("firstName").lean(),
             Role.find({ _id: { $in: Array.from(allRoleIds) } }).select("roleName").lean()
@@ -310,7 +568,6 @@ export const getCompanyTarget = async (req, res) => {
         const roleMap = {};
         roles.forEach(r => roleMap[r._id.toString()] = r.roleName);
 
-        // 4️⃣ Fetch Customers based on userIds
         const customers = await Customer.find({ _id: { $in: Array.from(allUserIds) } })
             .select("CompanyName _id")
             .lean();
@@ -320,7 +577,6 @@ export const getCompanyTarget = async (req, res) => {
             customerMap[c._id.toString()] = c.CompanyName;
         });
 
-        // 5️⃣ Process each month target and build hierarchy
         let yearlyTarget = 0;
         const result = companyTargets.map(target => {
             yearlyTarget += target.companyTotal || 0;
@@ -332,7 +588,6 @@ export const getCompanyTarget = async (req, res) => {
 
                 if (!grouped[rolePos]) grouped[rolePos] = { rolePosition: rolePos, roleName, users: [] };
 
-                // Use CompanyName for Customer, firstName for normal users
                 let firstName = userMap[ht.userId?.toString()] || "Unknown";
                 if (roleName.toLowerCase() === "customer" && customerMap[ht.userId?.toString()]) {
                     firstName = customerMap[ht.userId?.toString()];
@@ -505,7 +760,6 @@ export const updateCompanyTarget = async (req, res) => {
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const currentMonth = FY_MONTHS[i];
 
-      // Start with either initial products or incremented previous month
       let monthProducts = i === startIndex
         ? JSON.parse(JSON.stringify(productItem))
         : previousMonthProducts.map(p => ({
@@ -518,7 +772,6 @@ export const updateCompanyTarget = async (req, res) => {
 
       const companyTotal = round(monthProducts.reduce((sum, p) => sum + (p.total || 0), 0));
 
-      // Only get sales managers under this created_by
       const salesManagers = allUsers.filter(
         u => u.rolename === firstRole.roleId && String(u.created_by) === String(created_by)
       );
@@ -530,7 +783,6 @@ export const updateCompanyTarget = async (req, res) => {
       const managerCount = salesManagers.length;
       let remainingCompanyTotal = companyTotal;
 
-      // Loop per manager
       for (let idx = 0; idx < managerCount; idx++) {
         const manager = salesManagers[idx];
 
@@ -549,7 +801,6 @@ export const updateCompanyTarget = async (req, res) => {
 
         const hierarchyTargets = [];
 
-        // Add manager as root
         hierarchyTargets.push({
           roleId: firstRole.roleId,
           roleName: firstRole.roleName,
@@ -560,7 +811,6 @@ export const updateCompanyTarget = async (req, res) => {
           products: managerProducts
         });
 
-        // Recursive hierarchy division
         const divideHierarchy = (roleIndex, totalTarget, productTarget, parentUserId) => {
           if (roleIndex >= sortedRoles.length) return;
 
@@ -673,9 +923,6 @@ export const updateCustomerTarget = async (req, res) => {
 
       const currentMonth = FY_MONTHS[i];
 
-      /* -------------------------------------
-         FIND MANAGER DOCUMENT WHERE CUSTOMER EXISTS
-      ------------------------------------- */
       const doc = await CompanyTarget.findOne({
         database,
         fyear,
@@ -689,9 +936,7 @@ export const updateCustomerTarget = async (req, res) => {
         ...doc.hierarchyTargets.map(h => h.rolePosition)
       );
 
-      /* -------------------------------------
-         PREPARE PRODUCTS (LIKE saveCompanyTarget)
-      ------------------------------------- */
+     
       let monthProducts;
 
       if (i === startIndex) {
@@ -714,9 +959,7 @@ export const updateCustomerTarget = async (req, res) => {
 
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
 
-      /* -------------------------------------
-         FIND CUSTOMER NODE
-      ------------------------------------- */
+    
       const customerIndex = doc.hierarchyTargets.findIndex(
         h =>
           h.userId?.toString() === customerId &&
@@ -735,15 +978,10 @@ export const updateCustomerTarget = async (req, res) => {
 
       if (difference === 0) continue;
 
-      /* -------------------------------------
-         UPDATE CUSTOMER
-      ------------------------------------- */
       doc.hierarchyTargets[customerIndex].products = monthProducts;
       doc.hierarchyTargets[customerIndex].total = newTotal;
 
-      /* -------------------------------------
-         PROPAGATE DIFFERENCE UPWARD ONLY
-      ------------------------------------- */
+  
       for (let level = maxRolePosition - 1; level >= 1; level--) {
 
         const parents = doc.hierarchyTargets.filter(
@@ -755,9 +993,6 @@ export const updateCustomerTarget = async (req, res) => {
         });
       }
 
-      /* -------------------------------------
-         UPDATE MANAGER & COMPANY TOTAL
-      ------------------------------------- */
       doc.managerTotal = round((doc.managerTotal || 0) + difference);
       doc.companyTotal = round((doc.companyTotal || 0) + difference);
 
@@ -802,11 +1037,9 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
     for (let i = startIndex; i < FY_MONTHS.length; i++) {
       const currentMonth = FY_MONTHS[i];
 
-      // 🔹 Get the target month document
       const doc = await CompanyTarget.findOne({ database, fyear, month: currentMonth });
-      if (!doc) continue; // Skip if document does not exist
+      if (!doc) continue; 
 
-      // 🔹 Prepare products for this month with increment
       let monthProducts;
       if (i === startIndex) {
         monthProducts = productItem.map(p => ({ ...p, total: round(p.pQty * (p.price || 1)) }));
@@ -819,7 +1052,6 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
       }
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
 
-      // 🔹 Find the customer in the hierarchyTargets
       const customerIndex = doc.hierarchyTargets.findIndex(
         h => h.userId.toString() === customerId && h.roleName.toLowerCase() === "customer"
       );
@@ -827,11 +1059,9 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
 
       const customerTarget = doc.hierarchyTargets[customerIndex];
 
-      // 🔹 Update customer products & total
       customerTarget.products = monthProducts;
       customerTarget.total = round(monthProducts.reduce((sum, p) => sum + p.total, 0));
 
-      // 🔹 Recursive function to update parent totals up to Sales Manager
       const updateParentTotals = (parentUserId) => {
         if (!parentUserId) return;
 
@@ -841,13 +1071,12 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
         const children = doc.hierarchyTargets.filter(h => h.parentUserId?.toString() === parentUserId.toString());
         parent.total = round(children.reduce((sum, c) => sum + c.total, 0));
 
-        // Continue upward
+        
         updateParentTotals(parent.parentUserId);
       };
 
       updateParentTotals(customerTarget.parentUserId);
 
-      // 🔹 Recalculate top-level totals (Sales Manager(s)) & companyTotal
       const topLevelUsers = doc.hierarchyTargets.filter(h => !h.parentUserId);
       doc.companyTotal = round(topLevelUsers.reduce((sum, u) => sum + u.total, 0));
       doc.incrementper = incrementper;
