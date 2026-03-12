@@ -7,8 +7,8 @@ import { Customer } from "../model/customer.model.js";
 import { Role } from "../model/role.model.js";
 
 const FY_MONTHS = [
-    "April", "May", "June", "July", "August", "September",
-    "October", "November", "December", "January", "February", "March"
+  "April", "May", "June", "July", "August", "September",
+  "October", "November", "December", "January", "February", "March"
 ];
 
 // const round = (num) => Number(num.toFixed(2));
@@ -41,7 +41,7 @@ const FY_MONTHS = [
 //       });
 //     }
 
-    
+
 //     const departmentData = await AssignRole.find({ database }).populate({
 //       path: "departmentName",
 //       model: "department"
@@ -82,7 +82,7 @@ const FY_MONTHS = [
 //       customersByParent[parent].push(customer);
 //     });
 
-  
+
 //     const salesManagers = allUsers.filter(
 //       u =>
 //         u.rolename === firstRole.roleId &&
@@ -154,7 +154,7 @@ const FY_MONTHS = [
 //           products: managerProducts
 //         });
 
-     
+
 //         const divideHierarchy = (
 //           roleIndex,
 //           totalTarget,
@@ -318,7 +318,9 @@ export const saveCompanyTarget = async (req, res) => {
 
     const allCustomers = await Customer.find({
       database,
-      status: "Active"
+      status: "Active",
+      leadStatusCheck:
+        "false"
     }).lean();
 
     /* ---------------- MAPS FOR FAST LOOKUP ---------------- */
@@ -532,147 +534,147 @@ export const saveCompanyTarget = async (req, res) => {
   }
 };
 export const getCompanyTarget = async (req, res) => {
-    try {
-        const { database, fyear } = req.params;
+  try {
+    const { database, fyear } = req.params;
 
-        if (!database || !fyear) {
-            return res.status(400).json({ success: false, message: "database and fyear required" });
-        }
-
-        const companyTargets = await CompanyTarget.find({ database, fyear })
-            .sort({ createdAt: 1 })
-            .lean();
-
-        if (!companyTargets.length) {
-            return res.status(404).json({ success: false, message: "Company targets not found" });
-        }
-
-        const allUserIds = new Set();
-        const allRoleIds = new Set();
-
-        companyTargets.forEach(target => {
-            target.hierarchyTargets?.forEach(ht => {
-                if (ht.userId) allUserIds.add(ht.userId.toString());
-                if (ht.roleId) allRoleIds.add(ht.roleId.toString());
-            });
-        });
-
-        const [users, roles] = await Promise.all([
-            User.find({ _id: { $in: Array.from(allUserIds) } }).select("firstName").lean(),
-            Role.find({ _id: { $in: Array.from(allRoleIds) } }).select("roleName").lean()
-        ]);
-
-        const userMap = {};
-        users.forEach(u => userMap[u._id.toString()] = u.firstName);
-
-        const roleMap = {};
-        roles.forEach(r => roleMap[r._id.toString()] = r.roleName);
-
-        const customers = await Customer.find({ _id: { $in: Array.from(allUserIds) } })
-            .select("CompanyName _id")
-            .lean();
-
-        const customerMap = {};
-        customers.forEach(c => {
-            customerMap[c._id.toString()] = c.CompanyName;
-        });
-
-        let yearlyTarget = 0;
-        const result = companyTargets.map(target => {
-            yearlyTarget += target.companyTotal || 0;
-
-            const grouped = {};
-            target.hierarchyTargets?.forEach(ht => {
-                const rolePos = ht.rolePosition;
-                const roleName = roleMap[ht.roleId?.toString()] || "Unknown";
-
-                if (!grouped[rolePos]) grouped[rolePos] = { rolePosition: rolePos, roleName, users: [] };
-
-                let firstName = userMap[ht.userId?.toString()] || "Unknown";
-                if (roleName.toLowerCase() === "customer" && customerMap[ht.userId?.toString()]) {
-                    firstName = customerMap[ht.userId?.toString()];
-                }
-
-                grouped[rolePos].users.push({
-                    userId: ht.userId,
-                    firstName,
-                    total: ht.total,
-                    products: ht.products
-                });
-            });
-
-            return {
-                month: target.month,
-                incrementper: target.incrementper || 0,
-                companyTotal: target.companyTotal,
-                productItem: target.productItem,
-                layers: Object.values(grouped).sort((a, b) => a.rolePosition - b.rolePosition)
-            };
-        });
-
-        return res.status(200).json({
-            success: true,
-            fyear,
-            yearlyTarget,
-            data: result
-        });
-
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+    if (!database || !fyear) {
+      return res.status(400).json({ success: false, message: "database and fyear required" });
     }
+
+    const companyTargets = await CompanyTarget.find({ database, fyear })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    if (!companyTargets.length) {
+      return res.status(404).json({ success: false, message: "Company targets not found" });
+    }
+
+    const allUserIds = new Set();
+    const allRoleIds = new Set();
+
+    companyTargets.forEach(target => {
+      target.hierarchyTargets?.forEach(ht => {
+        if (ht.userId) allUserIds.add(ht.userId.toString());
+        if (ht.roleId) allRoleIds.add(ht.roleId.toString());
+      });
+    });
+
+    const [users, roles] = await Promise.all([
+      User.find({ _id: { $in: Array.from(allUserIds) } }).select("firstName").lean(),
+      Role.find({ _id: { $in: Array.from(allRoleIds) } }).select("roleName").lean()
+    ]);
+
+    const userMap = {};
+    users.forEach(u => userMap[u._id.toString()] = u.firstName);
+
+    const roleMap = {};
+    roles.forEach(r => roleMap[r._id.toString()] = r.roleName);
+
+    const customers = await Customer.find({ _id: { $in: Array.from(allUserIds) } })
+      .select("CompanyName _id")
+      .lean();
+
+    const customerMap = {};
+    customers.forEach(c => {
+      customerMap[c._id.toString()] = c.CompanyName;
+    });
+
+    let yearlyTarget = 0;
+    const result = companyTargets.map(target => {
+      yearlyTarget += target.companyTotal || 0;
+
+      const grouped = {};
+      target.hierarchyTargets?.forEach(ht => {
+        const rolePos = ht.rolePosition;
+        const roleName = roleMap[ht.roleId?.toString()] || "Unknown";
+
+        if (!grouped[rolePos]) grouped[rolePos] = { rolePosition: rolePos, roleName, users: [] };
+
+        let firstName = userMap[ht.userId?.toString()] || "Unknown";
+        if (roleName.toLowerCase() === "customer" && customerMap[ht.userId?.toString()]) {
+          firstName = customerMap[ht.userId?.toString()];
+        }
+
+        grouped[rolePos].users.push({
+          userId: ht.userId,
+          firstName,
+          total: ht.total,
+          products: ht.products
+        });
+      });
+
+      return {
+        month: target.month,
+        incrementper: target.incrementper || 0,
+        companyTotal: target.companyTotal,
+        productItem: target.productItem,
+        layers: Object.values(grouped).sort((a, b) => a.rolePosition - b.rolePosition)
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      fyear,
+      yearlyTarget,
+      data: result
+    });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 export const getSalesManagerTarget = async (req, res) => {
-    try {
-        const { fyear, salesManagerId } = req.params;
+  try {
+    const { fyear, salesManagerId } = req.params;
 
-        const companyTargets = await CompanyTarget.find({ fyear }).sort({ createdAt: 1 });
+    const companyTargets = await CompanyTarget.find({ fyear }).sort({ createdAt: 1 });
 
-        if (!companyTargets.length) {
-            return res.status(404).json({
-                success: false,
-                message: "Targets not found for this financial year"
-            });
-        }
-
-        const result = [];
-
-        for (let target of companyTargets) {
-            const managerTarget = target.dividedTargets?.get(salesManagerId.toString());
-
-            if (managerTarget) {
-                result.push({
-                    month: target.month,
-                    totalTarget: managerTarget.total,
-                    products: managerTarget.products
-                });
-            }
-        }
-
-        if (!result.length) {
-            return res.status(404).json({
-                success: false,
-                message: "No target assigned to this sales manager in this financial year"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            fyear,
-            salesManagerId,
-            monthlyTargets: result
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+    if (!companyTargets.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Targets not found for this financial year"
+      });
     }
+
+    const result = [];
+
+    for (let target of companyTargets) {
+      const managerTarget = target.dividedTargets?.get(salesManagerId.toString());
+
+      if (managerTarget) {
+        result.push({
+          month: target.month,
+          totalTarget: managerTarget.total,
+          products: managerTarget.products
+        });
+      }
+    }
+
+    if (!result.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No target assigned to this sales manager in this financial year"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      fyear,
+      salesManagerId,
+      monthlyTargets: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 };
 
 export const deleteCompanyTarget = async (req, res) => {
   try {
-    const {database, fyear } = req.body;
+    const { database, fyear } = req.body;
 
     if (!database || !fyear) {
       return res.status(400).json({
@@ -763,11 +765,11 @@ export const updateCompanyTarget = async (req, res) => {
       let monthProducts = i === startIndex
         ? JSON.parse(JSON.stringify(productItem))
         : previousMonthProducts.map(p => ({
-            ...p,
-            pQty: round(p.pQty * (1 + incrementPercent / 100)),
-            sQty: round(p.sQty * (1 + incrementPercent / 100)),
-            total: round(p.total * (1 + incrementPercent / 100))
-          }));
+          ...p,
+          pQty: round(p.pQty * (1 + incrementPercent / 100)),
+          sQty: round(p.sQty * (1 + incrementPercent / 100)),
+          total: round(p.total * (1 + incrementPercent / 100))
+        }));
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
 
       const companyTotal = round(monthProducts.reduce((sum, p) => sum + (p.total || 0), 0));
@@ -936,7 +938,7 @@ export const updateCustomerTarget = async (req, res) => {
         ...doc.hierarchyTargets.map(h => h.rolePosition)
       );
 
-     
+
       let monthProducts;
 
       if (i === startIndex) {
@@ -959,7 +961,7 @@ export const updateCustomerTarget = async (req, res) => {
 
       previousMonthProducts = JSON.parse(JSON.stringify(monthProducts));
 
-    
+
       const customerIndex = doc.hierarchyTargets.findIndex(
         h =>
           h.userId?.toString() === customerId &&
@@ -981,7 +983,7 @@ export const updateCustomerTarget = async (req, res) => {
       doc.hierarchyTargets[customerIndex].products = monthProducts;
       doc.hierarchyTargets[customerIndex].total = newTotal;
 
-  
+
       for (let level = maxRolePosition - 1; level >= 1; level--) {
 
         const parents = doc.hierarchyTargets.filter(
@@ -1038,7 +1040,7 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
       const currentMonth = FY_MONTHS[i];
 
       const doc = await CompanyTarget.findOne({ database, fyear, month: currentMonth });
-      if (!doc) continue; 
+      if (!doc) continue;
 
       let monthProducts;
       if (i === startIndex) {
@@ -1071,7 +1073,7 @@ export const updateCustomerHierarchyTarget = async (req, res) => {
         const children = doc.hierarchyTargets.filter(h => h.parentUserId?.toString() === parentUserId.toString());
         parent.total = round(children.reduce((sum, c) => sum + c.total, 0));
 
-        
+
         updateParentTotals(parent.parentUserId);
       };
 
