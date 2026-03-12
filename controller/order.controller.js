@@ -212,7 +212,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
         const date1 = new Date();
         const date2 = new Date(req.body.date);
 
-       
+
         const party = await Customer.findById(req.body.partyId);
 
         if (!party) {
@@ -222,9 +222,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
             });
         }
 
-        // =========================
-        // CHECK USER
-        // =========================
+
         const user = await User.findById(party.created_by);
 
         if (!user) {
@@ -279,35 +277,35 @@ export const createOrderWithInvoice = async (req, res, next) => {
         party.remainingLimit -= req.body.grandTotal;
         await party.save();
 
-   
 
 
-const upiId = "9575892923@ybl";
-const merchantName = "EKOPACK INDIA";
 
-const amount = req.body.grandTotal;
-const orderNo = req.body.orderNo || `INV${Date.now()}`;
-const partyName = party.CompanyName;
+        const upiId = "9575892923@ybl";
+        const merchantName = "EKOPACK INDIA";
 
-const invoiceDate = new Date(req.body.date).toISOString().split("T")[0];
-const invoiceTime = new Date().toLocaleTimeString();
+        const amount = req.body.grandTotal;
+        const orderNo = req.body.orderNo || `INV${Date.now()}`;
+        const partyName = party.CompanyName;
 
-const note = `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
+        const invoiceDate = new Date(req.body.date).toISOString().split("T")[0];
+        const invoiceTime = new Date().toLocaleTimeString();
 
-const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+        const note = `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
 
-const qrFolder = path.join(process.cwd(), "public/Images");
+        const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
 
-if (!fs.existsSync(qrFolder)) {
-    fs.mkdirSync(qrFolder, { recursive: true });
-}
+        const qrFolder = path.join(process.cwd(), "public/Images");
 
-const qrFileName = `invoice-${orderNo}.png`;
-const qrPath = path.join(qrFolder, qrFileName);
+        if (!fs.existsSync(qrFolder)) {
+            fs.mkdirSync(qrFolder, { recursive: true });
+        }
 
-await QRCode.toFile(qrPath, upiLink);
+        const qrFileName = `invoice-${orderNo}.png`;
+        const qrPath = path.join(qrFolder, qrFileName);
 
-      
+        await QRCode.toFile(qrPath, upiLink);
+
+
         req.body.upiId = upiId;
         req.body.upiLink = upiLink;
         req.body.qrCode = qrFileName;
@@ -2566,3 +2564,21 @@ export const HsnOutput = async (req, res, next) => {
     }
 };
 
+export const verifyQrPayment = async (req, res, next) => {
+    try {
+        const { id, paidAmount } = req.body;
+        const order = await CreateOrder.findById(id);
+        if (!order) {
+            return res.status(200).json({ message: "Not Found", status: false })
+        }
+        order.paidAmount = paidAmount;
+        await order.save();
+        res.status(200).json({ message: "Payment Successfully", status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+}
