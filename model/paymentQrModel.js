@@ -1,0 +1,28 @@
+import mongoose from "mongoose";
+const paymentQrSchema = new mongoose.Schema({
+    partyId: {
+        type: String
+    },
+    paymentVerified: {
+        type: Boolean,
+        default: false
+    },
+    invoiceId: {
+        type: Number,
+        default: 0
+    },
+    Time: {
+        type: String
+    },
+    Date: {
+        type: String
+    },
+    Status: {
+        type: String,
+        default:"Pending"
+    },
+    database:{
+        type:String
+    }
+}, { timestamps: true })
+export const PaymentQr = mongoose.model("paymentQr", paymentQrSchema)

@@ -27,6 +27,7 @@ import nodemailer from "nodemailer";
 import { Role } from "../model/role.model.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
 import QRCode from "qrcode";
+import { PaymentQr } from "../model/paymentQrModel.js";
 
 dotenv.config();
 
@@ -309,12 +310,14 @@ export const createOrderWithInvoice = async (req, res, next) => {
         req.body.upiId = upiId;
         req.body.upiLink = upiLink;
         req.body.qrCode = qrFileName;
-        req.body.invoiceTime = invoiceTime;
-        req.body.invoiceDate = invoiceDate;
+        req.body.Time = invoiceTime;
+        req.body.Date = invoiceDate;
         req.body.paidAmount = 0;
         req.body.paymentVerified = false;
-
-        const savedOrder = await CreateOrder.create(req.body);
+        const [qrData, savedOrder] = await Promise.all([
+            PaymentQr.create(req.body),
+            CreateOrder.create(req.body)
+        ]);
 
         if (savedOrder) {
             const particular = "SalesInvoice";
@@ -2574,6 +2577,23 @@ export const verifyQrPayment = async (req, res, next) => {
         order.paidAmount = paidAmount;
         await order.save();
         res.status(200).json({ message: "Payment Successfully", status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+}
+
+export const paymentDetails = async (req, res, next) => {
+    try {
+        const { database } = req.params;
+        const paymentDetails = await PaymentQr.find({ database });
+        if (paymentDetails.length === 0) {
+            return res.status(404).json({ message: "Not Found", status: false })
+        }
+        res.status(200).json({ message: "Data Found", paymentDetails, status: true })
     } catch (error) {
         console.error(error);
         return res.status(500).json({
