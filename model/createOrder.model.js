@@ -457,7 +457,7 @@ const createOrderSchema = new mongoose.Schema({
     paidAmount: {
         type: Number,
         default: 0
-    },
+    }
 }, { timestamps: true })
 
 export const CreateOrder = mongoose.model("createOrder", createOrderSchema)
