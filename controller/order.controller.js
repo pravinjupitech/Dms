@@ -2574,7 +2574,7 @@ export const verifyQrPayment = async (req, res, next) => {
         if (!payment) {
             return res.status(200).json({ message: "Not Found", status: false })
         }
-        payment.status = status;
+        payment.statusQr = status;
         payment.paymentDetails=paymentDetails
         await order.save();
         res.status(200).json({ message: "Payment Successfully", status: true })
