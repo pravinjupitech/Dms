@@ -20,7 +20,7 @@ const paymentQrSchema = new mongoose.Schema({
     paymentDetails:{
         type:Array
     },
-    status: {
+    statusQr: {
         type: String,
         default:"Pending"
     },
