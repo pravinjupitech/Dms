@@ -450,6 +450,9 @@ const createOrderSchema = new mongoose.Schema({
     utrNumber: {
         type: String
     },
+     paymentDetails:{
+        type:Object
+    },
     paymentVerified: {
         type: Boolean,
         default: false

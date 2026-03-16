@@ -18,7 +18,7 @@ const paymentQrSchema = new mongoose.Schema({
         type: String
     },
     paymentDetails:{
-        type:Array
+        type:Object
     },
     statusQr: {
         type: String,

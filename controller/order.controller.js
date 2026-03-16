@@ -2569,12 +2569,13 @@ export const HsnOutput = async (req, res, next) => {
 
 export const verifyPaymentMode = async (req, res, next) => {
     try {
-        const { id, paidAmount} = req.body;
+        const { id, paidAmount, paymentDetails} = req.body;
         const payment = await CreateOrder.findById(id);
         if (!payment) {
             return res.status(200).json({ message: "Not Found", status: false })
         }
         payment.paidAmount=paidAmount
+        payment.paymentDetails=paymentDetails
         await payment.save();
         res.status(200).json({ message: "first Step Successfully", status: true })
     } catch (error) {
