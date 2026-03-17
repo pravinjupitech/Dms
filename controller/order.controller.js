@@ -2597,7 +2597,7 @@ export const verifyQrPayment = async (req, res, next) => {
         }
         payment.statusQr = "Completed";
         payment.paymentDetails=paymentDetails
-        await order.save();
+        await payment.save();
         res.status(200).json({ message: "Payment Successfully", status: true })
     } catch (error) {
         console.error(error);
