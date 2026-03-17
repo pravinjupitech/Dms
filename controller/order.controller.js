@@ -313,6 +313,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
         req.body.Time = invoiceTime;
         req.body.Date = invoiceDate;
         req.body.paidAmount = 0;
+        req.body.paidAmounts = amount;
         req.body.paymentVerified = false;
         const [qrData, savedOrder] = await Promise.all([
             PaymentQr.create(req.body),
