@@ -24,6 +24,10 @@ const paymentQrSchema = new mongoose.Schema({
         type: String,
         default:"Pending"
     },
+    paidAmount: {
+        type: Number,
+        default: 0
+    },
     database:{
         type:String
     }
