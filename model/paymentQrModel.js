@@ -11,6 +11,9 @@ const paymentQrSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    created_by: {
+      type: String
+    },
     Time: {
         type: String
     },
