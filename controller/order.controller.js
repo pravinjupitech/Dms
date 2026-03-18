@@ -2570,13 +2570,13 @@ export const HsnOutput = async (req, res, next) => {
 
 export const verifyPaymentMode = async (req, res, next) => {
     try {
-        const { id, paidAmount, paymentDetails} = req.body;
+        const { id, paidAmount, paymentDetails } = req.body;
         const payment = await CreateOrder.findById(id);
         if (!payment) {
             return res.status(200).json({ message: "Not Found", status: false })
         }
-        payment.paidAmount=paidAmount
-        payment.paymentDetails=paymentDetails
+        payment.paidAmount = paidAmount
+        payment.paymentDetails = paymentDetails
         await payment.save();
         res.status(200).json({ message: "first Step Successfully", status: true })
     } catch (error) {
@@ -2590,13 +2590,13 @@ export const verifyPaymentMode = async (req, res, next) => {
 
 export const verifyQrPayment = async (req, res, next) => {
     try {
-        const { id,paymentDetails } = req.body;
+        const { id, paymentDetails } = req.body;
         const payment = await PaymentQr.findById(id);
         if (!payment) {
             return res.status(200).json({ message: "Not Found", status: false })
         }
         payment.statusQr = "Completed";
-        payment.paymentDetails=paymentDetails
+        payment.paymentDetails = paymentDetails
         await payment.save();
         res.status(200).json({ message: "Payment Successfully", status: true })
     } catch (error) {
@@ -2616,6 +2616,44 @@ export const paymentDetails = async (req, res, next) => {
             return res.status(404).json({ message: "Not Found", status: false })
         }
         res.status(200).json({ message: "Data Found", paymentDetails, status: true })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            error: "Internal Server Error"
+        });
+    }
+}
+
+export const verifyFinalPayment = async (req, res, next) => {
+    try {
+        const { id, paymentVerified } = req.body;
+        const payment = await PaymentQr.findById(id)
+        if (!payment) {
+            return res.status(404).json({ message: "Not Found", status: false })
+        }
+        if (paymentVerified !== true) {
+            payment.statusQr = "Rejected"
+        }
+        payment.paymentVerified = paymentVerified;
+        await payment.save();
+        const rece = await Receipt.find({ status: "Active" }).sort({ sortorder: -1 });
+        if (rece.length > 0) {
+            const latestReceipt = rece[rece.length - 1];
+            req.body.voucherNo = latestReceipt.voucherNo + 1;
+        } else {
+            req.body.voucherNo = 1;
+        }
+        req.body.database = payment.database,
+            req.body.partyId = payment.partyId,
+            req.body.type = "receipt",
+            req.body.voucherType = "receipt",
+            req.body.paymentMode = "Online",
+            req.body.amount = payment.paidAmounts,
+            req.body.status = "Active",
+            req.body.date = payment.Date
+        await Receipt.create(req.body);
+        return res.status(200).json({ message: "payment verified successfully", status: true })
     } catch (error) {
         console.error(error);
         return res.status(500).json({
