@@ -2651,7 +2651,17 @@ export const verifyFinalPayment = async (req, res, next) => {
                 status: true
             });
         }
+        let obj = {
+            database: payment.database,
+            partyId: payment.partyId,
+            invoiceId: payment.invoiceId
+        }
+        const order = await CreateOrder.findOne(obj)
+        if (order) {
+            order.paymentVerified = true
+            await order.save();
 
+        }
         payment.paymentVerified = true;
         payment.statusQr = "Approved";
         await payment.save();
