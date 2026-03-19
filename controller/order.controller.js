@@ -2641,7 +2641,7 @@ export const verifyFinalPayment = async (req, res, next) => {
             });
         }
 
-        if (paymentVerified !== true) {
+        if (!paymentVerified) {
             payment.statusQr = "Rejected";
             payment.paymentVerified = false;
             await payment.save();
