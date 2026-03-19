@@ -2628,32 +2628,58 @@ export const paymentDetails = async (req, res, next) => {
 export const verifyFinalPayment = async (req, res, next) => {
     try {
         const { id, paymentVerified } = req.body;
-        const payment = await PaymentQr.findById(id)
+
+        const payment = await PaymentQr.findById(id);
         if (!payment) {
-            return res.status(404).json({ message: "Not Found", status: false })
+            return res.status(404).json({ message: "Not Found", status: false });
         }
+
+        if (payment.paymentVerified === true) {
+            return res.status(400).json({
+                message: "Payment already verified",
+                status: false
+            });
+        }
+
         if (paymentVerified !== true) {
-            payment.statusQr = "Rejected"
+            payment.statusQr = "Rejected";
+            payment.paymentVerified = false;
+            await payment.save();
+
+            return res.status(200).json({
+                message: "Payment rejected",
+                status: true
+            });
         }
-        payment.paymentVerified = paymentVerified;
+
+        payment.paymentVerified = true;
+        payment.statusQr = "Approved";
         await payment.save();
-        const rece = await Receipt.find({ status: "Active" }).sort({ sortorder: -1 });
-        if (rece.length > 0) {
-            const latestReceipt = rece[rece.length - 1];
-            req.body.voucherNo = latestReceipt.voucherNo + 1;
-        } else {
-            req.body.voucherNo = 1;
-        }
-        req.body.database = payment.database,
-            req.body.partyId = payment.partyId,
-            req.body.type = "receipt",
-            req.body.voucherType = "receipt",
-            req.body.paymentMode = "Online",
-            req.body.amount = payment.paidAmounts,
-            req.body.status = "Active",
-            req.body.date = payment.Date
-        await Receipt.create(req.body);
-        return res.status(200).json({ message: "payment verified successfully", status: true })
+
+        const latestReceipt = await Receipt.findOne({ status: "Active" })
+            .sort({ voucherNo: -1 });
+
+        const voucherNo = latestReceipt ? latestReceipt.voucherNo + 1 : 1;
+
+        const receiptData = {
+            voucherNo,
+            database: payment.database,
+            partyId: payment.partyId,
+            type: "receipt",
+            voucherType: "receipt",
+            paymentMode: "Online",
+            amount: payment.paidAmounts,
+            status: "Active",
+            date: payment.Date
+        };
+
+        await Receipt.create(receiptData);
+
+        return res.status(200).json({
+            message: "Payment verified successfully",
+            status: true
+        });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -2661,4 +2687,4 @@ export const verifyFinalPayment = async (req, res, next) => {
             error: "Internal Server Error"
         });
     }
-}
+};
