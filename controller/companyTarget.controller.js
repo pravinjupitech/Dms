@@ -284,106 +284,12 @@ export const saveCompanyTarget = async (req, res) => {
   }
 };
 
-// export const getCompanyTarget = async (req, res) => {
-//   try {
-//     const { database, fyear } = req.params;
-
-//     if (!database || !fyear) {
-//       return res.status(400).json({ success: false, message: "database and fyear required" });
-//     }
-
-//     const companyTargets = await CompanyTarget.find({ database, fyear })
-//       .sort({ createdAt: 1 })
-//       .lean();
-
-//     if (!companyTargets.length) {
-//       return res.status(404).json({ success: false, message: "Company targets not found" });
-//     }
-
-//     const allUserIds = new Set();
-//     const allRoleIds = new Set();
-
-//     companyTargets.forEach(target => {
-//       target.hierarchyTargets?.forEach(ht => {
-//         if (ht.userId) allUserIds.add(ht.userId.toString());
-//         if (ht.roleId) allRoleIds.add(ht.roleId.toString());
-//       });
-//     });
-
-//     const [users, roles] = await Promise.all([
-//       User.find({ _id: { $in: Array.from(allUserIds) } }).select("firstName").lean(),
-//       Role.find({ _id: { $in: Array.from(allRoleIds) } }).select("roleName").lean()
-//     ]);
-
-//     const userMap = {};
-//     users.forEach(u => userMap[u._id.toString()] = u.firstName);
-
-//     const roleMap = {};
-//     roles.forEach(r => roleMap[r._id.toString()] = r.roleName);
-
-//     const customers = await Customer.find({ _id: { $in: Array.from(allUserIds) } })
-//       .select("CompanyName _id")
-//       .lean();
-
-//     const customerMap = {};
-//     customers.forEach(c => {
-//       customerMap[c._id.toString()] = c.CompanyName;
-//     });
-
-//     let yearlyTarget = 0;
-//     const result = companyTargets.map(target => {
-//       yearlyTarget += target.companyTotal || 0;
-
-//       const grouped = {};
-//       target.hierarchyTargets?.forEach(ht => {
-//         const rolePos = ht.rolePosition;
-//         const roleName = roleMap[ht.roleId?.toString()] || "Unknown";
-
-//         if (!grouped[rolePos]) grouped[rolePos] = { rolePosition: rolePos, roleName, users: [] };
-
-//         let firstName = userMap[ht.userId?.toString()] || "Unknown";
-//         if (roleName.toLowerCase() === "customer" && customerMap[ht.userId?.toString()]) {
-//           firstName = customerMap[ht.userId?.toString()];
-//         }
-
-//         grouped[rolePos].users.push({
-//           userId: ht.userId,
-//           firstName,
-//           total: ht.total,
-//           products: ht.products
-//         });
-//       });
-
-//       return {
-//         month: target.month,
-//         incrementper: target.incrementper || 0,
-//         companyTotal: target.companyTotal,
-//         productItem: target.productItem,
-//         layers: Object.values(grouped).sort((a, b) => a.rolePosition - b.rolePosition)
-//       };
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       fyear,
-//       yearlyTarget,
-//       data: result
-//     });
-
-//   } catch (error) {
-//     return res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
 export const getCompanyTarget = async (req, res) => {
   try {
     const { database, fyear } = req.params;
 
     if (!database || !fyear) {
-      return res.status(400).json({
-        success: false,
-        message: "database and fyear required"
-      });
+      return res.status(400).json({ success: false, message: "database and fyear required" });
     }
 
     const companyTargets = await CompanyTarget.find({ database, fyear })
@@ -391,10 +297,7 @@ export const getCompanyTarget = async (req, res) => {
       .lean();
 
     if (!companyTargets.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Company targets not found"
-      });
+      return res.status(404).json({ success: false, message: "Company targets not found" });
     }
 
     const allUserIds = new Set();
@@ -408,27 +311,17 @@ export const getCompanyTarget = async (req, res) => {
     });
 
     const [users, roles] = await Promise.all([
-      User.find({ _id: { $in: [...allUserIds] },status:"Active" })
-        .select("firstName")
-        .lean(),
-      Role.find({ _id: { $in: [...allRoleIds] } })
-        .select("roleName")
-        .lean()
+      User.find({ _id: { $in: Array.from(allUserIds) } }).select("firstName").lean(),
+      Role.find({ _id: { $in: Array.from(allRoleIds) } }).select("roleName").lean()
     ]);
 
     const userMap = {};
-    users.forEach(u => {
-      userMap[u._id.toString()] = u.firstName;
-    });
+    users.forEach(u => userMap[u._id.toString()] = u.firstName);
 
     const roleMap = {};
-    roles.forEach(r => {
-      roleMap[r._id.toString()] = r.roleName;
-    });
+    roles.forEach(r => roleMap[r._id.toString()] = r.roleName);
 
-    const customers = await Customer.find({
-      _id: { $in: [...allUserIds] },status:"Active"
-    })
+    const customers = await Customer.find({ _id: { $in: Array.from(allUserIds) } })
       .select("CompanyName _id")
       .lean();
 
@@ -438,73 +331,180 @@ export const getCompanyTarget = async (req, res) => {
     });
 
     let yearlyTarget = 0;
-
-    // ✅ Step 1: Create user map (flat)
-    const userTreeMap = {};
-
-    companyTargets.forEach(target => {
+    const result = companyTargets.map(target => {
       yearlyTarget += target.companyTotal || 0;
 
+      const grouped = {};
       target.hierarchyTargets?.forEach(ht => {
-        const userId = ht.userId?.toString();
-        const roleId = ht.roleId?.toString();
+        const rolePos = ht.rolePosition;
+        const roleName = roleMap[ht.roleId?.toString()] || "Unknown";
 
-        if (!userTreeMap[userId]) {
-          const roleName = roleMap[roleId] || "Unknown";
+        if (!grouped[rolePos]) grouped[rolePos] = { rolePosition: rolePos, roleName, users: [] };
 
-          let firstName = userMap[userId] || "Unknown";
-          if (
-            roleName.toLowerCase() === "customer" &&
-            customerMap[userId]
-          ) {
-            firstName = customerMap[userId];
-          }
-
-          userTreeMap[userId] = {
-            userId,
-            firstName,
-            rolePosition: ht.rolePosition,
-            roleName,
-            reportingTo: ht.reportingTo?.toString() || null,
-            targets: [],
-            children: []
-          };
+        let firstName = userMap[ht.userId?.toString()] || "Unknown";
+        if (roleName.toLowerCase() === "customer" && customerMap[ht.userId?.toString()]) {
+          firstName = customerMap[ht.userId?.toString()];
         }
 
-        userTreeMap[userId].targets.push({
-          month: target.month,
+        grouped[rolePos].users.push({
+          userId: ht.userId,
+          firstName,
           total: ht.total,
           products: ht.products
         });
       });
-    });
 
-    // ✅ Step 2: Build hierarchy
-    const root = [];
-
-    Object.values(userTreeMap).forEach(user => {
-      if (user.reportingTo && userTreeMap[user.reportingTo]) {
-        userTreeMap[user.reportingTo].children.push(user);
-      } else {
-        // top level (rolePosition 1)
-        root.push(user);
-      }
+      return {
+        month: target.month,
+        incrementper: target.incrementper || 0,
+        companyTotal: target.companyTotal,
+        productItem: target.productItem,
+        layers: Object.values(grouped).sort((a, b) => a.rolePosition - b.rolePosition)
+      };
     });
 
     return res.status(200).json({
       success: true,
       fyear,
       yearlyTarget,
-      data: root
+      data: result
     });
 
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// export const getCompanyTarget = async (req, res) => {
+//   try {
+//     const { database, fyear } = req.params;
+
+//     if (!database || !fyear) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "database and fyear required"
+//       });
+//     }
+
+//     const companyTargets = await CompanyTarget.find({ database, fyear })
+//       .sort({ createdAt: 1 })
+//       .lean();
+
+//     if (!companyTargets.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Company targets not found"
+//       });
+//     }
+
+//     const allUserIds = new Set();
+//     const allRoleIds = new Set();
+
+//     companyTargets.forEach(target => {
+//       target.hierarchyTargets?.forEach(ht => {
+//         if (ht.userId) allUserIds.add(ht.userId.toString());
+//         if (ht.roleId) allRoleIds.add(ht.roleId.toString());
+//       });
+//     });
+
+//     const [users, roles] = await Promise.all([
+//       User.find({ _id: { $in: [...allUserIds] },status:"Active" })
+//         .select("firstName")
+//         .lean(),
+//       Role.find({ _id: { $in: [...allRoleIds] } })
+//         .select("roleName")
+//         .lean()
+//     ]);
+
+//     const userMap = {};
+//     users.forEach(u => {
+//       userMap[u._id.toString()] = u.firstName;
+//     });
+
+//     const roleMap = {};
+//     roles.forEach(r => {
+//       roleMap[r._id.toString()] = r.roleName;
+//     });
+
+//     const customers = await Customer.find({
+//       _id: { $in: [...allUserIds] },status:"Active"
+//     })
+//       .select("CompanyName _id")
+//       .lean();
+
+//     const customerMap = {};
+//     customers.forEach(c => {
+//       customerMap[c._id.toString()] = c.CompanyName;
+//     });
+
+//     let yearlyTarget = 0;
+
+//     // ✅ Step 1: Create user map (flat)
+//     const userTreeMap = {};
+
+//     companyTargets.forEach(target => {
+//       yearlyTarget += target.companyTotal || 0;
+
+//       target.hierarchyTargets?.forEach(ht => {
+//         const userId = ht.userId?.toString();
+//         const roleId = ht.roleId?.toString();
+
+//         if (!userTreeMap[userId]) {
+//           const roleName = roleMap[roleId] || "Unknown";
+
+//           let firstName = userMap[userId] || "Unknown";
+//           if (
+//             roleName.toLowerCase() === "customer" &&
+//             customerMap[userId]
+//           ) {
+//             firstName = customerMap[userId];
+//           }
+
+//           userTreeMap[userId] = {
+//             userId,
+//             firstName,
+//             rolePosition: ht.rolePosition,
+//             roleName,
+//             reportingTo: ht.reportingTo?.toString() || null,
+//             targets: [],
+//             children: []
+//           };
+//         }
+
+//         userTreeMap[userId].targets.push({
+//           month: target.month,
+//           total: ht.total,
+//           products: ht.products
+//         });
+//       });
+//     });
+
+//     // ✅ Step 2: Build hierarchy
+//     const root = [];
+
+//     Object.values(userTreeMap).forEach(user => {
+//       if (user.reportingTo && userTreeMap[user.reportingTo]) {
+//         userTreeMap[user.reportingTo].children.push(user);
+//       } else {
+//         // top level (rolePosition 1)
+//         root.push(user);
+//       }
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       fyear,
+//       yearlyTarget,
+//       data: root
+//     });
+
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
 
 export const getSalesManagerTarget = async (req, res) => {
   try {
