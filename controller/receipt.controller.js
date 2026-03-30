@@ -1301,6 +1301,8 @@ export const ledgerCheck=async(req,res,next)=>{
     try {
         const {id}=req.params;
         const orders=await CreateOrder.find({partyId:id,status:"completed"})
+        console.log(orders);
+        
         const receipts=await Receipt.find({partyId:id,status:"Active"})
         let obj={
             orders:orders.length,

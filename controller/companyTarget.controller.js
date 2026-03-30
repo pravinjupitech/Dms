@@ -73,14 +73,18 @@ export const saveCompanyTarget = async (req, res) => {
       status: "Active"
     }).lean();
 
-    const allCustomers = await Customer.find({
+    const allCustomerss = await Customer.find({
       database,
       status: "Active",
       leadStatusCheck:
         "false"
     }).lean();
 
-
+const allCustomers = allCustomerss.filter(
+  (item) =>
+    item.partyType?.toLowerCase() === "debitor" &&
+    item.CompanyName?.toUpperCase() !== "CASH"
+);
     const userMap = new Map();
     allUsers.forEach(u => userMap.set(String(u._id), u));
 
@@ -1083,10 +1087,14 @@ export const achievedTarget = async (req, res) => {
     }
 
     // ================= MASTER DATA =================
-    const customers = await Customer.find({ database, status: "Active" }).lean();
+    const customerss = await Customer.find({ database, status: "Active" }).lean();
     const users = await User.find({ database, status: "Active" }).lean();
     const products = await Product.find({ database }).lean();
-
+const customers = customerss.filter(
+  (item) =>
+    item.partyType?.toLowerCase() === "debitor" &&
+    item.CompanyName?.toUpperCase() !== "CASH"
+);
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
     const userMap = new Map(users.map(u => [String(u._id), u]));
     const productMap = new Map(products.map(p => [String(p._id), p]));
