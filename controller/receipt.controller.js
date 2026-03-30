@@ -1301,12 +1301,11 @@ export const ledgerCheck=async(req,res,next)=>{
     try {
         const {id}=req.params;
         const orders=await CreateOrder.find({partyId:id,status:"completed"})
-        console.log(orders);
         
         const receipts=await Receipt.find({partyId:id,status:"Active"})
         let obj={
-            orders:orders.length,
-            receipts:receipts.length
+            orders:orders,
+            receipts:receipts
         }
         return res.status(200).json(obj)
     } catch (error) {
