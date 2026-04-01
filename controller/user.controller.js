@@ -1327,7 +1327,7 @@ export const assignSalesPerson = async () => {
       (item) => item.rolename?.roleName === "Sales Person"
     );
 
-    for (const user of filterSalesPersons) {   
+    for (const user of filterSalesPersons) {
       const service = user.service || [];
 
       const pincodes = Array.from(
@@ -1337,6 +1337,8 @@ export const assignSalesPerson = async () => {
       await Customer.updateMany(
         {
           created_by: user._id,
+          database:user.database,
+          status: "Active",  
           pincode: { $nin: pincodes },
         },
         { $set: { created_by: "" } }
@@ -1345,6 +1347,8 @@ export const assignSalesPerson = async () => {
       if (pincodes.length > 0) {
         await Customer.updateMany(
           {
+            status: "Active", 
+            database:user.database,
             pincode: { $in: pincodes },
             $or: [
               { created_by: "" },
