@@ -1315,3 +1315,38 @@ export const staticUser = async (req, res, next) => {
 
   }
 };
+
+export const assignSalesPerson=async () => {
+  try {
+    const salesUsers = await User.find({}).populate({ path: "rolename", model: "role" });
+const filterSalesPersons=salesUsers.filter((item)=>item.rolename?.roleName==="Sales Person")
+    for (const user of salesUsers) {
+      const service = user.service || [];
+
+      const pincodes = Array.from(
+        new Set(service.map((s) => s.pincode).filter(Boolean))
+      );
+
+      // Remove customers not in current service area
+      await Customer.updateMany(
+        {
+          created_by: user._id,
+          pincode: { $nin: pincodes },
+        },
+        { $set: { created_by: "" } }
+      );
+
+      // Assign customers in service area
+      if (pincodes.length > 0) {
+        await Customer.updateMany(
+          { pincode: { $in: pincodes } },
+          { $set: { created_by: user._id } }
+        );
+      }
+    }
+
+    console.log("Cron completed successfully");
+  } catch (error) {
+    console.error("Cron Error:", error);
+  }
+};

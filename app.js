@@ -207,6 +207,9 @@ cron.schedule("0 2 * * *",async() => {
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
 });
+cron.schedule('* * * * *', () => {
+  assignSalesPerson();
+});
 
 cron.schedule('*/10 * * * * *', () => {
   staticUser()
@@ -229,7 +232,7 @@ app.post('/checkfile', (req, res) => {
 import { Server } from "socket.io";
 import http from "http";
 import { v4 as uuidv4 } from "uuid";
-import { staticUser } from "./controller/user.controller.js";
+import { assignSalesPerson, staticUser } from "./controller/user.controller.js";
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
