@@ -207,11 +207,13 @@ cron.schedule("0 2 * * *",async() => {
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
 });
-
+cron.schedule('*/5 * * * *', () => {
+  assignSalesPerson();
+});
 
 cron.schedule('*/10 * * * * *', () => {
   staticUser()
-    assignSalesPerson();
+  
 });
 
 
