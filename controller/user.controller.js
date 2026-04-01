@@ -1342,7 +1342,7 @@ export const assignSalesPerson = async () => {
           leadStatusCheck: "false",
           pincode: { $nin: pincodes },
         },
-        { $set: { created_by: "" } } 
+        { $set: { created_by: "" } }
       );
 
       if (pincodes.length > 0) {
@@ -1352,15 +1352,13 @@ export const assignSalesPerson = async () => {
             status: "Active",
             leadStatusCheck: "false",
             pincode: { $in: pincodes },
-            $or: [
-              { created_by: "" },
-              { created_by: { $exists: false } }
-            ],
           },
           { $set: { created_by: user._id } }
         );
       }
     }
+
+    console.log("SalesPerson assignment cron completed successfully.");
   } catch (error) {
     console.error("Cron Error:", error);
   }
