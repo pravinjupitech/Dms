@@ -1334,16 +1334,16 @@ export const assignSalesPerson = async () => {
         new Set(service.map((s) => s.pincode).filter(Boolean))
       );
 
-      await Customer.updateMany(
-        {
-          created_by: user._id,
-          database: user.database,
-          status: "Active",
-          leadStatusCheck: "false",
-          pincode: { $nin: pincodes },
-        },
-        { $set: { created_by: "" } } 
-      );
+      // await Customer.updateMany(
+      //   {
+      //     created_by: user._id,
+      //     database: user.database,
+      //     status: "Active",
+      //     leadStatusCheck: "false",
+      //     pincode: { $nin: pincodes },
+      //   },
+      //   { $set: { created_by: "" } } 
+      // );
 
       if (pincodes.length > 0) {
         await Customer.updateMany(
@@ -1361,8 +1361,6 @@ export const assignSalesPerson = async () => {
         );
       }
     }
-
-    console.log("SalesPerson assignment cron completed successfully.");
   } catch (error) {
     console.error("Cron Error:", error);
   }
