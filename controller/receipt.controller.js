@@ -744,12 +744,32 @@ export const CashBookReport = async (req, res, next) => {
 
 export const BankAccountReport = async (req, res, next) => {
     try {
-        const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
-        const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
-        const targetQuery = { database: req.params.database, paymentMode: "Bank", status: "Active" };
-        if (startDate && endDate) {
-            targetQuery.createdAt = { $gte: startDate, $lte: endDate };
-        }
+        // const startDate = req.body.startDate ? new Date(req.body.startDate) : null;
+        // const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
+        // const targetQuery = { database: req.params.database, paymentMode: "Bank", status: "Active" };
+        // if (startDate && endDate) {
+        //     targetQuery.createdAt = { $gte: startDate, $lte: endDate };
+        // }
+        const startDate = req.body.startDate
+  ? new Date(new Date(req.body.startDate).setHours(0, 0, 0, 0))
+  : null;
+
+const endDate = req.body.endDate
+  ? new Date(new Date(req.body.endDate).setHours(23, 59, 59, 999))
+  : null;
+
+const targetQuery = {
+  database: req.params.database,
+  paymentMode: "Bank",
+  status: "Active",
+};
+
+if (startDate && endDate) {
+  targetQuery.date = {
+    $gte: startDate,
+    $lte: endDate,
+  };
+}
         const receipts = await Receipt.find(targetQuery).sort({ sortorder: -1 }).populate({ path: "partyId", model: "customer" }).populate({ path: "userId", model: "user" }).populate({ path: "expenseId", model: "createAccount" }).populate({ path: "transporterId", model: "transporter" });
         if (receipts.length === 0) {
             return res.status(404).json({ message: "Not Found", status: false });
