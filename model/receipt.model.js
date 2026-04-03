@@ -72,7 +72,7 @@ const ReceiptSchema = new mongoose.Schema({
         type: Number
     },
     bankDetails:{
-        type:Object
+        type:mongoose.Schema.Types.ObjectId
     },
     otpDateTime: {
         type: String
