@@ -1309,6 +1309,32 @@ export const staticUser = async (req, res, next) => {
 
         await Customer.create(customerObj);
       }
+      const findCashUser = await User.findOne({
+        database: item.database,
+        firstName: "CASH ACCOUNT"
+      })
+      if (!findCashUser) {
+        const obj = {
+          id: "CASH ACCOUNT-Cash-in-hand",
+          database: item.database,
+          setRule: [],
+          status: "Active",
+          firstName: "CASH ACCOUNT",
+          reference: [],
+          deviceStatus: false,
+          userRegister: 0,
+          userAllotted: 0,
+          planStatus: "unpaid",
+          OpeningBalance: "00",
+          Type: "debit",
+          account: "Cash-in-hand",
+          warehouse: [],
+          role: [],
+          service: [],
+          created_by: item.user_id
+        }
+        await User.create(obj)
+      }
     }
   } catch (error) {
     console.error(error);

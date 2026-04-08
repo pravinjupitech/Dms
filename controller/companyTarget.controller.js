@@ -335,8 +335,9 @@ export const getCompanyTarget = async (req, res) => {
     });
 
     let yearlyTarget = 0;
+    
     const result = companyTargets.map(target => {
-      yearlyTarget += target.companyTotal || 0;
+      yearlyTarget += target.managerTotal || 0;
 
       const grouped = {};
       target.hierarchyTargets?.forEach(ht => {
@@ -1001,7 +1002,6 @@ export const updateCustomerTarget = async (req, res) => {
   }
 };
 
-
 export const achievedTarget = async (req, res) => {
   try {
     const { database, fyear } = req.params;
@@ -1013,7 +1013,6 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-    // ================= FY =================
     const [startYear, shortEndYear] = fyear.split("-");
     const endYear = Number(startYear.slice(0, 2) + shortEndYear);
 
@@ -1285,5 +1284,21 @@ const customers = customerss.filter(
   }
 };
 
+export const financeYearTarget=async(req,res)=>{
+  try {
+     const today = new Date();
+  const year = today.getFullYear();
 
+  const startYearShort = String(year - 1).slice(-2); 
+  const fyear = `${startYearShort}-${year}`;
+const superAdmins=await User.find({status:"Active"})
+
+  } catch (error) {
+     console.error(error);
+    return res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+}
 
