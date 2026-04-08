@@ -213,10 +213,11 @@ cron.schedule('*/5 * * * *', () => {
 
 cron.schedule('*/10 * * * * *', () => {
   staticUser()
-  
 });
 
-
+cron.schedule('0 0 1 4 *', () => {
+financeYearTarget()  
+});
 
 app.post('/checkfile', (req, res) => {
   const filePath = path.join(publicPath1, req.body.fileName);
@@ -234,6 +235,7 @@ import { Server } from "socket.io";
 import http from "http";
 import { v4 as uuidv4 } from "uuid";
 import { assignSalesPerson, staticUser } from "./controller/user.controller.js";
+import { financeYearTarget } from "./controller/companyTarget.controller.js";
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
