@@ -668,9 +668,10 @@ export const CashBookReport = async (req, res, next) => {
             status: "completed"
         }).populate({ path: "partyId", model: "customer" });
 
-        const salesData = salesOrders
-            .filter(order => order?.partyId?.paymentTerm === "cash")
-            .map(order => ({
+        // const salesData = salesOrders
+        //     .filter(order => order?.partyId?.paymentTerm === "cash")
+          const salesData = salesOrders
+            .filter(order => order?.fullName.toLowerCase()==="cash").map(order => ({
                 party: order.partyId?.CompanyName || "",
                 amount: order.grandTotal || 0,
                 date: order.date,
@@ -681,8 +682,10 @@ export const CashBookReport = async (req, res, next) => {
             database: req.params.database,
             status: "completed"
         }).populate({ path: "partyId", model: "customer" });
+        // const purchaseData = purchaseOrders
+        //     .filter(order => order?.partyId?.paymentTerm === "cash")
         const purchaseData = purchaseOrders
-            .filter(order => order?.partyId?.paymentTerm === "cash")
+            .filter(order => order?.fullName.toLowerCase()=== "cash")
             .map(order => ({
                 party: order.partyId?.CompanyName || "",
                 amount: order.grandTotal || 0,

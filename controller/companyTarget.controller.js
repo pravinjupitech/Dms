@@ -80,11 +80,11 @@ export const saveCompanyTarget = async (req, res) => {
         "false"
     }).lean();
 
-const allCustomers = allCustomerss.filter(
-  (item) =>
-    item.partyType?.toLowerCase() === "debitor" &&
-    item.CompanyName?.toUpperCase() !== "CASH"
-);
+    const allCustomers = allCustomerss.filter(
+      (item) =>
+        item.partyType?.toLowerCase() === "debitor" &&
+        item.CompanyName?.toUpperCase() !== "CASH"
+    );
     const userMap = new Map();
     allUsers.forEach(u => userMap.set(String(u._id), u));
 
@@ -335,7 +335,7 @@ export const getCompanyTarget = async (req, res) => {
     });
 
     let yearlyTarget = 0;
-    
+
     const result = companyTargets.map(target => {
       yearlyTarget += target.managerTotal || 0;
 
@@ -1004,8 +1004,8 @@ export const updateCustomerTarget = async (req, res) => {
 
 export const achievedTarget = async (req, res) => {
   try {
-    const { database, fyear } = req.params;
-
+    const database = req.params.database ?? req.body.database;
+    const fyear = req.params.fyear ?? req.body.fyear;
     if (!database || !fyear) {
       return res.status(400).json({
         success: false,
@@ -1019,11 +1019,10 @@ export const achievedTarget = async (req, res) => {
     const startDate = new Date(`${startYear}-04-01T00:00:00.000Z`);
     const endDate = new Date(`${endYear}-03-31T23:59:59.999Z`);
 
-   
+
 
     const getFYIndex = (m) => (m >= 4 ? m - 4 : m + 8);
 
-    // ================= AGG =================
     const aggData = await CreateOrder.aggregate([
       {
         $match: {
@@ -1085,20 +1084,18 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-    // ================= MASTER DATA =================
     const customerss = await Customer.find({ database, status: "Active" }).lean();
     const users = await User.find({ database, status: "Active" }).lean();
     const products = await Product.find({ database }).lean();
-const customers = customerss.filter(
-  (item) =>
-    item.partyType?.toLowerCase() === "debitor" &&
-    item.CompanyName?.toUpperCase() !== "CASH"
-);
+    const customers = customerss.filter(
+      (item) =>
+        item.partyType?.toLowerCase() === "debitor" &&
+        item.CompanyName?.toUpperCase() !== "CASH"
+    );
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
     const userMap = new Map(users.map(u => [String(u._id), u]));
     const productMap = new Map(products.map(p => [String(p._id), p]));
 
-    // ================= ROLES =================
     const departmentData = await AssignRole.find({ database }).populate({
       path: "departmentName",
       model: "department"
@@ -1114,7 +1111,6 @@ const customers = customerss.filter(
 
     const bottomRole = roles[roles.length - 1];
 
-    // ================= HELPERS =================
     const mergeProducts = (a = [], b = []) => {
       const map = {};
 
@@ -1199,7 +1195,6 @@ const customers = customerss.filter(
       return chain;
     };
 
-    // ================= FINAL =================
     const finalMap = new Map();
 
     for (const mData of aggData) {
@@ -1283,22 +1278,253 @@ const customers = customerss.filter(
     });
   }
 };
+// services/achievedTarget.service.js
 
-export const financeYearTarget=async(req,res)=>{
+export const calculateAchievedTarget = async (database, fyear) => {
   try {
-     const today = new Date();
-  const year = today.getFullYear();
+    if (!database || !fyear) {
+      throw new Error("database and fyear required");
+    }
 
-  const startYearShort = String(year - 1).slice(-2); 
-  const fyear = `${startYearShort}-${year}`;
-const superAdmins=await User.find({status:"Active"})
+    const [startYear, shortEndYear] = fyear.split("-");
+    const endYear = Number(startYear.slice(0, 2) + shortEndYear);
+
+    const startDate = new Date(`${startYear}-04-01T00:00:00.000Z`);
+    const endDate = new Date(`${endYear}-03-31T23:59:59.999Z`);
+
+    const getFYIndex = (m) => (m >= 4 ? m - 4 : m + 8);
+
+    const aggData = await CreateOrder.aggregate([
+      {
+        $match: {
+          database,
+          status: "completed",
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      { $unwind: "$orderItems" },
+      { $addFields: { month: { $month: "$date" } } },
+      {
+        $group: {
+          _id: {
+            party: "$partyId",
+            product: "$orderItems.productId",
+            month: "$month"
+          },
+          qty: { $sum: "$orderItems.qty" },
+          total: { $sum: "$orderItems.totalPrice" }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            party: "$_id.party",
+            month: "$_id.month"
+          },
+          products: {
+            $push: {
+              productId: "$_id.product",
+              qty: "$qty",
+              total: "$total"
+            }
+          },
+          total: { $sum: "$total" }
+        }
+      },
+      {
+        $group: {
+          _id: "$_id.month",
+          parties: {
+            $push: {
+              partyId: "$_id.party",
+              total: "$total",
+              products: "$products"
+            }
+          },
+          companyTotal: { $sum: "$total" }
+        }
+      }
+    ]);
+
+    if (!aggData.length) {
+      return { success: false, message: "No data found" };
+    }
+
+    const customersAll = await Customer.find({ database, status: "Active" }).lean();
+    const users = await User.find({ database, status: "Active" }).lean();
+    const products = await Product.find({ database }).lean();
+
+    const customers = customersAll.filter(
+      c => c.partyType?.toLowerCase() === "debitor" && c.CompanyName?.toUpperCase() !== "CASH"
+    );
+
+    const customerMap = new Map(customers.map(c => [String(c._id), c]));
+    const userMap = new Map(users.map(u => [String(u._id), u]));
+    const productMap = new Map(products.map(p => [String(p._id), p]));
+
+    const departmentData = await AssignRole.find({ database }).populate({
+      path: "departmentName",
+      model: "department"
+    });
+
+    const salesDept = departmentData.find(
+      d => d?.departmentName?.departmentName?.toLowerCase() === "sales"
+    );
+
+    const roles = [...(salesDept?.roles || [])].sort(
+      (a, b) => a.rolePosition - b.rolePosition
+    );
+    const bottomRole = roles[roles.length - 1];
+
+    const mergeProducts = (a = [], b = []) => {
+      const map = {};
+      [...a, ...b].forEach(p => {
+        const key = String(p.productId);
+        if (!map[key]) {
+          const product = productMap.get(key);
+          map[key] = {
+            productId: key,
+            productName: product?.Product_Title || "Unknown",
+            qty: p.qty,
+            total: p.total
+          };
+        } else {
+          map[key].qty += p.qty;
+          map[key].total += p.total;
+        }
+      });
+      return Object.values(map);
+    };
+
+    const getParent = (id) => {
+      const c = customerMap.get(id);
+      if (c) return c.created_by ? String(c.created_by) : null;
+      const u = userMap.get(id);
+      return u?.created_by ? String(u.created_by) : null;
+    };
+
+    const getUserInfo = (id) => {
+      const c = customerMap.get(id);
+      if (c) return {
+        name: c.CompanyName || c.firstName || "Unknown",
+        roleName: bottomRole?.roleName || "CUSTOMER",
+        rolePosition: bottomRole?.rolePosition || roles.length + 1
+      };
+
+      const u = userMap.get(id);
+      if (!u) return { name: "Unknown", roleName: "UNKNOWN", rolePosition: roles.length + 2 };
+
+      const roleData = roles.find(r => String(r.roleId) === String(u.rolename));
+      return {
+        name: u.firstName || "Unknown",
+        roleName: roleData?.roleName || "UNKNOWN",
+        rolePosition: roleData?.rolePosition ?? roles.length + 2
+      };
+    };
+
+    const buildChain = (id) => {
+      const chain = [];
+      let current = id;
+      while (current) {
+        const info = getUserInfo(current);
+        chain.push({
+          userId: current,
+          firstName: info.name,
+          roleName: info.roleName,
+          rolePosition: info.rolePosition
+        });
+        current = getParent(current);
+      }
+      return chain;
+    };
+
+    const finalMap = new Map();
+
+    for (const mData of aggData) {
+      const monthName = FY_MONTHS[getFYIndex(mData._id)];
+      if (!finalMap.has(monthName)) finalMap.set(monthName, { month: monthName, companyTotal: 0, layers: [] });
+
+      const monthEntry = finalMap.get(monthName);
+      monthEntry.companyTotal += mData.companyTotal;
+
+      const hierarchy = {};
+
+      for (const p of mData.parties) {
+        const chain = buildChain(String(p.partyId));
+        chain.forEach(node => {
+          if (!hierarchy[node.userId]) {
+            hierarchy[node.userId] = {
+              userId: node.userId,
+              firstName: node.firstName,
+              roleName: node.roleName,
+              rolePosition: node.rolePosition,
+              total: 0,
+              products: []
+            };
+          }
+          hierarchy[node.userId].total += p.total;
+          hierarchy[node.userId].products = mergeProducts(hierarchy[node.userId].products, p.products);
+        });
+      }
+
+      const layerMap = {};
+      Object.values(hierarchy).forEach(u => {
+        const key = `${u.rolePosition}-${u.roleName}`;
+        if (!layerMap[key]) layerMap[key] = { rolePosition: u.rolePosition, roleName: u.roleName, users: [] };
+        layerMap[key].users.push({ userId: u.userId, firstName: u.firstName, total: u.total, products: u.products });
+      });
+
+      monthEntry.layers = Object.values(layerMap).sort((a, b) => a.rolePosition - b.rolePosition);
+    }
+
+    const finalData = FY_MONTHS.map(m => finalMap.get(m)).filter(Boolean);
+
+    return { success: true, fyear, data: finalData };
+
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: err.message };
+  }
+};
+
+export const financeYearTarget = async (req, res) => {
+  try {
+    const today = new Date();
+    const year = today.getFullYear();
+
+    const startYear = year - 1;
+    const endYearShort = String(year).slice(-2);
+    const fyear = `${startYear}-${endYearShort}`;
+
+    const superAdmins = await User.find({ status: "Active" })
+      .populate({
+        path: "rolename",
+        model: "role",
+        match: { roleName: "SuperAdmin" }
+      })
+      .select("database rolename");
+
+    const databases = superAdmins
+      .filter(item => item.rolename)
+      .map(item => item.database);
+
+    const results = await Promise.all(
+      databases.map(db => {
+        return calculateAchievedTarget(db, fyear);
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      fyear,
+      results
+    });
 
   } catch (error) {
-     console.error(error);
+    console.error(error);
     return res.status(500).json({
       status: false,
       message: error.message
     });
   }
-}
-
+};
