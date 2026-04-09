@@ -784,7 +784,7 @@ export const CashBookReport = async (req, res, next) => {
 //         return res.status(500).json({ error: "Internal Server Error", status: false });
 //     }
 // };
-
+import mongoose from "mongoose"
 const CASH_ID = "CASH";
 const isCashId = (id) =>
   String(id || "")
