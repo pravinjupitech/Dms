@@ -670,8 +670,8 @@ export const CashBookReport = async (req, res, next) => {
 
         // const salesData = salesOrders
         //     .filter(order => order?.partyId?.paymentTerm === "cash")
-          const salesData = salesOrders
-            .filter(order => order?.fullName.toLowerCase()==="cash").map(order => ({
+        const salesData = salesOrders
+            .filter(order => order?.fullName.toLowerCase() === "cash").map(order => ({
                 party: order.partyId?.CompanyName || "",
                 amount: order.grandTotal || 0,
                 date: order.date,
@@ -685,7 +685,7 @@ export const CashBookReport = async (req, res, next) => {
         // const purchaseData = purchaseOrders
         //     .filter(order => order?.partyId?.paymentTerm === "cash")
         const purchaseData = purchaseOrders
-            .filter(order => order?.fullName.toLowerCase()=== "cash")
+            .filter(order => order?.fullName.toLowerCase() === "cash")
             .map(order => ({
                 party: order.partyId?.CompanyName || "",
                 amount: order.grandTotal || 0,
@@ -694,6 +694,7 @@ export const CashBookReport = async (req, res, next) => {
             }));
 
         const accountDetails = await User.findOne({ id: "CASH ACCOUNT-Cash-in-Hand" });
+        const cashParty = await Customer.findOne({ CompanyName: "CASH" });
         const userId = accountDetails?._id;
 
         const query1 = {
@@ -702,11 +703,18 @@ export const CashBookReport = async (req, res, next) => {
             status: "Active"
         };
 
+        // const query2 = {
+        //     status: "Active",
+        //     userId: userId
+        // };
+
         const query2 = {
             status: "Active",
-            userId: userId
+            $or: [
+                ...(userId ? [{ userId }] : []),
+                ...(cashParty?._id ? [{ partyId: cashParty._id }] : [])
+            ]
         };
-
         if (startDate && endDate) {
             query1.createdAt = { $gte: startDate, $lte: endDate };
             query2.createdAt = { $gte: startDate, $lte: endDate };
@@ -787,18 +795,18 @@ export const CashBookReport = async (req, res, next) => {
 import mongoose from "mongoose"
 const CASH_ID = "CASH";
 const isCashId = (id) =>
-  String(id || "")
-    .trim()
-    .toUpperCase() === CASH_ID;
+    String(id || "")
+        .trim()
+        .toUpperCase() === CASH_ID;
 
 const toObjIdArray = (ids) =>
-  (ids || [])
-    .filter((id) => mongoose.Types.ObjectId.isValid(id))
-    .map((id) => new mongoose.Types.ObjectId(id));
+    (ids || [])
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
 
 export const BankAccountReport = async (req, res, next) => {
-  try {
-     const startDate = req.body.startDate
+    try {
+        const startDate = req.body.startDate
             ? new Date(new Date(req.body.startDate).setHours(0, 0, 0, 0))
             : null;
 
@@ -818,156 +826,156 @@ export const BankAccountReport = async (req, res, next) => {
                 $lte: endDate,
             };
         }
-    const receipts = await Receipt.find(targetQuery)
-      .sort({ sortorder: -1 })
-      .populate({ path: "partyId", model: "customer" })
-      .populate({ path: "userId", model: "user" })
-      .populate({ path: "transporterId", model: "transporter" })
-      .lean();
+        const receipts = await Receipt.find(targetQuery)
+            .sort({ sortorder: -1 })
+            .populate({ path: "partyId", model: "customer" })
+            .populate({ path: "userId", model: "user" })
+            .populate({ path: "transporterId", model: "transporter" })
+            .lean();
 
-    if (!receipts.length) {
-      return res.status(404).json({ message: "Not Found", status: false });
-    }
-    const bankIdStrings = [
-      ...new Set(
-        receipts
-          .map((r) => r?.bankDetails)
-          .filter(Boolean)
-          .map((id) => String(id)),
-      ),
-    ];
-
-    const expenseIdStrings = [
-      ...new Set(
-        receipts
-          .map((r) => r?.expenseId)
-          .filter(Boolean)
-          .map((id) => String(id)),
-      ),
-    ];
-    const allCandidateIds = [
-      ...new Set(
-        [...bankIdStrings, ...expenseIdStrings].filter(
-          (id) => id && !isCashId(id),
-        ),
-      ),
-    ];
-
-    const candidateObjIds = toObjIdArray(allCandidateIds);
-    const expenseDocs = candidateObjIds.length
-      ? await CreateAccount.find({ _id: { $in: candidateObjIds } }).lean()
-      : [];
-
-    const expenseMap = new Map(
-      expenseDocs.map((d) => [String(d._id), { ...d, _kind: "expense" }]),
-    );
-    const unresolvedForBankSubdoc = allCandidateIds.filter(
-      (id) =>
-        mongoose.Types.ObjectId.isValid(id) && !expenseMap.has(String(id)),
-    );
-
-    const bankMap = new Map();
-
-    if (unresolvedForBankSubdoc.length) {
-      const bankObjIds = toObjIdArray(unresolvedForBankSubdoc);
-
-      const companies = await CompanyDetails.find({
-        database: req.params.database,
-        "bankDetails._id": { $in: bankObjIds },
-      }).lean();
-
-      for (const company of companies) {
-        for (const bank of company.bankDetails || []) {
-          const bankKey = String(bank._id);
-          if (!unresolvedForBankSubdoc.includes(bankKey)) continue;
-
-          bankMap.set(bankKey, {
-            ...bank,
-            _kind: "bank",
-            companyId: company._id,
-            companyName: company.name,
-            companyGstNo: company.gstNo,
-          });
+        if (!receipts.length) {
+            return res.status(404).json({ message: "Not Found", status: false });
         }
-      }
+        const bankIdStrings = [
+            ...new Set(
+                receipts
+                    .map((r) => r?.bankDetails)
+                    .filter(Boolean)
+                    .map((id) => String(id)),
+            ),
+        ];
+
+        const expenseIdStrings = [
+            ...new Set(
+                receipts
+                    .map((r) => r?.expenseId)
+                    .filter(Boolean)
+                    .map((id) => String(id)),
+            ),
+        ];
+        const allCandidateIds = [
+            ...new Set(
+                [...bankIdStrings, ...expenseIdStrings].filter(
+                    (id) => id && !isCashId(id),
+                ),
+            ),
+        ];
+
+        const candidateObjIds = toObjIdArray(allCandidateIds);
+        const expenseDocs = candidateObjIds.length
+            ? await CreateAccount.find({ _id: { $in: candidateObjIds } }).lean()
+            : [];
+
+        const expenseMap = new Map(
+            expenseDocs.map((d) => [String(d._id), { ...d, _kind: "expense" }]),
+        );
+        const unresolvedForBankSubdoc = allCandidateIds.filter(
+            (id) =>
+                mongoose.Types.ObjectId.isValid(id) && !expenseMap.has(String(id)),
+        );
+
+        const bankMap = new Map();
+
+        if (unresolvedForBankSubdoc.length) {
+            const bankObjIds = toObjIdArray(unresolvedForBankSubdoc);
+
+            const companies = await CompanyDetails.find({
+                database: req.params.database,
+                "bankDetails._id": { $in: bankObjIds },
+            }).lean();
+
+            for (const company of companies) {
+                for (const bank of company.bankDetails || []) {
+                    const bankKey = String(bank._id);
+                    if (!unresolvedForBankSubdoc.includes(bankKey)) continue;
+
+                    bankMap.set(bankKey, {
+                        ...bank,
+                        _kind: "bank",
+                        companyId: company._id,
+                        companyName: company.name,
+                        companyGstNo: company.gstNo,
+                    });
+                }
+            }
+        }
+
+        const resolveBankDetailsObject = (id) => {
+            if (!id) return null;
+            const key = String(id);
+
+            if (isCashId(key)) {
+                return { _id: CASH_ID, bankName: "Cash", isCash: true, _kind: "cash" };
+            }
+
+            const exp = expenseMap.get(key);
+            if (exp) {
+                return {
+                    ...exp,
+                    bankName: exp?.title || exp?.name || "Account",
+                    _kind: "expense_as_bank",
+                };
+            }
+
+            return bankMap.get(key) || null;
+        };
+
+        const resolveExpenseIdObject = (id) => {
+            if (!id) return null;
+            const key = String(id);
+
+            if (isCashId(key)) {
+                return { _id: CASH_ID, title: "Cash", isCash: true, _kind: "cash" };
+            }
+
+            const exp = expenseMap.get(key);
+            if (exp) return exp;
+
+            const bank = bankMap.get(key);
+            if (bank) {
+                return {
+                    ...bank,
+                    title:
+                        bank?.bankName +
+                        (bank?.accountNumber ? ` (${bank.accountNumber})` : "") || "Bank",
+                    _kind: "bank_as_expense",
+                };
+            }
+
+            return null;
+        };
+
+
+        const finalReceipts = receipts.map((receipt) => {
+            const bankKey = receipt?.bankDetails ? String(receipt.bankDetails) : null;
+            const expKey = receipt?.expenseId ? String(receipt.expenseId) : null;
+
+            const resolvedBankDetails = bankKey
+                ? resolveBankDetailsObject(bankKey)
+                : null;
+
+            const resolvedExpenseId = expKey ? resolveExpenseIdObject(expKey) : null;
+
+            return {
+                ...receipt,
+
+                bankDetails: bankKey ? resolvedBankDetails : null,
+
+                expenseId: resolvedExpenseId || receipt.expenseId,
+            };
+        });
+
+        return res.status(200).json({
+            BankAccount: finalReceipts,
+            status: true,
+        });
+    } catch (err) {
+        console.error("BankAccountReport error:", err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false,
+        });
     }
-
-    const resolveBankDetailsObject = (id) => {
-      if (!id) return null;
-      const key = String(id);
-
-      if (isCashId(key)) {
-        return { _id: CASH_ID, bankName: "Cash", isCash: true, _kind: "cash" };
-      }
-
-      const exp = expenseMap.get(key);
-      if (exp) {
-        return {
-          ...exp,
-          bankName: exp?.title || exp?.name || "Account",
-          _kind: "expense_as_bank",
-        };
-      }
-
-      return bankMap.get(key) || null;
-    };
-
-    const resolveExpenseIdObject = (id) => {
-      if (!id) return null;
-      const key = String(id);
-
-      if (isCashId(key)) {
-        return { _id: CASH_ID, title: "Cash", isCash: true, _kind: "cash" };
-      }
-
-      const exp = expenseMap.get(key);
-      if (exp) return exp;
-
-      const bank = bankMap.get(key);
-      if (bank) {
-        return {
-          ...bank,
-          title:
-            bank?.bankName +
-              (bank?.accountNumber ? ` (${bank.accountNumber})` : "") || "Bank",
-          _kind: "bank_as_expense",
-        };
-      }
-
-      return null;
-    };
-
-  
-    const finalReceipts = receipts.map((receipt) => {
-      const bankKey = receipt?.bankDetails ? String(receipt.bankDetails) : null;
-      const expKey = receipt?.expenseId ? String(receipt.expenseId) : null;
-
-      const resolvedBankDetails = bankKey
-        ? resolveBankDetailsObject(bankKey)
-        : null;
-
-      const resolvedExpenseId = expKey ? resolveExpenseIdObject(expKey) : null;
-
-      return {
-        ...receipt,
-
-        bankDetails: bankKey ? resolvedBankDetails : null,
-
-        expenseId: resolvedExpenseId || receipt.expenseId,
-      };
-    });
-
-    return res.status(200).json({
-      BankAccount: finalReceipts,
-      status: true,
-    });
-  } catch (err) {
-    console.error("BankAccountReport error:", err);
-    return res.status(500).json({
-      error: "Internal Server Error",
-      status: false,
-    });
-  }
 };
 
 export const TaxReport = async (req, res, next) => {
