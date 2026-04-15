@@ -56,7 +56,7 @@ export async function exportDatabase() {
   await client.close();
   console.log("🎉 Atlas Free DB backup completed");
 
-  deleteOldBackups(7);
+  deleteOldBackups(30);
 }
 
 export const SaveBackup = async (req, res) => {
