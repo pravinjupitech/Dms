@@ -172,6 +172,7 @@ export const savePayment = async (req, res, next) => {
         return res.status(500).json({ error: "Internal Server Error", status: false });
     }
 }
+
 export const UpdatePayment = async (req, res, next) => {
     try {
         const existingReceipt = await Receipt.findById(req.params.id);
