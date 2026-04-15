@@ -1002,10 +1002,289 @@ export const updateCustomerTarget = async (req, res) => {
   }
 };
 
+// export const achievedTarget = async (req, res) => {
+//   try {
+//     const database = req.params.database ?? req.body.database;
+//     const fyear = req.params.fyear ?? req.body.fyear;
+//     if (!database || !fyear) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "database and fyear required"
+//       });
+//     }
+
+//     const [startYear, shortEndYear] = fyear.split("-");
+//     const endYear = Number(startYear.slice(0, 2) + shortEndYear);
+
+//     const startDate = new Date(`${startYear}-04-01T00:00:00.000Z`);
+//     const endDate = new Date(`${endYear}-03-31T23:59:59.999Z`);
+
+
+
+//     const getFYIndex = (m) => (m >= 4 ? m - 4 : m + 8);
+
+//     const aggData = await CreateOrder.aggregate([
+//       {
+//         $match: {
+//           database,
+//           status: "completed",
+//           date: { $gte: startDate, $lte: endDate }
+//         }
+//       },
+//       { $unwind: "$orderItems" },
+//       {
+//         $addFields: { month: { $month: "$date" } }
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             party: "$partyId",
+//             product: "$orderItems.productId",
+//             month: "$month"
+//           },
+//           qty: { $sum: "$orderItems.qty" },
+//           total: { $sum: "$orderItems.totalPrice" }
+//         }
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             party: "$_id.party",
+//             month: "$_id.month"
+//           },
+//           products: {
+//             $push: {
+//               productId: "$_id.product",
+//               qty: "$qty",
+//               total: "$total"
+//             }
+//           },
+//           total: { $sum: "$total" }
+//         }
+//       },
+//       {
+//         $group: {
+//           _id: "$_id.month",
+//           parties: {
+//             $push: {
+//               partyId: "$_id.party",
+//               total: "$total",
+//               products: "$products"
+//             }
+//           },
+//           companyTotal: { $sum: "$total" }
+//         }
+//       }
+//     ]);
+
+//     if (!aggData.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No data found"
+//       });
+//     }
+
+//     const customerss = await Customer.find({ database, status: "Active" }).lean();
+//     const users = await User.find({ database, status: "Active" }).lean();
+//     const products = await Product.find({ database }).lean();
+//     const customers = customerss.filter(
+//       (item) =>
+//         item.partyType?.toLowerCase() === "debitor" &&
+//         item.CompanyName?.toUpperCase() !== "CASH"
+//     );
+//     const customerMap = new Map(customers.map(c => [String(c._id), c]));
+//     const userMap = new Map(users.map(u => [String(u._id), u]));
+//     const productMap = new Map(products.map(p => [String(p._id), p]));
+
+//     const departmentData = await AssignRole.find({ database }).populate({
+//       path: "departmentName",
+//       model: "department"
+//     });
+
+//     const salesDept = departmentData.find(
+//       d => d?.departmentName?.departmentName?.toLowerCase() === "sales"
+//     );
+
+//     let roles = [...(salesDept?.roles || [])].sort(
+//       (a, b) => a.rolePosition - b.rolePosition
+//     );
+
+//     const bottomRole = roles[roles.length - 1];
+
+//     const mergeProducts = (a = [], b = []) => {
+//       const map = {};
+
+//       [...a, ...b].forEach(p => {
+//         const key = String(p.productId);
+
+//         if (!map[key]) {
+//           const product = productMap.get(key);
+
+//           map[key] = {
+//             productId: key,
+//             productName: product?.Product_Title || "Unknown",
+//             qty: p.qty,
+//             total: p.total
+//           };
+//         } else {
+//           map[key].qty += p.qty;
+//           map[key].total += p.total;
+//         }
+//       });
+
+//       return Object.values(map);
+//     };
+
+//     const getParent = (id) => {
+//       const c = customerMap.get(id);
+//       if (c) return c.created_by ? String(c.created_by) : null;
+
+//       const u = userMap.get(id);
+//       return u?.created_by ? String(u.created_by) : null;
+//     };
+
+//     const getUserInfo = (id) => {
+//       const c = customerMap.get(id);
+
+//       if (c) {
+//         return {
+//           name: c.CompanyName || c.firstName || "Unknown",
+//           roleName: bottomRole?.roleName || "CUSTOMER",
+//           rolePosition: bottomRole?.rolePosition || roles.length + 1
+//         };
+//       }
+
+//       const u = userMap.get(id);
+
+//       if (!u) {
+//         return {
+//           name: "Unknown",
+//           roleName: "UNKNOWN",
+//           rolePosition: roles.length + 2
+//         };
+//       }
+
+//       const roleData = roles.find(
+//         r => String(r.roleId) === String(u.rolename)
+//       );
+
+//       return {
+//         name: u.firstName || "Unknown",
+//         roleName: roleData?.roleName || "UNKNOWN",
+//         rolePosition: roleData?.rolePosition ?? roles.length + 2
+//       };
+//     };
+
+//     const buildChain = (id) => {
+//       const chain = [];
+//       let current = id;
+
+//       while (current) {
+//         const info = getUserInfo(current);
+
+//         chain.push({
+//           userId: current,
+//           firstName: info.name,
+//           roleName: info.roleName,
+//           rolePosition: info.rolePosition
+//         });
+
+//         current = getParent(current);
+//       }
+
+//       return chain;
+//     };
+
+//     const finalMap = new Map();
+
+//     for (const mData of aggData) {
+//       const monthName = FY_MONTHS[getFYIndex(mData._id)];
+
+//       if (!finalMap.has(monthName)) {
+//         finalMap.set(monthName, {
+//           month: monthName,
+//           companyTotal: 0,
+//           layers: []
+//         });
+//       }
+
+//       const monthEntry = finalMap.get(monthName);
+//       monthEntry.companyTotal += mData.companyTotal;
+
+//       const hierarchy = {};
+
+//       for (const p of mData.parties) {
+//         const chain = buildChain(String(p.partyId));
+
+//         chain.forEach(node => {
+//           if (!hierarchy[node.userId]) {
+//             hierarchy[node.userId] = {
+//               userId: node.userId,
+//               firstName: node.firstName,
+//               roleName: node.roleName,
+//               rolePosition: node.rolePosition,
+//               total: 0,
+//               products: []
+//             };
+//           }
+
+//           hierarchy[node.userId].total += p.total;
+//           hierarchy[node.userId].products = mergeProducts(
+//             hierarchy[node.userId].products,
+//             p.products
+//           );
+//         });
+//       }
+
+//       const layerMap = {};
+
+//       Object.values(hierarchy).forEach(u => {
+//         const key = `${u.rolePosition}-${u.roleName}`;
+
+//         if (!layerMap[key]) {
+//           layerMap[key] = {
+//             rolePosition: u.rolePosition,
+//             roleName: u.roleName,
+//             users: []
+//           };
+//         }
+
+//         layerMap[key].users.push({
+//           userId: u.userId,
+//           firstName: u.firstName,
+//           total: u.total,
+//           products: u.products
+//         });
+//       });
+
+//       monthEntry.layers = Object.values(layerMap).sort(
+//         (a, b) => a.rolePosition - b.rolePosition
+//       );
+//     }
+
+//     const finalData = FY_MONTHS.map(m => finalMap.get(m)).filter(Boolean);
+
+//     return res.status(200).json({
+//       success: true,
+//       fyear,
+//       data: finalData
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };
+// services/achievedTarget.service.js
+
 export const achievedTarget = async (req, res) => {
   try {
     const database = req.params.database ?? req.body.database;
     const fyear = req.params.fyear ?? req.body.fyear;
+
     if (!database || !fyear) {
       return res.status(400).json({
         success: false,
@@ -1013,16 +1292,20 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
+ 
     const [startYear, shortEndYear] = fyear.split("-");
     const endYear = Number(startYear.slice(0, 2) + shortEndYear);
 
     const startDate = new Date(`${startYear}-04-01T00:00:00.000Z`);
     const endDate = new Date(`${endYear}-03-31T23:59:59.999Z`);
 
-
-
     const getFYIndex = (m) => (m >= 4 ? m - 4 : m + 8);
 
+    const now = new Date();
+    const isCurrentFY = now >= startDate && now <= endDate;
+    const currentFYIndex = getFYIndex(now.getMonth() + 1);
+
+  
     const aggData = await CreateOrder.aggregate([
       {
         $match: {
@@ -1033,7 +1316,9 @@ export const achievedTarget = async (req, res) => {
       },
       { $unwind: "$orderItems" },
       {
-        $addFields: { month: { $month: "$date" } }
+        $addFields: {
+          month: { $month: "$date" }
+        }
       },
       {
         $group: {
@@ -1078,48 +1363,53 @@ export const achievedTarget = async (req, res) => {
     ]);
 
     if (!aggData.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No data found"
+      return res.status(200).json({
+        success: true,
+        fyear,
+        data: []
       });
     }
 
-    const customerss = await Customer.find({ database, status: "Active" }).lean();
-    const users = await User.find({ database, status: "Active" }).lean();
-    const products = await Product.find({ database }).lean();
+
+    const [customerss, users, products, departmentData] = await Promise.all([
+      Customer.find({ database, status: "Active" }).lean(),
+      User.find({ database, status: "Active" }).lean(),
+      Product.find({ database }).lean(),
+      AssignRole.find({ database }).populate({
+        path: "departmentName",
+        model: "department"
+      })
+    ]);
+
     const customers = customerss.filter(
-      (item) =>
-        item.partyType?.toLowerCase() === "debitor" &&
-        item.CompanyName?.toUpperCase() !== "CASH"
+      (c) =>
+        c.partyType?.toLowerCase() === "debitor" &&
+        c.CompanyName?.toUpperCase() !== "CASH"
     );
+
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
     const userMap = new Map(users.map(u => [String(u._id), u]));
     const productMap = new Map(products.map(p => [String(p._id), p]));
-
-    const departmentData = await AssignRole.find({ database }).populate({
-      path: "departmentName",
-      model: "department"
-    });
 
     const salesDept = departmentData.find(
       d => d?.departmentName?.departmentName?.toLowerCase() === "sales"
     );
 
-    let roles = [...(salesDept?.roles || [])].sort(
+    const roles = [...(salesDept?.roles || [])].sort(
       (a, b) => a.rolePosition - b.rolePosition
     );
 
     const bottomRole = roles[roles.length - 1];
 
+   
     const mergeProducts = (a = [], b = []) => {
       const map = {};
 
       [...a, ...b].forEach(p => {
         const key = String(p.productId);
+        const product = productMap.get(key);
 
         if (!map[key]) {
-          const product = productMap.get(key);
-
           map[key] = {
             productId: key,
             productName: product?.Product_Title || "Unknown",
@@ -1195,6 +1485,7 @@ export const achievedTarget = async (req, res) => {
       return chain;
     };
 
+   
     const finalMap = new Map();
 
     for (const mData of aggData) {
@@ -1262,7 +1553,21 @@ export const achievedTarget = async (req, res) => {
       );
     }
 
-    const finalData = FY_MONTHS.map(m => finalMap.get(m)).filter(Boolean);
+
+    let monthsToInclude = FY_MONTHS;
+
+    if (isCurrentFY) {
+      monthsToInclude = FY_MONTHS.slice(0, currentFYIndex + 1);
+    }
+
+    if (now < startDate) {
+      monthsToInclude = [];
+    }
+
+    const finalData = monthsToInclude
+      .map(m => finalMap.get(m))
+      .filter(Boolean);
+
 
     return res.status(200).json({
       success: true,
@@ -1278,8 +1583,6 @@ export const achievedTarget = async (req, res) => {
     });
   }
 };
-// services/achievedTarget.service.js
-
 export const calculateAchievedTarget = async (database, fyear) => {
   try {
     if (!database || !fyear) {
@@ -1526,5 +1829,263 @@ export const financeYearTarget = async (req, res) => {
       status: false,
       message: error.message
     });
+  }
+};
+
+export const generateCompanyTarget = async () => {
+  try {
+    console.log("🚀 Generating Company Target...");
+
+    const today = new Date();
+    const year = today.getFullYear();
+
+    // ✅ Last FY
+    const lastStartYear = year - 2;
+    const lastEndShort = String(year - 1).slice(-2);
+    const lastFY = `${lastStartYear}-${lastEndShort}`;
+
+    // ✅ Target FY
+    const targetStartYear = year - 1;
+    const targetEndShort = String(year).slice(-2);
+    const targetFY = `${targetStartYear}-${targetEndShort}`;
+
+    // ✅ Get SuperAdmin databases
+    const superAdmins = await User.find({ status: "Active" })
+      .populate({
+        path: "rolename",
+        model: "role",
+        match: { roleName: "SuperAdmin" }
+      })
+      .select("_id database");
+
+    const validAdmins = superAdmins.filter(a => a.rolename);
+
+    for (const admin of validAdmins) {
+
+      const database = admin.database;
+      const created_by = admin._id;
+
+      console.log(`📦 Processing: ${database}`);
+
+      // ❗ Skip if already exists
+      const exists = await CompanyTarget.findOne({
+        database,
+        fyear: targetFY
+      });
+
+      if (exists) {
+        console.log(`⏭ Skipped (already exists)`);
+        continue;
+      }
+
+      // ✅ Date range
+      const [startY, shortEndY] = lastFY.split("-");
+      const endY = Number(startY.slice(0, 2) + shortEndY);
+
+      const startDate = new Date(`${startY}-04-01T00:00:00.000Z`);
+      const endDate = new Date(`${endY}-03-31T23:59:59.999Z`);
+
+      // ✅ Aggregate LAST FY data
+      const salesData = await CreateOrder.aggregate([
+        {
+          $match: {
+            database,
+            status: "completed",
+            date: { $gte: startDate, $lte: endDate }
+          }
+        },
+        { $unwind: "$orderItems" },
+        {
+          $group: {
+            _id: "$orderItems.productId",
+            qty: { $sum: "$orderItems.qty" },
+            total: { $sum: "$orderItems.totalPrice" }
+          }
+        }
+      ]);
+
+      if (!salesData.length) {
+        console.log("⚠ No sales data found");
+        continue;
+      }
+
+      // ✅ Product mapping
+      const products = await Product.find({ database }).lean();
+      const productMap = new Map(products.map(p => [String(p._id), p]));
+
+      const incrementper = 10;
+
+      const applyIncrement = (val) =>
+        Number((val + (val * incrementper / 100)).toFixed(2));
+
+      // ✅ Build productItem
+      const productItem = salesData.map(p => {
+        const prod = productMap.get(String(p._id));
+
+        return {
+          category: prod?.category || "",
+          subCategory: prod?.subCategory || "",
+          productId: p._id,
+          productName: prod?.Product_Title || "Unknown",
+          pQty: applyIncrement(p.qty),
+          sQty: 1,
+          price: p.qty ? p.total / p.qty : 0,
+          total: applyIncrement(p.total)
+        };
+      });
+
+      // ✅ Call your existing controller
+      await saveCompanyTarget(
+        {
+          body: {
+            database,
+            fyear: targetFY,
+            month: "April",
+            incrementper,
+            productItem,
+            created_by
+          }
+        },
+        {
+          status: () => ({
+            json: () => {}
+          })
+        }
+      );
+
+      console.log("✅ Target Saved");
+    }
+
+    console.log("🎯 All Done");
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+  }
+};
+
+export const autoGenerateCompanyTarget = async () => {
+  try {
+    console.log("🚀 Auto Company Target Start");
+
+    const today = new Date();
+    const year = today.getFullYear();
+
+    const lastStartYear = year - 2;
+    const lastEndShort = String(year - 1).slice(-2);
+    const lastFY = `${lastStartYear}-${lastEndShort}`;
+
+    const targetStartYear = year - 1;
+    const targetEndShort = String(year).slice(-2);
+    const targetFY = `${targetStartYear}-${targetEndShort}`;
+
+    // ✅ Get all SuperAdmins
+    const superAdmins = await User.find({ status: "Active" })
+      .populate({
+        path: "rolename",
+        model: "role",
+        match: { roleName: "SuperAdmin" }
+      })
+      .select("_id database");
+
+    const validAdmins = superAdmins.filter(a => a.rolename);
+
+    for (const admin of validAdmins) {
+
+      const database = admin.database;
+      const created_by = admin._id;
+
+      console.log(`📦 Processing DB: ${database}`);
+
+      // ❗ Skip if already exists
+      const exists = await CompanyTarget.findOne({
+        database,
+        fyear: targetFY
+      });
+
+      if (exists) {
+        console.log(`⏭ Already exists for ${database}`);
+        continue;
+      }
+
+      // ✅ Get LAST FY SALES DATA (first month only or total)
+      const [startY, shortEndY] = lastFY.split("-");
+      const endY = Number(startY.slice(0, 2) + shortEndY);
+
+      const startDate = new Date(`${startY}-04-01T00:00:00.000Z`);
+      const endDate = new Date(`${endY}-03-31T23:59:59.999Z`);
+
+      const agg = await CreateOrder.aggregate([
+        {
+          $match: {
+            database,
+            status: "completed",
+            date: { $gte: startDate, $lte: endDate }
+          }
+        },
+        { $unwind: "$orderItems" },
+        {
+          $group: {
+            _id: "$orderItems.productId",
+            qty: { $sum: "$orderItems.qty" },
+            total: { $sum: "$orderItems.totalPrice" }
+          }
+        }
+      ]);
+
+      if (!agg.length) {
+        console.log(`⚠ No data for ${database}`);
+        continue;
+      }
+
+      const products = await Product.find({ database }).lean();
+      const productMap = new Map(products.map(p => [String(p._id), p]));
+
+      const incrementper = 10;
+
+      const applyIncrement = (val) =>
+        Number((val + (val * incrementper / 100)).toFixed(2));
+
+      // ✅ Convert to productItem format
+      const productItem = agg.map(p => {
+        const prod = productMap.get(String(p._id));
+
+        return {
+          category: prod?.category || "",
+          subCategory: prod?.subCategory || "",
+          productId: p._id,
+          productName: prod?.Product_Title || "Unknown",
+          pQty: applyIncrement(p.qty),
+          sQty: 1,
+          price: p.qty ? p.total / p.qty : 0,
+          total: applyIncrement(p.total)
+        };
+      });
+
+      // ✅ Call your existing function
+      await saveCompanyTarget(
+        {
+          body: {
+            database,
+            fyear: targetFY,
+            month: "April", // starting month
+            incrementper,
+            productItem,
+            created_by
+          }
+        },
+        {
+          status: () => ({
+            json: () => {}
+          })
+        }
+      );
+
+      console.log(`✅ Target created for ${database}`);
+    }
+
+    console.log("🎯 All company targets generated");
+
+  } catch (error) {
+    console.error("❌ Error:", error);
   }
 };
