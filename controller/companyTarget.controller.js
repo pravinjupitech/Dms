@@ -1383,7 +1383,8 @@ export const achievedTarget = async (req, res) => {
 
     const customers = customerss.filter(
       (c) =>
-        c.partyType?.toLowerCase() === "debitor"
+        c.partyType?.toLowerCase() === "debitor" &&
+        c.CompanyName?.toUpperCase() !== "CASH"
     );
 
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
