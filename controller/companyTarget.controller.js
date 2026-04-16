@@ -1427,7 +1427,7 @@ export const achievedTarget = async (req, res) => {
       return u?.created_by ? String(u.created_by) : null;
     };
 
-    // 🔹 CATEGORY LOGIC
+    // 🔹 USER INFO (FIXED: roleName + rolePosition included properly)
     const getUserInfo = (id) => {
       const c = customerMap.get(id);
 
@@ -1435,15 +1435,15 @@ export const achievedTarget = async (req, res) => {
         const partyType = c.partyType?.toLowerCase();
         const regType = c.registrationType?.toLowerCase();
         const company = c.CompanyName?.toUpperCase();
-// console.log("regType",regType,partyType,company)
+
         let category = "UNKNOWN";
 
         if (company === "CASH") {
           category = "CASH";
         } else if (partyType === "debitor") {
-          if (regType==="regular") {
+          if (regType === "regular") {
             category = "REGISTERED";
-          } else if (regType==="unknown") {
+          } else if (regType === "unknown") {
             category = "UNREGISTERED";
           }
         } else {
@@ -1481,7 +1481,6 @@ export const achievedTarget = async (req, res) => {
       };
     };
 
-    // 🔹 Build Chain
     const buildChain = (id) => {
       const chain = [];
       let current = id;
@@ -1530,6 +1529,8 @@ export const achievedTarget = async (req, res) => {
             hierarchy[node.userId] = {
               userId: node.userId,
               firstName: node.firstName,
+              roleName: node.roleName,
+              rolePosition: node.rolePosition,
               category: node.category,
               total: 0,
               products: []
@@ -1554,11 +1555,12 @@ export const achievedTarget = async (req, res) => {
       Object.values(hierarchy).forEach(u => {
         if (u.category === "CASH") {
           partyGroups.cashParties.push(u);
-        } 
-        else if (u.category === "REGISTERED" || u.category === "REGULAR") {
+        } else if (
+          u.category === "REGISTERED" ||
+          u.category === "REGULAR"
+        ) {
           partyGroups.registerParties.push(u);
-        } 
-        else {
+        } else {
           partyGroups.unregisterParties.push(u);
         }
       });
