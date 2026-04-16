@@ -1292,7 +1292,6 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
- 
     const [startYear, shortEndYear] = fyear.split("-");
     const endYear = Number(startYear.slice(0, 2) + shortEndYear);
 
@@ -1305,7 +1304,7 @@ export const achievedTarget = async (req, res) => {
     const isCurrentFY = now >= startDate && now <= endDate;
     const currentFYIndex = getFYIndex(now.getMonth() + 1);
 
-  
+    // 🔹 Aggregation
     const aggData = await CreateOrder.aggregate([
       {
         $match: {
@@ -1370,8 +1369,8 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-
-    const [customerss, users, products, departmentData] = await Promise.all([
+    // 🔹 Master Data
+    const [customers, users, products, departmentData] = await Promise.all([
       Customer.find({ database, status: "Active" }).lean(),
       User.find({ database, status: "Active" }).lean(),
       Product.find({ database }).lean(),
@@ -1380,12 +1379,6 @@ export const achievedTarget = async (req, res) => {
         model: "department"
       })
     ]);
-
-    const customers = customerss.filter(
-      (c) =>
-        c.partyType?.toLowerCase() === "debitor" &&
-        c.CompanyName?.toUpperCase() !== "CASH"
-    );
 
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
     const userMap = new Map(users.map(u => [String(u._id), u]));
@@ -1401,7 +1394,7 @@ export const achievedTarget = async (req, res) => {
 
     const bottomRole = roles[roles.length - 1];
 
-   
+    // 🔹 Merge Products
     const mergeProducts = (a = [], b = []) => {
       const map = {};
 
@@ -1425,6 +1418,7 @@ export const achievedTarget = async (req, res) => {
       return Object.values(map);
     };
 
+    // 🔹 Parent Finder
     const getParent = (id) => {
       const c = customerMap.get(id);
       if (c) return c.created_by ? String(c.created_by) : null;
@@ -1433,14 +1427,34 @@ export const achievedTarget = async (req, res) => {
       return u?.created_by ? String(u.created_by) : null;
     };
 
+    // 🔹 CATEGORY LOGIC
     const getUserInfo = (id) => {
       const c = customerMap.get(id);
 
       if (c) {
+        const partyType = c.partyType?.toLowerCase();
+        const regType = c.registrationType?.toLowerCase();
+        const company = c.CompanyName?.toUpperCase();
+// console.log("regType",regType,partyType,company)
+        let category = "UNKNOWN";
+
+        if (company === "CASH") {
+          category = "CASH";
+        } else if (partyType === "debitor") {
+          if (regType==="regular") {
+            category = "REGISTERED";
+          } else if (regType==="unknown") {
+            category = "UNREGISTERED";
+          }
+        } else {
+          category = "REGULAR";
+        }
+
         return {
           name: c.CompanyName || c.firstName || "Unknown",
           roleName: bottomRole?.roleName || "CUSTOMER",
-          rolePosition: bottomRole?.rolePosition || roles.length + 1
+          rolePosition: bottomRole?.rolePosition || roles.length + 1,
+          category
         };
       }
 
@@ -1450,7 +1464,8 @@ export const achievedTarget = async (req, res) => {
         return {
           name: "Unknown",
           roleName: "UNKNOWN",
-          rolePosition: roles.length + 2
+          rolePosition: roles.length + 2,
+          category: "UNKNOWN"
         };
       }
 
@@ -1461,10 +1476,12 @@ export const achievedTarget = async (req, res) => {
       return {
         name: u.firstName || "Unknown",
         roleName: roleData?.roleName || "UNKNOWN",
-        rolePosition: roleData?.rolePosition ?? roles.length + 2
+        rolePosition: roleData?.rolePosition ?? roles.length + 2,
+        category: "USER"
       };
     };
 
+    // 🔹 Build Chain
     const buildChain = (id) => {
       const chain = [];
       let current = id;
@@ -1476,7 +1493,8 @@ export const achievedTarget = async (req, res) => {
           userId: current,
           firstName: info.name,
           roleName: info.roleName,
-          rolePosition: info.rolePosition
+          rolePosition: info.rolePosition,
+          category: info.category
         });
 
         current = getParent(current);
@@ -1485,7 +1503,7 @@ export const achievedTarget = async (req, res) => {
       return chain;
     };
 
-   
+    // 🔹 Final Map
     const finalMap = new Map();
 
     for (const mData of aggData) {
@@ -1495,7 +1513,7 @@ export const achievedTarget = async (req, res) => {
         finalMap.set(monthName, {
           month: monthName,
           companyTotal: 0,
-          layers: []
+          parties: {}
         });
       }
 
@@ -1512,8 +1530,7 @@ export const achievedTarget = async (req, res) => {
             hierarchy[node.userId] = {
               userId: node.userId,
               firstName: node.firstName,
-              roleName: node.roleName,
-              rolePosition: node.rolePosition,
+              category: node.category,
               total: 0,
               products: []
             };
@@ -1527,33 +1544,29 @@ export const achievedTarget = async (req, res) => {
         });
       }
 
-      const layerMap = {};
+      // 🔹 FINAL GROUPING
+      const partyGroups = {
+        registerParties: [],
+        unregisterParties: [],
+        cashParties: []
+      };
 
       Object.values(hierarchy).forEach(u => {
-        const key = `${u.rolePosition}-${u.roleName}`;
-
-        if (!layerMap[key]) {
-          layerMap[key] = {
-            rolePosition: u.rolePosition,
-            roleName: u.roleName,
-            users: []
-          };
+        if (u.category === "CASH") {
+          partyGroups.cashParties.push(u);
+        } 
+        else if (u.category === "REGISTERED" || u.category === "REGULAR") {
+          partyGroups.registerParties.push(u);
+        } 
+        else {
+          partyGroups.unregisterParties.push(u);
         }
-
-        layerMap[key].users.push({
-          userId: u.userId,
-          firstName: u.firstName,
-          total: u.total,
-          products: u.products
-        });
       });
 
-      monthEntry.layers = Object.values(layerMap).sort(
-        (a, b) => a.rolePosition - b.rolePosition
-      );
+      monthEntry.parties = partyGroups;
     }
 
-
+    // 🔹 Month Filter
     let monthsToInclude = FY_MONTHS;
 
     if (isCurrentFY) {
@@ -1567,7 +1580,6 @@ export const achievedTarget = async (req, res) => {
     const finalData = monthsToInclude
       .map(m => finalMap.get(m))
       .filter(Boolean);
-
 
     return res.status(200).json({
       success: true,
@@ -1583,6 +1595,7 @@ export const achievedTarget = async (req, res) => {
     });
   }
 };
+
 export const calculateAchievedTarget = async (database, fyear) => {
   try {
     if (!database || !fyear) {
