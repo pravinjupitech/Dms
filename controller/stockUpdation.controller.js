@@ -1590,7 +1590,7 @@ export const stockReport = async (req, res, next) => {
 
                 allProductIds.add(productId);
                 const qty = item.qty || 0;
-                const totalPrice = item.totalPrice || 0;
+                const totalPrice = item?.qty*item?.price || 0;
 
                 if (!productMap[productId]) {
                     productMap[productId] = {
@@ -1641,7 +1641,10 @@ export const stockReport = async (req, res, next) => {
 
                 allProductIds.add(productId);
                 const qty = item.qty || 0;
-                const sTotal = item.totalPrice || 0;
+                
+                
+                
+                const sTotal = item?.qty*item?.price || 0;
 
                 if (!productMap[productId]) {
                     productMap[productId] = {
