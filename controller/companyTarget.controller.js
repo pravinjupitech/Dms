@@ -1292,8 +1292,12 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-    const [startYear, shortEndYear] = fyear.split("-");
-    const endYear = Number(startYear.slice(0, 2) + shortEndYear);
+    // 🔹 FY parsing (safe)
+    const [startYear, endPart] = fyear.split("-");
+    const endYear =
+      endPart.length === 2
+        ? Number(startYear.slice(0, 2) + endPart)
+        : Number(endPart);
 
     const startDate = new Date(`${startYear}-04-01T00:00:00.000Z`);
     const endDate = new Date(`${endYear}-03-31T23:59:59.999Z`);
@@ -1314,11 +1318,7 @@ export const achievedTarget = async (req, res) => {
         }
       },
       { $unwind: "$orderItems" },
-      {
-        $addFields: {
-          month: { $month: "$date" }
-        }
-      },
+      { $addFields: { month: { $month: "$date" } } },
       {
         $group: {
           _id: {
@@ -1374,10 +1374,7 @@ export const achievedTarget = async (req, res) => {
       Customer.find({ database, status: "Active" }).lean(),
       User.find({ database, status: "Active" }).lean(),
       Product.find({ database }).lean(),
-      AssignRole.find({ database }).populate({
-        path: "departmentName",
-        model: "department"
-      })
+      AssignRole.find({ database }).populate("departmentName")
     ]);
 
     const customerMap = new Map(customers.map(c => [String(c._id), c]));
@@ -1394,31 +1391,32 @@ export const achievedTarget = async (req, res) => {
 
     const bottomRole = roles[roles.length - 1];
 
-    // 🔹 Merge Products
+    // 🔹 Utils
+
     const mergeProducts = (a = [], b = []) => {
-      const map = {};
+      const map = new Map();
 
       [...a, ...b].forEach(p => {
         const key = String(p.productId);
         const product = productMap.get(key);
 
-        if (!map[key]) {
-          map[key] = {
+        if (!map.has(key)) {
+          map.set(key, {
             productId: key,
             productName: product?.Product_Title || "Unknown",
             qty: p.qty,
             total: p.total
-          };
+          });
         } else {
-          map[key].qty += p.qty;
-          map[key].total += p.total;
+          const ex = map.get(key);
+          ex.qty += p.qty;
+          ex.total += p.total;
         }
       });
 
-      return Object.values(map);
+      return Array.from(map.values());
     };
 
-    // 🔹 Parent Finder
     const getParent = (id) => {
       const c = customerMap.get(id);
       if (c) return c.created_by ? String(c.created_by) : null;
@@ -1427,7 +1425,7 @@ export const achievedTarget = async (req, res) => {
       return u?.created_by ? String(u.created_by) : null;
     };
 
-    // 🔹 USER INFO (FIXED: roleName + rolePosition included properly)
+    // ✅ CORRECT ROLE + CATEGORY LOGIC
     const getUserInfo = (id) => {
       const c = customerMap.get(id);
 
@@ -1436,18 +1434,12 @@ export const achievedTarget = async (req, res) => {
         const regType = c.registrationType?.toLowerCase();
         const company = c.CompanyName?.toUpperCase();
 
-        let category = "UNKNOWN";
+        let category = "UNREGISTERED";
 
         if (company === "CASH") {
           category = "CASH";
         } else if (partyType === "debitor") {
-          if (regType === "regular") {
-            category = "REGISTERED";
-          } else if (regType === "unknown") {
-            category = "UNREGISTERED";
-          }
-        } else {
-          category = "REGULAR";
+          category = regType === "regular" ? "REGISTERED" : "UNREGISTERED";
         }
 
         return {
@@ -1465,7 +1457,7 @@ export const achievedTarget = async (req, res) => {
           name: "Unknown",
           roleName: "UNKNOWN",
           rolePosition: roles.length + 2,
-          category: "UNKNOWN"
+          category: "UNREGISTERED"
         };
       }
 
@@ -1484,8 +1476,11 @@ export const achievedTarget = async (req, res) => {
     const buildChain = (id) => {
       const chain = [];
       let current = id;
+      const visited = new Set();
 
-      while (current) {
+      while (current && !visited.has(current)) {
+        visited.add(current);
+
         const info = getUserInfo(current);
 
         chain.push({
@@ -1502,7 +1497,7 @@ export const achievedTarget = async (req, res) => {
       return chain;
     };
 
-    // 🔹 Final Map
+    // 🔹 FINAL MAP
     const finalMap = new Map();
 
     for (const mData of aggData) {
@@ -1512,63 +1507,81 @@ export const achievedTarget = async (req, res) => {
         finalMap.set(monthName, {
           month: monthName,
           companyTotal: 0,
-          parties: {}
+          hierarchyTargets: {
+            registerParties: [],
+            unregisterParties: [],
+            cashParties: []
+          }
         });
       }
 
       const monthEntry = finalMap.get(monthName);
       monthEntry.companyTotal += mData.companyTotal;
 
-      const hierarchy = {};
+      const categoryMaps = {
+        REGISTERED: {},
+        UNREGISTERED: {},
+        CASH: {}
+      };
 
+      // 🔹 Build hierarchy per category
       for (const p of mData.parties) {
         const chain = buildChain(String(p.partyId));
 
-        chain.forEach(node => {
-          if (!hierarchy[node.userId]) {
-            hierarchy[node.userId] = {
-              userId: node.userId,
+        let category = chain[0]?.category || "UNREGISTERED";
+
+        const targetMap = categoryMaps[category];
+
+        chain.forEach((node, index) => {
+          const id = node.userId;
+
+          if (!targetMap[id]) {
+            targetMap[id] = {
+              userId: id,
               firstName: node.firstName,
               roleName: node.roleName,
               rolePosition: node.rolePosition,
-              category: node.category,
               total: 0,
-              products: []
+              products: [],
+              children: []
             };
           }
 
-          hierarchy[node.userId].total += p.total;
-          hierarchy[node.userId].products = mergeProducts(
-            hierarchy[node.userId].products,
+          targetMap[id].total += p.total;
+          targetMap[id].products = mergeProducts(
+            targetMap[id].products,
             p.products
           );
+
+          if (index > 0) {
+            const parentId = chain[index - 1].userId;
+
+            if (targetMap[parentId]) {
+              if (
+                !targetMap[parentId].children.find(
+                  c => c.userId === id
+                )
+              ) {
+                targetMap[parentId].children.push(targetMap[id]);
+              }
+            }
+          }
         });
       }
 
-      // 🔹 FINAL GROUPING
-      const partyGroups = {
-        registerParties: [],
-        unregisterParties: [],
-        cashParties: []
+      const buildTree = (map) =>
+        Object.values(map)
+          .filter(n => !getParent(n.userId))
+          .sort((a, b) => a.rolePosition - b.rolePosition);
+
+      monthEntry.hierarchyTargets = {
+        registerParties: buildTree(categoryMaps.REGISTERED),
+        unregisterParties: buildTree(categoryMaps.UNREGISTERED),
+        cashParties: buildTree(categoryMaps.CASH)
       };
-
-      Object.values(hierarchy).forEach(u => {
-        if (u.category === "CASH") {
-          partyGroups.cashParties.push(u);
-        } else if (
-          u.category === "REGISTERED" ||
-          u.category === "REGULAR"
-        ) {
-          partyGroups.registerParties.push(u);
-        } else {
-          partyGroups.unregisterParties.push(u);
-        }
-      });
-
-      monthEntry.parties = partyGroups;
     }
 
-    // 🔹 Month Filter
+    // 🔹 Month filter
     let monthsToInclude = FY_MONTHS;
 
     if (isCurrentFY) {
@@ -2104,3 +2117,19 @@ export const autoGenerateCompanyTarget = async () => {
     console.error("❌ Error:", error);
   }
 };
+
+
+
+// | Ledger Name        | Nature       | Account Type  | Final Side |
+// | ------------------ | ------------ | ------------- | ---------- |
+// | Proprietor Account | Capital      | Balance Sheet | Credit     |
+// | Purchases          | Expense      | Trading       | Debit      |
+// | Sales Account      | Income       | Trading       | Credit     |
+// | Indirect Income    | Income       | P&L           | Credit     |
+// | Indirect Expenses  | Expense      | P&L           | Debit      |
+// | Yes Bank           | Asset        | Balance Sheet | Debit      |
+// | Suspense           | Asset        | Balance Sheet | Debit      |
+// | Creditor           | Liability    | Balance Sheet | Credit     |
+// | Closing Stock      | Asset/Income | Trading       | Credit     |
+// | Opening Stock      | Expense      | Trading       | Debit      |
+// | Direct Expenses    | Expense      | Trading       | Debit      |
