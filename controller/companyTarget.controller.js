@@ -1292,7 +1292,9 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-    // 🔹 FY parsing (safe)
+    // =========================
+    // FY DATE RANGE
+    // =========================
     const [startYear, endPart] = fyear.split("-");
     const endYear =
       endPart.length === 2
@@ -1304,11 +1306,9 @@ export const achievedTarget = async (req, res) => {
 
     const getFYIndex = (m) => (m >= 4 ? m - 4 : m + 8);
 
-    const now = new Date();
-    const isCurrentFY = now >= startDate && now <= endDate;
-    const currentFYIndex = getFYIndex(now.getMonth() + 1);
-
-    // 🔹 Aggregation
+    // =========================
+    // AGGREGATION
+    // =========================
     const aggData = await CreateOrder.aggregate([
       {
         $match: {
@@ -1369,7 +1369,9 @@ export const achievedTarget = async (req, res) => {
       });
     }
 
-    // 🔹 Master Data
+    // =========================
+    // MASTER DATA
+    // =========================
     const [customers, users, products, departmentData] = await Promise.all([
       Customer.find({ database, status: "Active" }).lean(),
       User.find({ database, status: "Active" }).lean(),
@@ -1381,18 +1383,24 @@ export const achievedTarget = async (req, res) => {
     const userMap = new Map(users.map(u => [String(u._id), u]));
     const productMap = new Map(products.map(p => [String(p._id), p]));
 
-    const salesDept = departmentData.find(
-      d => d?.departmentName?.departmentName?.toLowerCase() === "sales"
-    );
+    // =========================
+    // ROLE MAP (FIXED)
+    // =========================
+    const roleMap = new Map();
 
-    const roles = [...(salesDept?.roles || [])].sort(
-      (a, b) => a.rolePosition - b.rolePosition
-    );
+    for (const dept of departmentData) {
+      for (const r of dept?.roles || []) {
+        const roleId = String(r.roleId || r._id);
+        roleMap.set(roleId, {
+          roleName: r.roleName,
+          rolePosition: r.rolePosition
+        });
+      }
+    }
 
-    const bottomRole = roles[roles.length - 1];
-
-    // 🔹 Utils
-
+    // =========================
+    // HELPERS
+    // =========================
     const mergeProducts = (a = [], b = []) => {
       const map = new Map();
 
@@ -1425,7 +1433,6 @@ export const achievedTarget = async (req, res) => {
       return u?.created_by ? String(u.created_by) : null;
     };
 
-    // ✅ CORRECT ROLE + CATEGORY LOGIC
     const getUserInfo = (id) => {
       const c = customerMap.get(id);
 
@@ -1435,45 +1442,47 @@ export const achievedTarget = async (req, res) => {
         const company = c.CompanyName?.toUpperCase();
 
         let category = "UNREGISTERED";
-
-        if (company === "CASH") {
-          category = "CASH";
-        } else if (partyType === "debitor") {
+        if (company === "CASH") category = "CASH";
+        else if (partyType === "debitor") {
           category = regType === "regular" ? "REGISTERED" : "UNREGISTERED";
         }
 
         return {
-          name: c.CompanyName || c.firstName || "Unknown",
-          roleName: bottomRole?.roleName || "CUSTOMER",
-          rolePosition: bottomRole?.rolePosition || roles.length + 1,
+          name: c.CompanyName || c.firstName || "Customer",
+          roleName: "CUSTOMER",
+          rolePosition: 1,
           category
         };
       }
 
       const u = userMap.get(id);
+      if (u) {
+        const roleKey =
+          typeof u.rolename === "object"
+            ? String(u.rolename._id)
+            : String(u.rolename);
 
-      if (!u) {
+        const roleData = roleMap.get(roleKey);
+
         return {
-          name: "Unknown",
-          roleName: "UNKNOWN",
-          rolePosition: roles.length + 2,
-          category: "UNREGISTERED"
+          name: u.firstName || "User",
+          roleName: roleData?.roleName || "USER",
+          rolePosition: roleData?.rolePosition ?? 99,
+          category: "USER"
         };
       }
 
-      const roleData = roles.find(
-        r => String(r.roleId) === String(u.rolename)
-      );
-
-      return {
-        name: u.firstName || "Unknown",
-        roleName: roleData?.roleName || "UNKNOWN",
-        rolePosition: roleData?.rolePosition ?? roles.length + 2,
-        category: "USER"
-      };
+      return null;
     };
 
+    // =========================
+    // CHAIN CACHE
+    // =========================
+    const chainCache = new Map();
+
     const buildChain = (id) => {
+      if (chainCache.has(id)) return chainCache.get(id);
+
       const chain = [];
       let current = id;
       const visited = new Set();
@@ -1482,22 +1491,21 @@ export const achievedTarget = async (req, res) => {
         visited.add(current);
 
         const info = getUserInfo(current);
-
-        chain.push({
-          userId: current,
-          firstName: info.name,
-          roleName: info.roleName,
-          rolePosition: info.rolePosition,
-          category: info.category
-        });
+        if (info) {
+          chain.push({ userId: current, ...info });
+        }
 
         current = getParent(current);
       }
 
-      return chain;
+      const result = chain.reverse();
+      chainCache.set(id, result);
+      return result;
     };
 
-    // 🔹 FINAL MAP
+    // =========================
+    // FINAL MAP BUILD
+    // =========================
     const finalMap = new Map();
 
     for (const mData of aggData) {
@@ -1524,21 +1532,19 @@ export const achievedTarget = async (req, res) => {
         CASH: {}
       };
 
-      // 🔹 Build hierarchy per category
+      // BUILD NODES
       for (const p of mData.parties) {
         const chain = buildChain(String(p.partyId));
+        if (!chain.length) continue;
 
-        let category = chain[0]?.category || "UNREGISTERED";
+        const category = chain[chain.length - 1].category;
+        const map = categoryMaps[category];
 
-        const targetMap = categoryMaps[category];
-
-        chain.forEach((node, index) => {
-          const id = node.userId;
-
-          if (!targetMap[id]) {
-            targetMap[id] = {
-              userId: id,
-              firstName: node.firstName,
+        chain.forEach(node => {
+          if (!map[node.userId]) {
+            map[node.userId] = {
+              userId: node.userId,
+              firstName: node.name,
               roleName: node.roleName,
               rolePosition: node.rolePosition,
               total: 0,
@@ -1547,31 +1553,38 @@ export const achievedTarget = async (req, res) => {
             };
           }
 
-          targetMap[id].total += p.total;
-          targetMap[id].products = mergeProducts(
-            targetMap[id].products,
+          map[node.userId].total += p.total;
+          map[node.userId].products = mergeProducts(
+            map[node.userId].products,
             p.products
           );
-
-          if (index > 0) {
-            const parentId = chain[index - 1].userId;
-
-            if (targetMap[parentId]) {
-              if (
-                !targetMap[parentId].children.find(
-                  c => c.userId === id
-                )
-              ) {
-                targetMap[parentId].children.push(targetMap[id]);
-              }
-            }
-          }
         });
       }
 
+      // LINK TREE
+      for (const p of mData.parties) {
+        const chain = buildChain(String(p.partyId));
+        const category = chain[chain.length - 1]?.category;
+        const map = categoryMaps[category];
+        if (!map) continue;
+
+        for (let i = 0; i < chain.length - 1; i++) {
+          const parent = map[chain[i].userId];
+          const child = map[chain[i + 1].userId];
+
+          if (parent && child && !parent.children.some(c => c.userId === child.userId)) {
+            parent.children.push(child);
+          }
+        }
+      }
+
+      // ROOT NODES
       const buildTree = (map) =>
         Object.values(map)
-          .filter(n => !getParent(n.userId))
+          .filter(node => {
+            const parentId = getParent(node.userId);
+            return !parentId || !map[parentId];
+          })
           .sort((a, b) => a.rolePosition - b.rolePosition);
 
       monthEntry.hierarchyTargets = {
@@ -1581,20 +1594,7 @@ export const achievedTarget = async (req, res) => {
       };
     }
 
-    // 🔹 Month filter
-    let monthsToInclude = FY_MONTHS;
-
-    if (isCurrentFY) {
-      monthsToInclude = FY_MONTHS.slice(0, currentFYIndex + 1);
-    }
-
-    if (now < startDate) {
-      monthsToInclude = [];
-    }
-
-    const finalData = monthsToInclude
-      .map(m => finalMap.get(m))
-      .filter(Boolean);
+    const finalData = FY_MONTHS.map(m => finalMap.get(m)).filter(Boolean);
 
     return res.status(200).json({
       success: true,
