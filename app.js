@@ -200,9 +200,9 @@ cron.schedule('0 20 * * *', () => {
   // StockClose()
 });
 
-cron.schedule("0 2 * * *",async() => {
+cron.schedule("0 7,14,21 * * *", async () => {
   await exportDatabase().catch(console.error);
-  await SaveBackup()
+  await SaveBackup();
 });
 cron.schedule('1 0 1 * *', () => {
   increasePercentage();
