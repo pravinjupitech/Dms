@@ -89,7 +89,6 @@ export const viewPincodes = async (req, res) => {
 
 
 
-
 export const viewPincode = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;

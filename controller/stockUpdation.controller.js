@@ -1801,6 +1801,211 @@ export const stockReport = async (req, res, next) => {
         });
     }
 };
+export const financeYearWiseReport = async (req, res) => {
+    try {
+        const { database } = req.params;
+const mainDatabase = database.split("-")[0];
+        const [purchaseOrders, salesOrders, products] = await Promise.all([
+            PurchaseOrder.find({
+                database,
+                status: { $ne: "Deactive" }
+            }),
+
+            CreateOrder.find({
+                database,
+                status: { $ne: "Deactive" }
+            }),
+
+            Product.find({
+                mainDatabase,
+                status: "Active"
+            })
+        ]);
+
+        const productMap = {};
+
+        // Create default product object
+        const createProductEntry = (productId) => ({
+            productId,
+            Product_Title: "",
+
+            oQty: 0,
+            openingRate: 0,
+            openingTotal: 0,
+
+            pQty: 0,
+            purchaseTotal: 0,
+
+            sQty: 0,
+            pendingStock: 0,
+
+            closingQty: 0,
+            closingRate: 0,
+            closingTotal: 0
+        });
+
+        // =========================
+        // PURCHASE ORDERS
+        // =========================
+        for (const po of purchaseOrders) {
+            const isCompleted = po.status === "completed";
+
+            const extraCost =
+                (po.coolieAndCartage || 0) +
+                (po.labourCost || 0) +
+                (po.localFreight || 0) +
+                (po.miscellaneousCost || 0) +
+                (po.transportationCost || 0) +
+                (po.tax || 0);
+
+            const perItemTax =
+                po.orderItems?.length > 0
+                    ? extraCost / po.orderItems.length
+                    : 0;
+
+            for (const item of po.orderItems) {
+                const productId = item.productId?.toString();
+
+                if (!productId) continue;
+
+                if (!productMap[productId]) {
+                    productMap[productId] =
+                        createProductEntry(productId);
+                }
+
+                const entry = productMap[productId];
+
+                const qty = item.qty || 0;
+                const total = (item.qty || 0) * (item.price || 0);
+
+                if (isCompleted) {
+                    entry.pQty += qty;
+                    entry.purchaseTotal += total + perItemTax;
+                }
+            }
+        }
+
+        // =========================
+        // SALES ORDERS
+        // =========================
+        for (const so of salesOrders) {
+            const isCompleted = so.status === "completed";
+
+            for (const item of so.orderItems) {
+                const productId = item.productId?.toString();
+
+                if (!productId) continue;
+
+                if (!productMap[productId]) {
+                    productMap[productId] =
+                        createProductEntry(productId);
+                }
+
+                const entry = productMap[productId];
+
+                const qty = item.qty || 0;
+
+                if (isCompleted) {
+                    entry.sQty += qty;
+                } else {
+                    entry.pendingStock += qty;
+                }
+            }
+        }
+
+        // =========================
+        // PRODUCT CALCULATIONS
+        // =========================
+        for (const product of products) {
+            const productId = product._id.toString();
+
+            if (!productMap[productId]) {
+                productMap[productId] =
+                    createProductEntry(productId);
+            }
+
+            const entry = productMap[productId];
+
+            entry.Product_Title =
+                product.Product_Title || "";
+
+            entry.oQty =
+                product.Opening_Stock || 0;
+
+            entry.openingRate =
+                product.openingRate || 0;
+
+            entry.openingTotal =
+                entry.oQty * entry.openingRate;
+
+            const totalQty =
+                entry.oQty + entry.pQty;
+
+            entry.closingQty =
+                entry.oQty +
+                entry.pQty -
+                entry.sQty -
+                entry.pendingStock;
+
+            entry.closingRate =
+                totalQty > 0
+                    ? (
+                        entry.openingTotal +
+                        entry.purchaseTotal
+                    ) / totalQty
+                    : 0;
+
+            entry.closingTotal =
+                entry.closingQty *
+                entry.closingRate;
+        }
+
+        // =========================
+        // FINAL DATA
+        // =========================
+        const stockReport = Object.values(productMap);
+
+        // =========================
+        // TOTAL SUMMARY
+        // =========================
+        const totalSummary = stockReport.reduce(
+            (acc, item) => {
+                acc.Product_Title = "Total";
+
+                acc.closingQty +=
+                    item.closingQty || 0;
+
+                acc.closingTotal +=
+                    item.closingTotal || 0;
+
+                return acc;
+            },
+            {
+                Product_Title: "Total",
+                closingQty: 0,
+                closingTotal: 0
+            }
+        );
+
+        return res.status(200).json({
+            status: true,
+            message: "Stock report generated successfully",
+
+            data: stockReport,
+
+            totalSummary
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+};
 
 export const InvertReport = async (req, res, next) => {
     try {

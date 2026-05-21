@@ -1,5 +1,5 @@
 import express from "express";
-import { InvertReport, OutwordReport, OverDuePartyCounter, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewDeadPartyCount, ViewOverDueStock, dashboardStockReport, deletedamageItem, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
+import { InvertReport, OutwordReport, OverDuePartyCounter, ViewAllWarehouse, ViewAllWarehouse1, ViewDeadParty, ViewDeadPartyCount, ViewOverDueStock, dashboardStockReport, deletedamageItem, financeYearWiseReport, getDamageItems, getShortItems, saveDamageItem, saveShortItem, stockReport, stockTransferToWarehouse, updateDamageItem, updateTypeStatus, updateWarehousetoWarehouse, viewInWardStockToWarehouse, viewOpeningStockWarehouse, viewOutWardStockToWarehouse, viewProductInWarehouse, viewStockClosingWarehouse, viewWarehouseStock } from "../controller/stockUpdation.controller.js";
 
 const router = express.Router();
 
@@ -28,6 +28,7 @@ router.get("/view-opening-stock/:database", viewOpeningStockWarehouse)
 router.get("/view-over-due-stock/:database", ViewOverDueStock)
 router.get("/view-dead-party/:id/:database", ViewDeadParty)
 router.get("/stock-data/:database",stockReport)
+router.get("/finance-year-data/:database",financeYearWiseReport)
 router.get("/invert-report/:database",InvertReport)
 router.get("/outword-report/:database",OutwordReport)
 router.get("/testing", ViewAllWarehouse1)

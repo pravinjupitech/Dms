@@ -7,7 +7,6 @@ const MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = process.env.DATABASE_NAME;
 const BACKUP_DIR = path.join(process.cwd(), "exports", DB_NAME);
 
-// ================= BACKUP FUNCTION =================
 export async function exportDatabase() {
   const client = new MongoClient(MONGO_URI);
 
@@ -30,24 +29,23 @@ export async function exportDatabase() {
 
       fs.writeFileSync(
         path.join(backupPath, `${col.name}.json`),
-        JSON.stringify(data, null, 2) // pretty format
+        JSON.stringify(data, null, 2)
       );
 
-      console.log(`✅ Backed up ${col.name}`);
+      console.log(` Backed up ${col.name}`);
     }
 
-    console.log(`🎉 Backup completed at ${folderName}`);
+    console.log(` Backup completed at ${folderName}`);
 
     deleteOldBackups(30);
 
   } catch (err) {
-    console.error("❌ Backup failed:", err);
+    console.error(" Backup failed:", err);
   } finally {
     await client.close();
   }
 }
 
-// ================= DELETE OLD BACKUPS =================
 function deleteOldBackups(days = 30) {
   if (!fs.existsSync(BACKUP_DIR)) return;
 
@@ -61,13 +59,12 @@ function deleteOldBackups(days = 30) {
 
       if (now - folderTime > days * 24 * 60 * 60 * 1000) {
         fs.rmSync(folderPath, { recursive: true, force: true });
-        console.log(`🗑 Deleted old backup: ${folder}`);
+        console.log(` Deleted old backup: ${folder}`);
       }
     }
   });
 }
 
-// ================= DOWNLOAD LATEST BACKUP =================
 export const SaveBackup = (req, res) => {
   const allowedIP = "152.59.49.216";
 
@@ -98,7 +95,7 @@ export const SaveBackup = (req, res) => {
 
   const latestFolderPath = path.join(BACKUP_DIR, folders[0]);
 
-  // 👉 send entire folder as zip (simple approach = first file fallback)
+ 
   const files = fs
     .readdirSync(latestFolderPath)
     .filter(f => f.endsWith(".json"));
