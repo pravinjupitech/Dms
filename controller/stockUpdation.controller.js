@@ -1801,6 +1801,230 @@ export const stockReport = async (req, res, next) => {
         });
     }
 };
+
+export const hsnSummaryReport = async (req, res) => {
+    try {
+        const { database } = req.params;
+
+        const products = await Product.find({
+            database,
+            status: "Active"
+        });
+
+        const purchaseOrders = await PurchaseOrder.find({
+            database,
+            status: "completed"
+        });
+
+        const salesOrders = await CreateOrder.find({
+            database,
+            status: "completed"
+        });
+
+        const productMap = {};
+
+        products.forEach(product => {
+            productMap[product._id.toString()] = {
+                productId: product._id.toString(),
+                Product_Title: product.Product_Title,
+                HSN_Code: product.HSN_Code || "",
+                GSTRate: product.GSTRate || 0,
+                openingQty: product.Opening_Stock || 0,
+                openingRate: product.openingRate || 0
+            };
+        });
+
+        const inwardMap = {};
+        const outwardMap = {};
+        const closingMap = {};
+
+        const getKey = (product) =>
+            `${product.HSN_Code}_${product.productId}`;
+
+        // =====================
+        // PURCHASE / INWARD
+        // =====================
+
+        for (const po of purchaseOrders) {
+
+            const extraCost =
+                (po.coolieAndCartage || 0) +
+                (po.labourCost || 0) +
+                (po.localFreight || 0) +
+                (po.miscellaneousCost || 0) +
+                (po.transportationCost || 0) +
+                (po.tax || 0);
+
+            const perItemExtra =
+                po.orderItems.length > 0
+                    ? extraCost / po.orderItems.length
+                    : 0;
+
+            for (const item of po.orderItems) {
+
+                const product =
+                    productMap[item.productId?.toString()];
+
+                if (!product) continue;
+
+                const key = getKey(product);
+
+                if (!inwardMap[key]) {
+                    inwardMap[key] = {
+                        HSN_Code: product.HSN_Code,
+                        Product_Title: product.Product_Title,
+                        qty: 0,
+                        taxableAmount: 0,
+                        taxAmount: 0,
+                        avgRate: 0
+                    };
+                }
+
+                const amount =
+                    (item.qty || 0) *
+                    (item.price || 0);
+
+                inwardMap[key].qty += item.qty || 0;
+                inwardMap[key].taxableAmount += amount;
+                inwardMap[key].taxAmount += perItemExtra;
+            }
+        }
+
+        Object.values(inwardMap).forEach(row => {
+            row.avgRate =
+                row.qty > 0
+                    ? row.taxableAmount / row.qty
+                    : 0;
+        });
+
+        // =====================
+        // SALES / OUTWARD
+        // =====================
+
+        for (const so of salesOrders) {
+
+            for (const item of so.orderItems) {
+
+                const product =
+                    productMap[item.productId?.toString()];
+
+                if (!product) continue;
+
+                const key = getKey(product);
+
+                if (!outwardMap[key]) {
+                    outwardMap[key] = {
+                        HSN_Code: product.HSN_Code,
+                        Product_Title: product.Product_Title,
+                        qty: 0,
+                        taxableAmount: 0,
+                        taxAmount: 0,
+                        avgRate: 0
+                    };
+                }
+
+                const amount =
+                    (item.qty || 0) *
+                    (item.price || 0);
+
+                const taxAmount =
+                    amount *
+                    (product.GSTRate || 0) /
+                    100;
+
+                outwardMap[key].qty += item.qty || 0;
+                outwardMap[key].taxableAmount += amount;
+                outwardMap[key].taxAmount += taxAmount;
+            }
+        }
+
+        Object.values(outwardMap).forEach(row => {
+            row.avgRate =
+                row.qty > 0
+                    ? row.taxableAmount / row.qty
+                    : 0;
+        });
+
+        // =====================
+        // CLOSING STOCK
+        // =====================
+
+        products.forEach(product => {
+
+            const key = getKey({
+                HSN_Code: product.HSN_Code,
+                productId: product._id.toString()
+            });
+
+            const inward = inwardMap[key] || {};
+            const outward = outwardMap[key] || {};
+
+            const openingQty =
+                product.Opening_Stock || 0;
+
+            const openingRate =
+                product.openingRate || 0;
+
+            const inwardQty =
+                inward.qty || 0;
+
+            const inwardAmount =
+                (inward.taxableAmount || 0) +
+                (inward.taxAmount || 0);
+
+            const outwardQty =
+                outward.qty || 0;
+
+            const totalQty =
+                openingQty + inwardQty;
+
+            const totalValue =
+                (openingQty * openingRate) +
+                inwardAmount;
+
+            const avgCost =
+                totalQty > 0
+                    ? totalValue / totalQty
+                    : 0;
+
+            const closingQty =
+                openingQty +
+                inwardQty -
+                outwardQty;
+
+            const closingValue =
+                closingQty * avgCost;
+
+            closingMap[key] = {
+                HSN_Code: product.HSN_Code,
+                Product_Title: product.Product_Title,
+
+                closingQty,
+                avgRate: avgCost,
+                closingValue
+            };
+        });
+
+        return res.status(200).json({
+            status: true,
+            message: "HSN Wise Report",
+
+            inwardReport: Object.values(inwardMap),
+
+            outwardReport: Object.values(outwardMap),
+
+            closingReport: Object.values(closingMap)
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            status: false,
+            message: error.message
+        });
+    }
+};
+
 export const financeYearWiseReport = async (req, res) => {
     try {
         const { database } = req.params;
