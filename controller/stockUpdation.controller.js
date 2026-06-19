@@ -1821,6 +1821,9 @@ export const hsnSummaryReport = async (req, res) => {
             status: "completed"
         });
 
+        // =========================
+        // PRODUCT MAP
+        // =========================
         const productMap = {};
 
         products.forEach(product => {
@@ -1838,33 +1841,16 @@ export const hsnSummaryReport = async (req, res) => {
         const outwardMap = {};
         const closingMap = {};
 
-        const getKey = (product) =>
-            `${product.HSN_Code}_${product.productId}`;
+        const getKey = (p) => `${p.HSN_Code}_${p.productId}`;
 
-        // =====================
-        // PURCHASE / INWARD
-        // =====================
-
+        // =========================
+        // INWARD
+        // =========================
         for (const po of purchaseOrders) {
-
-            const extraCost =
-                (po.coolieAndCartage || 0) +
-                (po.labourCost || 0) +
-                (po.localFreight || 0) +
-                (po.miscellaneousCost || 0) +
-                (po.transportationCost || 0) +
-                (po.tax || 0);
-
-            const perItemExtra =
-                po.orderItems.length > 0
-                    ? extraCost / po.orderItems.length
-                    : 0;
 
             for (const item of po.orderItems) {
 
-                const product =
-                    productMap[item.productId?.toString()];
-
+                const product = productMap[item.productId?.toString()];
                 if (!product) continue;
 
                 const key = getKey(product);
@@ -1873,41 +1859,51 @@ export const hsnSummaryReport = async (req, res) => {
                     inwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
+
                         qty: 0,
                         taxableAmount: 0,
-                        taxAmount: 0,
-                        avgRate: 0
+
+                        cgst: 0,
+                        sgst: 0,
+                        igst: 0,
+
+                        grandTotal: 0
                     };
                 }
 
-                const amount =
-                    (item.qty || 0) *
-                    (item.price || 0);
+                const qty = item.qty || 0;
+                const rate = item.price || 0;
+                const amount = qty * rate;
 
-                inwardMap[key].qty += item.qty || 0;
+                const gst = product.GSTRate || 0;
+
+                const cgst = amount * (gst / 2) / 100;
+                const sgst = amount * (gst / 2) / 100;
+                const igst = 0;
+
+                inwardMap[key].qty += qty;
                 inwardMap[key].taxableAmount += amount;
-                inwardMap[key].taxAmount += perItemExtra;
+
+                inwardMap[key].cgst += cgst;
+                inwardMap[key].sgst += sgst;
+                inwardMap[key].igst += igst;
+
+                inwardMap[key].grandTotal += amount + cgst + sgst + igst;
             }
         }
 
         Object.values(inwardMap).forEach(row => {
-            row.avgRate =
-                row.qty > 0
-                    ? row.taxableAmount / row.qty
-                    : 0;
+            row.avgRate = row.qty ? row.taxableAmount / row.qty : 0;
         });
 
-        // =====================
-        // SALES / OUTWARD
-        // =====================
-
+        // =========================
+        // OUTWARD
+        // =========================
         for (const so of salesOrders) {
 
             for (const item of so.orderItems) {
 
-                const product =
-                    productMap[item.productId?.toString()];
-
+                const product = productMap[item.productId?.toString()];
                 if (!product) continue;
 
                 const key = getKey(product);
@@ -1916,84 +1912,71 @@ export const hsnSummaryReport = async (req, res) => {
                     outwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
+
                         qty: 0,
                         taxableAmount: 0,
-                        taxAmount: 0,
-                        avgRate: 0
+
+                        cgst: 0,
+                        sgst: 0,
+                        igst: 0,
+
+                        grandTotal: 0
                     };
                 }
 
-                const amount =
-                    (item.qty || 0) *
-                    (item.price || 0);
+                const qty = item.qty || 0;
+                const rate = item.price || 0;
+                const amount = qty * rate;
 
-                const taxAmount =
-                    amount *
-                    (product.GSTRate || 0) /
-                    100;
+                const gst = product.GSTRate || 0;
 
-                outwardMap[key].qty += item.qty || 0;
+                const cgst = amount * (gst / 2) / 100;
+                const sgst = amount * (gst / 2) / 100;
+                const igst = 0;
+
+                outwardMap[key].qty += qty;
                 outwardMap[key].taxableAmount += amount;
-                outwardMap[key].taxAmount += taxAmount;
+
+                outwardMap[key].cgst += cgst;
+                outwardMap[key].sgst += sgst;
+                outwardMap[key].igst += igst;
+
+                outwardMap[key].grandTotal += amount + cgst + sgst + igst;
             }
         }
 
         Object.values(outwardMap).forEach(row => {
-            row.avgRate =
-                row.qty > 0
-                    ? row.taxableAmount / row.qty
-                    : 0;
+            row.avgRate = row.qty ? row.taxableAmount / row.qty : 0;
         });
 
-        // =====================
-        // CLOSING STOCK
-        // =====================
+        // =========================
+        // CLOSING
+        // =========================
+        for (const product of products) {
 
-        products.forEach(product => {
+            const key = `${product.HSN_Code}_${product._id.toString()}`;
 
-            const key = getKey({
-                HSN_Code: product.HSN_Code,
-                productId: product._id.toString()
-            });
+            const inward = inwardMap[key] || { qty: 0, grandTotal: 0 };
+            const outward = outwardMap[key] || { qty: 0 };
 
-            const inward = inwardMap[key] || {};
-            const outward = outwardMap[key] || {};
+            const openingQty = product.Opening_Stock || 0;
+            const openingRate = product.openingRate || 0;
 
-            const openingQty =
-                product.Opening_Stock || 0;
+            const inwardQty = inward.qty || 0;
 
-            const openingRate =
-                product.openingRate || 0;
+            const totalQty = openingQty + inwardQty;
 
-            const inwardQty =
-                inward.qty || 0;
+            const inwardValue = inward.grandTotal || 0;
+            const openingValue = openingQty * openingRate;
 
-            const inwardAmount =
-                (inward.taxableAmount || 0) +
-                (inward.taxAmount || 0);
-
-            const outwardQty =
-                outward.qty || 0;
-
-            const totalQty =
-                openingQty + inwardQty;
-
-            const totalValue =
-                (openingQty * openingRate) +
-                inwardAmount;
-
-            const avgCost =
-                totalQty > 0
-                    ? totalValue / totalQty
-                    : 0;
+            const avgCost = totalQty
+                ? (openingValue + inwardValue) / totalQty
+                : 0;
 
             const closingQty =
-                openingQty +
-                inwardQty -
-                outwardQty;
+                openingQty + inwardQty - (outward.qty || 0);
 
-            const closingValue =
-                closingQty * avgCost;
+            const closingValue = closingQty * avgCost;
 
             closingMap[key] = {
                 HSN_Code: product.HSN_Code,
@@ -2003,21 +1986,21 @@ export const hsnSummaryReport = async (req, res) => {
                 avgRate: avgCost,
                 closingValue
             };
-        });
+        }
 
+        // =========================
+        // RESPONSE
+        // =========================
         return res.status(200).json({
             status: true,
-            message: "HSN Wise Report",
+            message: "HSN Wise Inward, Outward & Closing Report",
 
             inwardReport: Object.values(inwardMap),
-
             outwardReport: Object.values(outwardMap),
-
             closingReport: Object.values(closingMap)
         });
 
     } catch (error) {
-
         return res.status(500).json({
             status: false,
             message: error.message
