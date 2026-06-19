@@ -1830,6 +1830,8 @@ export const hsnSummaryReport = async (req, res) => {
             productMap[product._id.toString()] = {
                 productId: product._id.toString(),
                 Product_Title: product.Product_Title,
+                primaryUnit:product.primaryUnit,
+                secondaryUnit:product.secondaryUnit,
                 HSN_Code: product.HSN_Code || "",
                 GSTRate: product.GSTRate || 0,
                 openingQty: product.Opening_Stock || 0,
@@ -1859,7 +1861,8 @@ export const hsnSummaryReport = async (req, res) => {
                     inwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
-
+primaryUnit:product.primaryUnit,
+                secondaryUnit:product.secondaryUnit,
                         qty: 0,
                         taxableAmount: 0,
 
@@ -1912,7 +1915,8 @@ export const hsnSummaryReport = async (req, res) => {
                     outwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
-
+primaryUnit:product.primaryUnit,
+                secondaryUnit:product.secondaryUnit,
                         qty: 0,
                         taxableAmount: 0,
 
@@ -1981,7 +1985,8 @@ export const hsnSummaryReport = async (req, res) => {
             closingMap[key] = {
                 HSN_Code: product.HSN_Code,
                 Product_Title: product.Product_Title,
-
+primaryUnit:product.primaryUnit,
+                secondaryUnit:product.secondaryUnit,
                 closingQty,
                 avgRate: avgCost,
                 closingValue
