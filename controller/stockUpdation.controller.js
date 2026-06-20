@@ -233,150 +233,150 @@ export const viewOutWardStockToWarehouse = async (req, res, next) => {
 // };
 
 export const stockTransferToWarehouse = async (req, res) => {
-  try {
-    const {
-      created_by,
-      warehouseFromId,
-      warehouseToId,
-      stockTransferDate,
-      productItems = [],
-      grandTotal,
-      transferStatus,
-      InwardStatus,
-      OutwardStatus
-    } = req.body;
+    try {
+        const {
+            created_by,
+            warehouseFromId,
+            warehouseToId,
+            stockTransferDate,
+            productItems = [],
+            grandTotal,
+            transferStatus,
+            InwardStatus,
+            OutwardStatus
+        } = req.body;
 
-    if (!warehouseFromId || !warehouseToId || !productItems.length) {
-      return res.status(400).json({
-        message: "Missing required fields",
-        status: false
-      });
-    }
+        if (!warehouseFromId || !warehouseToId || !productItems.length) {
+            return res.status(400).json({
+                message: "Missing required fields",
+                status: false
+            });
+        }
 
-    const [warehouseFrom, warehouseTo] = await Promise.all([
-      Warehouse.findById(warehouseFromId),
-      Warehouse.findById(warehouseToId)
-    ]);
+        const [warehouseFrom, warehouseTo] = await Promise.all([
+            Warehouse.findById(warehouseFromId),
+            Warehouse.findById(warehouseToId)
+        ]);
 
-    if (!warehouseFrom) {
-      return res.status(400).json({
-        message: "Warehouse From Not Found",
-        status: false
-      });
-    }
+        if (!warehouseFrom) {
+            return res.status(400).json({
+                message: "Warehouse From Not Found",
+                status: false
+            });
+        }
 
-    if (!warehouseTo) {
-      return res.status(400).json({
-        message: "Warehouse To Not Found",
-        status: false
-      });
-    }
+        if (!warehouseTo) {
+            return res.status(400).json({
+                message: "Warehouse To Not Found",
+                status: false
+            });
+        }
 
-    const warehouseno = await warehouseNo(warehouseFrom.database);
-    warehouseFrom.warehouseNo = `${warehouseFrom.id}${warehouseno}`;
+        const warehouseno = await warehouseNo(warehouseFrom.database);
+        warehouseFrom.warehouseNo = `${warehouseFrom.id}${warehouseno}`;
 
-    for (const item of productItems) {
-      const {
-        fromProductId,
-        toProductId,
-        transferQty,
-        totalPrice,
-        price,
-        primaryUnit
-      } = item;
+        for (const item of productItems) {
+            const {
+                fromProductId,
+                toProductId,
+                transferQty,
+                totalPrice,
+                price,
+                primaryUnit
+            } = item;
 
-      const fromProduct = warehouseFrom.productItems.find(
-        p => p.productId?.toString() === fromProductId?.toString()
-      );
+            const fromProduct = warehouseFrom.productItems.find(
+                p => p.productId?.toString() === fromProductId?.toString()
+            );
 
-      if (!fromProduct) {
-        return res.status(400).json({
-          error: "Product not found in source warehouse"
+            if (!fromProduct) {
+                return res.status(400).json({
+                    error: "Product not found in source warehouse"
+                });
+            }
+
+            if (fromProduct.currentStock < transferQty) {
+                return res.status(400).json({
+                    error: "Insufficient stock"
+                });
+            }
+
+            /** Update main product (FROM) */
+            const fromMainProduct = await Product.findById(fromProductId);
+            if (fromMainProduct) {
+                fromMainProduct.qty -= transferQty;
+                await fromMainProduct.save();
+            }
+
+            /** Update source warehouse stock */
+            fromProduct.currentStock -= transferQty;
+            fromProduct.pendingStock += transferQty;
+            fromProduct.totalPrice -= totalPrice;
+
+            /** Handle destination warehouse product */
+            let toProduct = warehouseTo.productItems.find(
+                p => p.productId?.toString() === toProductId?.toString()
+            );
+
+            /** Update main product (TO) */
+            const toMainProduct = await Product.findById(toProductId);
+            if (toMainProduct) {
+                toMainProduct.qty += transferQty;
+                await toMainProduct.save();
+            }
+
+            if (toProduct) {
+                toProduct.currentStock += transferQty;
+                toProduct.totalPrice += totalPrice;
+                toProduct.price = price;
+            } else {
+                warehouseTo.productItems.push({
+                    productId: toProductId,
+                    currentStock: transferQty,
+                    pendingStock: 0,
+                    price,
+                    totalPrice,
+                    primaryUnit
+                });
+            }
+        }
+
+        warehouseFrom.markModified("productItems");
+        warehouseTo.markModified("productItems");
+
+        await Promise.all([
+            warehouseFrom.save(),
+            warehouseTo.save()
+        ]);
+
+        const stockTransfer = new StockUpdation({
+            created_by,
+            warehouseFromId,
+            warehouseToId,
+            stockTransferDate,
+            productItems,
+            grandTotal,
+            transferStatus,
+            InwardStatus,
+            OutwardStatus,
+            database: warehouseFrom.database,
+            warehouseNo: warehouseFrom.warehouseNo
         });
-      }
 
-      if (fromProduct.currentStock < transferQty) {
-        return res.status(400).json({
-          error: "Insufficient stock"
+        await stockTransfer.save();
+
+        return res.status(201).json({
+            message: "Stock transferred successfully",
+            status: true
         });
-      }
 
-      /** Update main product (FROM) */
-      const fromMainProduct = await Product.findById(fromProductId);
-      if (fromMainProduct) {
-        fromMainProduct.qty -= transferQty;
-        await fromMainProduct.save();
-      }
-
-      /** Update source warehouse stock */
-      fromProduct.currentStock -= transferQty;
-      fromProduct.pendingStock += transferQty;
-      fromProduct.totalPrice -= totalPrice;
-
-      /** Handle destination warehouse product */
-      let toProduct = warehouseTo.productItems.find(
-        p => p.productId?.toString() === toProductId?.toString()
-      );
-
-      /** Update main product (TO) */
-      const toMainProduct = await Product.findById(toProductId);
-      if (toMainProduct) {
-        toMainProduct.qty += transferQty;
-        await toMainProduct.save();
-      }
-
-      if (toProduct) {
-        toProduct.currentStock += transferQty;
-        toProduct.totalPrice += totalPrice;
-        toProduct.price = price;
-      } else {
-        warehouseTo.productItems.push({
-          productId: toProductId,
-          currentStock: transferQty,
-          pendingStock: 0,
-          price,
-          totalPrice,
-          primaryUnit
+    } catch (error) {
+        console.error("Stock Transfer Error:", error);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            status: false
         });
-      }
     }
-
-    warehouseFrom.markModified("productItems");
-    warehouseTo.markModified("productItems");
-
-    await Promise.all([
-      warehouseFrom.save(),
-      warehouseTo.save()
-    ]);
-
-    const stockTransfer = new StockUpdation({
-      created_by,
-      warehouseFromId,
-      warehouseToId,
-      stockTransferDate,
-      productItems,
-      grandTotal,
-      transferStatus,
-      InwardStatus,
-      OutwardStatus,
-      database: warehouseFrom.database,
-      warehouseNo: warehouseFrom.warehouseNo
-    });
-
-    await stockTransfer.save();
-
-    return res.status(201).json({
-      message: "Stock transferred successfully",
-      status: true
-    });
-
-  } catch (error) {
-    console.error("Stock Transfer Error:", error);
-    return res.status(500).json({
-      error: "Internal Server Error",
-      status: false
-    });
-  }
 };
 
 export const viewWarehouseStock = async (req, res) => {
@@ -1590,7 +1590,7 @@ export const stockReport = async (req, res, next) => {
 
                 allProductIds.add(productId);
                 const qty = item.qty || 0;
-                const totalPrice = item?.qty*item?.price || 0;
+                const totalPrice = item?.qty * item?.price || 0;
 
                 if (!productMap[productId]) {
                     productMap[productId] = {
@@ -1641,10 +1641,10 @@ export const stockReport = async (req, res, next) => {
 
                 allProductIds.add(productId);
                 const qty = item.qty || 0;
-                
-                
-                
-                const sTotal = item?.qty*item?.price || 0;
+
+
+
+                const sTotal = item?.qty * item?.price || 0;
 
                 if (!productMap[productId]) {
                     productMap[productId] = {
@@ -1802,24 +1802,110 @@ export const stockReport = async (req, res, next) => {
     }
 };
 
+
 export const hsnSummaryReport = async (req, res) => {
     try {
-        const { database } = req.params;
+        const { database, filterType } = req.params;
 
+        // =========================
+        // DATE RANGE
+        // =========================
+        const toDate = new Date();
+        let fromDate = new Date();
+
+        switch (filterType?.toLowerCase()) {
+            case "monthly":
+                fromDate = new Date(
+                    toDate.getFullYear(),
+                    toDate.getMonth(),
+                    1
+                );
+                break;
+
+            case "quarterly":
+                fromDate = new Date(
+                    toDate.getFullYear(),
+                    toDate.getMonth() - 2,
+                    1
+                );
+                break;
+
+            case "halfyearly":
+                fromDate = new Date(
+                    toDate.getFullYear(),
+                    toDate.getMonth() - 5,
+                    1
+                );
+                break;
+
+            case "yearly":
+                fromDate = new Date(
+                    toDate.getFullYear(),
+                    0,
+                    1
+                );
+                break;
+
+            default:
+                fromDate = null;
+                break;
+        }
+
+        // =========================
+        // PRODUCTS
+        // =========================
         const products = await Product.find({
             database,
             status: "Active"
         });
 
-        const purchaseOrders = await PurchaseOrder.find({
+        // =========================
+        // CURRENT PERIOD FILTER
+        // =========================
+        const purchaseFilter = {
             database,
             status: "completed"
-        });
+        };
 
-        const salesOrders = await CreateOrder.find({
+        const salesFilter = {
             database,
             status: "completed"
-        });
+        };
+
+        if (fromDate) {
+            purchaseFilter.date = {
+                $gte: fromDate,
+                $lte: toDate
+            };
+
+            salesFilter.date = {
+                $gte: fromDate,
+                $lte: toDate
+            };
+        }
+
+        const purchaseOrders = await PurchaseOrder.find(purchaseFilter);
+        const salesOrders = await CreateOrder.find(salesFilter);
+
+        // =========================
+        // PREVIOUS PERIOD DATA
+        // =========================
+        let previousPurchaseOrders = [];
+        let previousSalesOrders = [];
+
+        if (fromDate) {
+            previousPurchaseOrders = await PurchaseOrder.find({
+                database,
+                status: "completed",
+                date: { $lt: fromDate }
+            });
+
+            previousSalesOrders = await CreateOrder.find({
+                database,
+                status: "completed",
+                date: { $lt: fromDate }
+            });
+        }
 
         // =========================
         // PRODUCT MAP
@@ -1830,12 +1916,12 @@ export const hsnSummaryReport = async (req, res) => {
             productMap[product._id.toString()] = {
                 productId: product._id.toString(),
                 Product_Title: product.Product_Title,
-                primaryUnit:product.primaryUnit,
-                secondaryUnit:product.secondaryUnit,
                 HSN_Code: product.HSN_Code || "",
-                GSTRate: product.GSTRate || 0,
-                openingQty: product.Opening_Stock || 0,
-                openingRate: product.openingRate || 0
+                primaryUnit: product.primaryUnit,
+                secondaryUnit: product.secondaryUnit,
+                GSTRate: Number(product.GSTRate || 0),
+                openingQty: Number(product.Opening_Stock || 0),
+                openingRate: Number(product.openingRate || 0)
             };
         });
 
@@ -1843,16 +1929,46 @@ export const hsnSummaryReport = async (req, res) => {
         const outwardMap = {};
         const closingMap = {};
 
-        const getKey = (p) => `${p.HSN_Code}_${p.productId}`;
+        const previousPurchaseQtyMap = {};
+        const previousSalesQtyMap = {};
+
+        const getKey = product =>
+            `${product.HSN_Code}_${product.productId}`;
 
         // =========================
-        // INWARD
+        // PREVIOUS PURCHASE QTY
+        // =========================
+        for (const po of previousPurchaseOrders) {
+            for (const item of po.orderItems) {
+                const productId = item.productId?.toString();
+
+                previousPurchaseQtyMap[productId] =
+                    (previousPurchaseQtyMap[productId] || 0) +
+                    Number(item.qty || 0);
+            }
+        }
+
+        // =========================
+        // PREVIOUS SALES QTY
+        // =========================
+        for (const so of previousSalesOrders) {
+            for (const item of so.orderItems) {
+                const productId = item.productId?.toString();
+
+                previousSalesQtyMap[productId] =
+                    (previousSalesQtyMap[productId] || 0) +
+                    Number(item.qty || 0);
+            }
+        }
+
+        // =========================
+        // INWARD REPORT
         // =========================
         for (const po of purchaseOrders) {
-
             for (const item of po.orderItems) {
+                const product =
+                    productMap[item.productId?.toString()];
 
-                const product = productMap[item.productId?.toString()];
                 if (!product) continue;
 
                 const key = getKey(product);
@@ -1861,52 +1977,52 @@ export const hsnSummaryReport = async (req, res) => {
                     inwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
-primaryUnit:product.primaryUnit,
-                secondaryUnit:product.secondaryUnit,
+                        primaryUnit: product.primaryUnit,
+                        secondaryUnit: product.secondaryUnit,
+                        GSTRate: product.GSTRate,
                         qty: 0,
                         taxableAmount: 0,
-
                         cgst: 0,
                         sgst: 0,
                         igst: 0,
-
                         grandTotal: 0
                     };
                 }
 
-                const qty = item.qty || 0;
-                const rate = item.price || 0;
+                const qty = Number(item.qty || 0);
+                const rate = Number(item.price || 0);
                 const amount = qty * rate;
 
-                const gst = product.GSTRate || 0;
+                const cgst =
+                    amount * (product.GSTRate / 2) / 100;
 
-                const cgst = amount * (gst / 2) / 100;
-                const sgst = amount * (gst / 2) / 100;
-                const igst = 0;
+                const sgst =
+                    amount * (product.GSTRate / 2) / 100;
 
                 inwardMap[key].qty += qty;
                 inwardMap[key].taxableAmount += amount;
-
                 inwardMap[key].cgst += cgst;
                 inwardMap[key].sgst += sgst;
-                inwardMap[key].igst += igst;
-
-                inwardMap[key].grandTotal += amount + cgst + sgst + igst;
+                inwardMap[key].grandTotal +=
+                    amount + cgst + sgst;
             }
         }
 
         Object.values(inwardMap).forEach(row => {
-            row.avgRate = row.qty ? row.taxableAmount / row.qty : 0;
+            row.avgRate =
+                row.qty > 0
+                    ? row.taxableAmount / row.qty
+                    : 0;
         });
 
         // =========================
-        // OUTWARD
+        // OUTWARD REPORT
         // =========================
         for (const so of salesOrders) {
-
             for (const item of so.orderItems) {
+                const product =
+                    productMap[item.productId?.toString()];
 
-                const product = productMap[item.productId?.toString()];
                 if (!product) continue;
 
                 const key = getKey(product);
@@ -1915,96 +2031,103 @@ primaryUnit:product.primaryUnit,
                     outwardMap[key] = {
                         HSN_Code: product.HSN_Code,
                         Product_Title: product.Product_Title,
-primaryUnit:product.primaryUnit,
-                secondaryUnit:product.secondaryUnit,
+                        primaryUnit: product.primaryUnit,
+                        secondaryUnit: product.secondaryUnit,
+                        GSTRate: product.GSTRate,
                         qty: 0,
                         taxableAmount: 0,
-
                         cgst: 0,
                         sgst: 0,
                         igst: 0,
-
                         grandTotal: 0
                     };
                 }
 
-                const qty = item.qty || 0;
-                const rate = item.price || 0;
+                const qty = Number(item.qty || 0);
+                const rate = Number(item.price || 0);
                 const amount = qty * rate;
 
-                const gst = product.GSTRate || 0;
+                const cgst =
+                    amount * (product.GSTRate / 2) / 100;
 
-                const cgst = amount * (gst / 2) / 100;
-                const sgst = amount * (gst / 2) / 100;
-                const igst = 0;
+                const sgst =
+                    amount * (product.GSTRate / 2) / 100;
 
                 outwardMap[key].qty += qty;
                 outwardMap[key].taxableAmount += amount;
-
                 outwardMap[key].cgst += cgst;
                 outwardMap[key].sgst += sgst;
-                outwardMap[key].igst += igst;
-
-                outwardMap[key].grandTotal += amount + cgst + sgst + igst;
+                outwardMap[key].grandTotal +=
+                    amount + cgst + sgst;
             }
         }
 
         Object.values(outwardMap).forEach(row => {
-            row.avgRate = row.qty ? row.taxableAmount / row.qty : 0;
+            row.avgRate =
+                row.qty > 0
+                    ? row.taxableAmount / row.qty
+                    : 0;
         });
 
         // =========================
-        // CLOSING
+        // CLOSING REPORT
         // =========================
         for (const product of products) {
+            const productId = product._id.toString();
 
-            const key = `${product.HSN_Code}_${product._id.toString()}`;
+            const key =
+                `${product.HSN_Code}_${productId}`;
 
-            const inward = inwardMap[key] || { qty: 0, grandTotal: 0 };
-            const outward = outwardMap[key] || { qty: 0 };
+            const openingQty =
+                Number(product.Opening_Stock || 0) +
+                (previousPurchaseQtyMap[productId] || 0) -
+                (previousSalesQtyMap[productId] || 0);
 
-            const openingQty = product.Opening_Stock || 0;
-            const openingRate = product.openingRate || 0;
+            const inwardQty =
+                inwardMap[key]?.qty || 0;
 
-            const inwardQty = inward.qty || 0;
-
-            const totalQty = openingQty + inwardQty;
-
-            const inwardValue = inward.grandTotal || 0;
-            const openingValue = openingQty * openingRate;
-
-            const avgCost = totalQty
-                ? (openingValue + inwardValue) / totalQty
-                : 0;
+            const outwardQty =
+                outwardMap[key]?.qty || 0;
 
             const closingQty =
-                openingQty + inwardQty - (outward.qty || 0);
+                openingQty +
+                inwardQty -
+                outwardQty;
 
-            const closingValue = closingQty * avgCost;
+            const avgRate =
+                inwardMap[key]?.avgRate ||
+                Number(product.openingRate || 0);
 
             closingMap[key] = {
                 HSN_Code: product.HSN_Code,
                 Product_Title: product.Product_Title,
-primaryUnit:product.primaryUnit,
-                secondaryUnit:product.secondaryUnit,
+                primaryUnit: product.primaryUnit,
+                secondaryUnit: product.secondaryUnit,
+                GSTRate: product.GSTRate,
+
+                openingQty,
+                inwardQty,
+                outwardQty,
+
                 closingQty,
-                avgRate: avgCost,
-                closingValue
+                avgRate,
+                closingValue:
+                    closingQty * avgRate
             };
         }
 
-        // =========================
-        // RESPONSE
-        // =========================
         return res.status(200).json({
             status: true,
-            message: "HSN Wise Inward, Outward & Closing Report",
+            message: "HSN Summary Report",
+
+            filterType,
+            fromDate,
+            toDate,
 
             inwardReport: Object.values(inwardMap),
             outwardReport: Object.values(outwardMap),
             closingReport: Object.values(closingMap)
         });
-
     } catch (error) {
         return res.status(500).json({
             status: false,
@@ -2013,10 +2136,11 @@ primaryUnit:product.primaryUnit,
     }
 };
 
+
 export const financeYearWiseReport = async (req, res) => {
     try {
         const { database } = req.params;
-const mainDatabase = database.split("-")[0];
+        const mainDatabase = database.split("-")[0];
         const [purchaseOrders, salesOrders, products] = await Promise.all([
             PurchaseOrder.find({
                 database,
