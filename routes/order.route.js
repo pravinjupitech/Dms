@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path"
 import multer from "multer";
-import { BalanceGst, CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, HsnOutput, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, outWardStockReport, paymentDetails, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn, verifyFinalPayment, verifyPaymentMode, verifyQrPayment} from "../controller/order.controller.js";
+import { BalanceGst, CheckPartyPayment, DebitorCalculate, DispatchOrderCancelFromWarehouse, HsnOutput, InvoiceIdFrom, OrdertoBilling, OrdertoDispatch, PartyPurchaseqty, ProductWiseSalesReport, SalesOrderCalculate, SalesOrderList, ViewOrderHistoryForPartySalesPerson, averageSinceFirstOrder, bulkOrderUpload, checkPartyOrderLimit, completeSalesOrder, countCancelledOrder, countCompletedOrder, countOrder, countOutOfDeliveryOrder, countPendingOrder, countReadytoDispatchOrder, createOrder, createOrderHistory, createOrderHistoryById, createOrderHistoryByPartyId, createOrderHistoryByUserId, createOrderWithInvoice, currentMonthSale, dashboardGstOutput, dashboardSales, dashboardTotalSales, deleteSalesOrder, deletedSalesOrder, deletedSalesOrderMultiple, gstOutputReport, hsnWiseSaleReportB2B, hsnWiseSaleReportB2C, invoicePartySend, lastMonthSale, outWardStockReport, paymentDetails, updateCNDetails, updateCreateOrder, updateCreateOrderStatus, updateOrderArn, verifyFinalPayment, verifyPaymentMode, verifyQrPayment} from "../controller/order.controller.js";
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -18,6 +18,11 @@ const upload = multer({ storage: storage });
 
 router.post("/save-create-order", createOrder);
 router.post("/save-sales-invoice-order", createOrderWithInvoice);
+router.post(
+    "/bulk-order-upload",
+    upload.single("file"),
+    bulkOrderUpload
+);
 router.get("/view-create-order-history/:id", createOrderHistory);
 router.get("/view-create-order-history-by-id/:id", createOrderHistoryByUserId);
 router.delete("/delete-sales-order/:id", deleteSalesOrder)

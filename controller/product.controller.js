@@ -59,7 +59,7 @@ export const ViewProduct = async (req, res, next) => {
   try {
     const userId = req.params.id;
     const database = req.params.database;
-    const product = await Product.find({ database: database, status: 'Active' }).sort({ sortorder: -1 }).populate({ path: "warehouse", model: "warehouse" });
+    const product = await Product.find({ database: database, status: 'Active' }).sort({ sortorder: -1 }).populate({ path: "warehouse", model: "warehouse" }).lean();
     return res.status(200).json({ Product: product, status: true })
   } catch (err) {
     console.log(err);
@@ -69,7 +69,7 @@ export const ViewProduct = async (req, res, next) => {
 export const ViewProductForPurchase = async (req, res, next) => {
   try {
     const database = req.params.database;
-    const product = await Product.find({ database: database, status: 'Active' }).sort({ sortorder: -1 }).populate({ path: "warehouse", model: "warehouse" });
+    const product = await Product.find({ database: database, status: 'Active' }).sort({ sortorder: -1 }).populate({ path: "warehouse", model: "warehouse" }).lean();;
     return res.status(200).json({ Product: product, status: true })
   } catch (err) {
     console.log(err);
@@ -408,7 +408,8 @@ export const saveItemWithExcel = async (req, res) => {
     console.error(err);
     return res.status(500).json({ error: 'Internal Server Error', status: false });
   }
-}
+}///customer/view-customer/67ee8a63bcdb9bbcd59f98ca/ninteen
+///product/view-product-purchase/ninteen
 export const updateItemWithExcel = async (req, res) => {
   try {
     let groupDiscount = 0;

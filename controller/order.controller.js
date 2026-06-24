@@ -28,7 +28,7 @@ import { Role } from "../model/role.model.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
 import QRCode from "qrcode";
 import { PaymentQr } from "../model/paymentQrModel.js";
-
+import XLSX from "xlsx";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -341,6 +341,253 @@ export const createOrderWithInvoice = async (req, res, next) => {
 
     }
 };
+
+
+
+export const bulkOrderUpload = async (req, res) => {
+    try {
+
+        const workbook = XLSX.readFile(req.file.path);
+
+        const sheetName = workbook.SheetNames[0];
+
+        const rows = XLSX.utils.sheet_to_json(
+            workbook.Sheets[sheetName]
+        );
+
+        const successOrders = [];
+        const failedOrders = [];
+
+        for (const row of rows) {
+
+            try {
+
+                const orderData = {
+                    partyId: row.partyId,
+                    date: row.date,
+                    orderNo: row.orderNo,
+                    grandTotal: Number(row.grandTotal),
+
+                    orderItems: [
+                        {
+                            productId: row.productId,
+                            qty: Number(row.qty),
+                            price: Number(row.price),
+                            totalPrice:
+                                Number(row.qty) *
+                                Number(row.price),
+                            grandTotal:
+                                Number(row.qty) *
+                                Number(row.price)
+                        }
+                    ]
+                };
+
+                // ===== SAME LOGIC AS createOrderWithInvoice =====
+
+                const orderItems = orderData.orderItems;
+
+                const date1 = new Date();
+                const date2 = new Date(orderData.date);
+
+                const party = await Customer.findById(
+                    orderData.partyId
+                );
+
+                if (!party) {
+                    throw new Error("Customer not found");
+                }
+
+                const user = await User.findById(
+                    party.created_by
+                );
+
+                if (!user) {
+                    throw new Error("User not found");
+                }
+
+                if (date2 > date1) {
+                    throw new Error(
+                        "Cannot create invoice for future date"
+                    );
+                }
+
+                for (const orderItem of orderItems) {
+
+                    const product =
+                        await Product.findById(
+                            orderItem.productId
+                        );
+
+                    if (!product) {
+                        throw new Error(
+                            `Product not found ${orderItem.productId}`
+                        );
+                    }
+
+                    const warehouse =
+                        await Warehouse.findById(
+                            product.warehouse
+                        );
+
+                    if (!warehouse) {
+                        throw new Error(
+                            "Warehouse not found"
+                        );
+                    }
+
+                    product.qty -= orderItem.qty;
+
+                    await product.save();
+
+                    await warehouse.save();
+
+                    await addProductInWarehouse5(
+                        product,
+                        product.warehouse,
+                        orderItem,
+                        orderData.date
+                    );
+                }
+
+                orderData.status = "completed";
+                orderData.userId = party.created_by;
+                orderData.database = user.database;
+
+                if (date1 > date2) {
+                    orderData.paymentStatus = true;
+                }
+
+                party.remainingLimit -=
+                    orderData.grandTotal;
+
+                await party.save();
+
+                const upiId =
+                    "9575892923@ybl";
+
+                const merchantName =
+                    "EKOPACK INDIA";
+
+                const amount =
+                    orderData.grandTotal;
+
+                const orderNo =
+                    orderData.orderNo ||
+                    `INV${Date.now()}`;
+
+                const partyName =
+                    party.CompanyName;
+
+                const invoiceDate =
+                    new Date(orderData.date)
+                        .toISOString()
+                        .split("T")[0];
+
+                const invoiceTime =
+                    new Date().toLocaleTimeString();
+
+                const note =
+                    `Party:${partyName},Invoice:${orderNo},Date:${invoiceDate},Time:${invoiceTime},Amount:${amount}`;
+
+                const upiLink =
+                    `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+                const qrFolder = path.join(
+                    process.cwd(),
+                    "public/Images"
+                );
+
+                if (
+                    !fs.existsSync(qrFolder)
+                ) {
+                    fs.mkdirSync(
+                        qrFolder,
+                        { recursive: true }
+                    );
+                }
+
+                const qrFileName =
+                    `invoice-${orderNo}.png`;
+
+                const qrPath = path.join(
+                    qrFolder,
+                    qrFileName
+                );
+
+                await QRCode.toFile(
+                    qrPath,
+                    upiLink
+                );
+
+                orderData.upiId = upiId;
+                orderData.upiLink = upiLink;
+                orderData.qrCode =
+                    qrFileName;
+                orderData.Time =
+                    invoiceTime;
+                orderData.Date =
+                    invoiceDate;
+                orderData.paidAmount = 0;
+                orderData.paymentVerified =
+                    false;
+
+                const [
+                    qrData,
+                    savedOrder
+                ] = await Promise.all([
+                    PaymentQr.create(
+                        orderData
+                    ),
+                    CreateOrder.create(
+                        orderData
+                    )
+                ]);
+
+                if (savedOrder) {
+
+                    await ledgerPartyForDebit(
+                        savedOrder,
+                        "SalesInvoice"
+                    );
+                }
+
+                successOrders.push({
+                    orderNo:
+                        savedOrder.orderNo
+                });
+
+            } catch (error) {
+
+                failedOrders.push({
+                    row,
+                    error:
+                        error.message
+                });
+            }
+        }
+
+        return res.status(200).json({
+            status: true,
+            successCount:
+                successOrders.length,
+            failedCount:
+                failedOrders.length,
+            successOrders,
+            failedOrders
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            status: false,
+            message: error.message
+        });
+    }
+};
+
 export const createOrderHistoryByUserId = async (req, res, next) => {
     try {
         const userId = req.params.id;
