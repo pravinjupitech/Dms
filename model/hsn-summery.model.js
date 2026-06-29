@@ -7,7 +7,20 @@ const hsnSummerySchema = new mongoose.Schema({
     financeYear: {
         type: String
     },
+    type: {
+        type: String,
+        required: true
+    },
     taxAmount: {
+        type: Number
+    },
+    particular: {
+        type: String
+    },
+    gstin: {
+        type: String
+    },
+    roundOff: {
         type: Number
     },
     sgstAmount: {
@@ -34,11 +47,11 @@ const hsnSummerySchema = new mongoose.Schema({
     qty: {
         type: Number
     },
-    Description:{
+    Description: {
         type: String,
     },
-    UQC:{
-        type:String
+    UQC: {
+        type: String
     }
 }, { timestamps: true })
 

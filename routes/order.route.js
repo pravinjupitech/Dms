@@ -19,7 +19,7 @@ const upload = multer({ storage: storage });
 router.post("/save-create-order", createOrder);
 router.post("/save-sales-invoice-order", createOrderWithInvoice);
 router.post(
-    "/bulk-order-upload/:database/:financeYear",
+    "/bulk-order-upload/:database/:financeYear/:type",
     upload.single("file"),
    bulkHsnUpload
 );
