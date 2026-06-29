@@ -23,7 +23,7 @@ import { addProductInWarehouse5, addProductInWarehouse6 } from "./product.contro
 import { Stock } from "../model/stock.js";
 import { CompanyDetails } from "../model/companyDetails.model.js";
 // import transporterss from "../service/email.js";
-import { hsn_summery } from"../model/hsn-summery.model.js";
+import { hsn_summery } from "../model/hsn-summery.model.js";
 import nodemailer from "nodemailer";
 import { Role } from "../model/role.model.js";
 import { PurchaseOrder } from "../model/purchaseOrder.model.js";
@@ -347,7 +347,7 @@ export const createOrderWithInvoice = async (req, res, next) => {
 export const bulkHsnUpload = async (req, res) => {
     try {
 
-        const { database, financeYear } = req.params;
+        const { database, financeYear, type } = req.params;
 
         if (!req.file) {
             return res.status(400).json({
@@ -367,7 +367,7 @@ export const bulkHsnUpload = async (req, res) => {
         const data = rows.map((row) => ({
             database,
             financeYear,
-
+            type,
             taxAmount: Number(row.taxAmount) || 0,
             sgstAmount: Number(row.sgstAmount) || 0,
             cgstAmount: Number(row.cgstAmount) || 0,
@@ -383,10 +383,11 @@ export const bulkHsnUpload = async (req, res) => {
                 Number(row.grandTotal) || 0,
 
             qty: Number(row.qty) || 0,
-
-            Description: row.Description,
-
-            UQC: row.UQC
+            Description: row.Description || "",
+            gstin: row.gstin || "",
+            roundOff: row.roundOff || 0,
+            date:row.date||"",
+            UQC: row.UQC || ""
         }));
 
         const result = await hsn_summery.insertMany(data);

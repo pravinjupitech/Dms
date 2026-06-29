@@ -10,6 +10,15 @@ const hsnSummerySchema = new mongoose.Schema({
     taxAmount: {
         type: Number
     },
+    particular: {
+        type: String
+    },
+    gstin: {
+        type: String
+    },
+roundOff:{
+    type:Number
+},
     sgstAmount: {
         type: Number
     },
