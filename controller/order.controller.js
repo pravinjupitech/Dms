@@ -364,32 +364,32 @@ export const bulkHsnUpload = async (req, res) => {
             workbook.Sheets[sheetName]
         );
 
-        const data = rows.map((row) =>console.log("row",row),
-         ({
-            database,
-            financeYear,
-            type,            
-            taxAmount: Number(row.taxAmount) || 0,
-            sgstAmount: Number(row.sgstAmount) || 0,
-            cgstAmount: Number(row.cgstAmount) || 0,
-            igstAmount: Number(row.igstAmount) || 0,
+       const data = rows.map((row) => {
+    console.log("row", row);
 
-            hsn: row.hsn?.toString(),
-            gstRate: row.gstRate?.toString(),
+    return {
+        database,
+        financeYear,
+        type,
+        taxAmount: Number(row.taxAmount) || 0,
+        sgstAmount: Number(row.sgstAmount) || 0,
+        cgstAmount: Number(row.cgstAmount) || 0,
+        igstAmount: Number(row.igstAmount) || 0,
 
-            taxableAmount:
-                Number(row.taxableAmount) || 0,
+        hsn: row.hsn?.toString(),
+        gstRate: row.gstRate?.toString(),
 
-            grandTotal:
-                Number(row.grandTotal) || 0,
+        taxableAmount: Number(row.taxableAmount) || 0,
+        grandTotal: Number(row.grandTotal) || 0,
 
-            qty: Number(row.qty) || 0,
-            Description: row.Description || "",
-            gstin: row.gstin || "",
-            roundOff: row.roundOff || 0,
-            date:row.date||"",
-            UQC: row.UQC || ""
-        }));
+        qty: Number(row.qty) || 0,
+        Description: row.Description || "",
+        gstin: row.gstin || "",
+        roundOff: row.roundOff || 0,
+        date: row.date || "",
+        UQC: row.UQC || "",
+    };
+});
 
         const result = await hsn_summery.insertMany(data);
 
