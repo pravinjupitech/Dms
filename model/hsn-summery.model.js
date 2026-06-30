@@ -21,7 +21,7 @@ const hsnSummerySchema = new mongoose.Schema({
         type: String
     },
     roundOff: {
-        type: Number
+        type: String
     },
     sgstAmount: {
         type: Number
