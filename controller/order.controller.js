@@ -364,10 +364,11 @@ export const bulkHsnUpload = async (req, res) => {
             workbook.Sheets[sheetName]
         );
 
-        const data = rows.map((row) => ({
+        const data = rows.map((row) =>console.log("row",row)
+         ({
             database,
             financeYear,
-            type,
+            type,            
             taxAmount: Number(row.taxAmount) || 0,
             sgstAmount: Number(row.sgstAmount) || 0,
             cgstAmount: Number(row.cgstAmount) || 0,
