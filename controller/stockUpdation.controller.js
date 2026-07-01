@@ -2109,7 +2109,7 @@ export const hsnSummaryReport = async (req, res) => {
         });
 
         // =========================
-        // GROUP MAP
+        // HSN GROUP MAP
         // =========================
         const map = {};
 
@@ -2118,10 +2118,8 @@ export const hsnSummaryReport = async (req, res) => {
                 map[hsn] = {
                     HSN_Code: hsn,
                     taxRate: rate,
-
                     inwardReport: {},
-                    outwardReport: {},
-                    closingReport: {}
+                    outwardReport: {}
                 };
             }
             return map[hsn];
@@ -2132,9 +2130,8 @@ export const hsnSummaryReport = async (req, res) => {
 
             if (!bucket[id]) {
                 bucket[id] = {
-                    
-            HSN_Code: product.HSN_Code,
                     Product_Title: product.Product_Title,
+                    HSN_Code: product.HSN_Code,
                     primaryUnit: product.primaryUnit,
                     secondaryUnit: product.secondaryUnit,
                     taxRate: product.GSTRate,
@@ -2151,7 +2148,7 @@ export const hsnSummaryReport = async (req, res) => {
         };
 
         // =========================
-        // OPENING STOCK (inward)
+        // OPENING STOCK (INWARD)
         // =========================
         for (const row of openingHSN) {
 
@@ -2171,7 +2168,7 @@ export const hsnSummaryReport = async (req, res) => {
         }
 
         // =========================
-        // PURCHASE (inward)
+        // PURCHASE (INWARD)
         // =========================
         for (const po of purchaseOrders) {
             for (const item of po.orderItems) {
@@ -2198,7 +2195,7 @@ export const hsnSummaryReport = async (req, res) => {
         }
 
         // =========================
-        // SALES (outward)
+        // SALES (OUTWARD)
         // =========================
         for (const so of salesOrders) {
             for (const item of so.orderItems) {
@@ -2225,7 +2222,7 @@ export const hsnSummaryReport = async (req, res) => {
         }
 
         // =========================
-        // BUILD FINAL RESPONSE
+        // FINAL RESPONSE BUILD
         // =========================
         const result = [];
 
@@ -2236,8 +2233,38 @@ export const hsnSummaryReport = async (req, res) => {
             const inward = Object.values(hsn.inwardReport);
             const outward = Object.values(hsn.outwardReport);
 
-            const inwardTotal = inward.reduce((a, b) => a + (b.taxableAmount || 0), 0);
-            const outwardTotal = outward.reduce((a, b) => a + (b.taxableAmount || 0), 0);
+            const inwardMap = hsn.inwardReport;
+            const outwardMap = hsn.outwardReport;
+
+            const allProductIds = new Set([
+                ...Object.keys(inwardMap),
+                ...Object.keys(outwardMap)
+            ]);
+
+            const closingReport = [];
+
+            for (const productId of allProductIds) {
+
+                const inItem = inwardMap[productId] || {};
+                const outItem = outwardMap[productId] || {};
+
+                const inwardValue = inItem.taxableAmount || 0;
+                const outwardValue = outItem.taxableAmount || 0;
+
+                const closingValue = inwardValue - outwardValue;
+                const closingQty = (inItem.taxableAmount || 0) - (outItem.taxableAmount || 0);
+
+                const avgRate =
+                    closingQty !== 0 ? closingValue / closingQty : 0;
+
+                closingReport.push({
+                    Product_Title: inItem.Product_Title || outItem.Product_Title,
+                    HSN_Code: hsn.HSN_Code,
+                    avgRate,
+                    closingQty,
+                    closingValue
+                });
+            }
 
             result.push({
                 HSN_Code: hsn.HSN_Code,
@@ -2245,14 +2272,7 @@ export const hsnSummaryReport = async (req, res) => {
 
                 inwardReport: inward,
                 outwardReport: outward,
-
-                closingReport: [
-                    {
-                        HSN_Code: hsn.HSN_Code,
-                        taxableAmount: inwardTotal - outwardTotal,
-                        closingQty: inwardTotal - outwardTotal
-                    }
-                ]
+                closingReport
             });
         }
 
