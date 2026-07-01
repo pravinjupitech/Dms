@@ -2132,6 +2132,8 @@ export const hsnSummaryReport = async (req, res) => {
 
             if (!bucket[id]) {
                 bucket[id] = {
+                    
+            HSN_Code: product.HSN_Code,
                     Product_Title: product.Product_Title,
                     primaryUnit: product.primaryUnit,
                     secondaryUnit: product.secondaryUnit,
