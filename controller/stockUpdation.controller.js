@@ -1804,6 +1804,252 @@ export const stockReport = async (req, res, next) => {
 };
 
 
+// export const hsnSummaryReport = async (req, res) => {
+//     try {
+//         const { database, financeYear, filterType } = req.params;
+
+//         const toDate = new Date();
+//         let fromDate = null;
+
+//         switch ((filterType || "").toLowerCase()) {
+//             case "monthly":
+//                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+//                 break;
+
+//             case "quarterly":
+//                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 2, 1);
+//                 break;
+
+//             case "halfyearly":
+//                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 5, 1);
+//                 break;
+
+//             case "yearly":
+//                 fromDate = new Date(toDate.getFullYear(), 0, 1);
+//                 break;
+
+//             default:
+//                 fromDate = null;
+//         }
+
+//         const purchaseFilter = { database, status: "completed" };
+//         const salesFilter = { database, status: "completed" };
+
+//         if (fromDate) {
+//             purchaseFilter.date = { $gte: fromDate, $lte: toDate };
+//             salesFilter.date = { $gte: fromDate, $lte: toDate };
+//         }
+
+//         const [
+//             products,
+//             purchaseOrders,
+//             salesOrders,
+//             openingHSN
+//         ] = await Promise.all([
+//             Product.find({ database, status: "Active" }),
+//             PurchaseOrder.find(database,purchaseFilter),
+//             CreateOrder.find(database,salesFilter),
+//             hsn_summery.find({ database, financeYear })
+//         ]);
+
+
+//         const productByMongoId = {};
+//         const productByCustomId = {};
+
+//         products.forEach((p) => {
+
+//             productByMongoId[p._id.toString()] = p;
+
+//             if (p.id) {
+//                 productByCustomId[p.id.toString().trim()] = p;
+//             }
+//         });
+
+//         const reportMap = {};
+
+//         const getKey = (desc) => (desc || "").trim().toLowerCase();
+
+//         const createRow = (product) => ({
+//             productId: product._id.toString(),
+//             productName: product.Product_Title,
+//             description: product.Product_Desc,
+//             hsn: product.HSN_Code,
+//             gstRate: Number(product.GSTRate || 0),
+//             UQC: product.primaryUnit,
+
+//             openingInputQty: 0,
+//             openingOutputQty: 0,
+
+//             purchaseQty: 0,
+//             salesQty: 0,
+
+//             openingTaxable: 0,
+//             purchaseTaxable: 0,
+//             salesTaxable: 0,
+
+//             cgst: 0,
+//             sgst: 0,
+//             igst: 0,
+
+//             grandTotal: 0
+//         });
+
+
+
+//         for (const row of openingHSN) {
+
+//             const key = (row.Description || "").toString().trim();
+
+//             const product = productByCustomId[key];
+
+//             if (!product) {
+//                 console.log("Product not found :", key);
+//                 continue;
+//             }
+
+//             if (!reportMap[product._id]) {
+//                 reportMap[product._id] = createRow(product);
+//             }
+
+//             const report = reportMap[product._id];
+
+//             if ((row.type || "").toLowerCase() === "input") {
+//                 report.openingInputQty += Number(row.qty || 0);
+//                 report.openingTaxable += Number(row.taxableAmount || 0);
+//             } else if ((row.type || "").toLowerCase() === "output") {
+//                 report.openingOutputQty += Number(row.qty || 0);
+//             }
+
+//             report.cgst += Number(row.cgstAmount || 0);
+//             report.sgst += Number(row.sgstAmount || 0);
+//             report.igst += Number(row.igstAmount || 0);
+//             report.grandTotal += Number(row.grandTotal || 0);
+//         }
+
+
+//         for (const po of purchaseOrders) {
+//             for (const item of po.orderItems) {
+
+//                 const product = productByMongoId[item.productId?.toString()];
+//                 if (!product) continue;
+
+//                 const key = product._id.toString();
+
+//                 if (!reportMap[key]) {
+//                     reportMap[key] = createRow(product);
+//                 }
+
+
+//                 const qty = Number(item.qty || 0);
+//                 const rate = Number(item.price || 0);
+//                 const amount = qty * rate;
+
+//                 const gst = Number(product.GSTRate || 0);
+//                 const cgst = amount * (gst / 2) / 100;
+//                 const sgst = amount * (gst / 2) / 100;
+
+//                 const report = reportMap[key];
+
+//                 report.purchaseQty += qty;
+//                 report.purchaseTaxable += amount;
+
+//                 report.cgst += cgst;
+//                 report.sgst += sgst;
+//                 report.grandTotal += amount + cgst + sgst;
+//             }
+//         }
+
+
+//         for (const so of salesOrders) {
+//             for (const item of so.orderItems) {
+
+//                 const product = productByMongoId[item.productId?.toString()];
+//                  if (!product) continue;
+
+//                 const key = product._id.toString();
+
+//                 if (!reportMap[key]) {
+//                     reportMap[key] = createRow(product);
+//                 }
+
+
+//                 const qty = Number(item.qty || 0);
+//                 const rate = Number(item.price || 0);
+//                 const amount = qty * rate;
+
+//                 const gst = Number(product.GSTRate || 0);
+//                 const cgst = amount * (gst / 2) / 100;
+//                 const sgst = amount * (gst / 2) / 100;
+
+//                 const report = reportMap[key];
+
+//                 report.salesQty += qty;
+//                 report.salesTaxable += amount;
+
+//                 report.cgst += cgst;
+//                 report.sgst += sgst;
+//                 report.grandTotal += amount + cgst + sgst;
+//             }
+//         }
+
+
+//         const finalReport = [];
+
+//         for (const key in reportMap) {
+
+//             const row = reportMap[key];
+
+//             const openingQty =
+//                 (row.openingInputQty || 0) -
+//                 (row.openingOutputQty || 0);
+
+//             const closingQty =
+//                 openingQty +
+//                 (row.purchaseQty || 0) -
+//                 (row.salesQty || 0);
+
+//             finalReport.push({
+//                 productId: row.productId,
+//                 productName: row.productName,
+//                 description: row.description,
+//                 hsn: row.hsn,
+//                 gstRate: row.gstRate,
+//                 UQC: row.UQC,
+
+//                 openingQty,
+//                 purchaseQty: row.purchaseQty,
+//                 salesQty: row.salesQty,
+//                 closingQty,
+
+//                 taxablePurchase: row.purchaseTaxable,
+//                 taxableSales: row.salesTaxable,
+
+//                 cgst: row.cgst,
+//                 sgst: row.sgst,
+//                 igst: row.igst,
+
+//                 grandTotal: row.grandTotal
+//             });
+//         }
+
+//         return res.status(200).json({
+//             status: true,
+//             message: "Product-wise HSN Summary Report Generated Successfully",
+//             filterType,
+//             fromDate,
+//             toDate,
+//             report: finalReport
+//         });
+
+//     } catch (error) {
+//         console.log(error);
+//         return res.status(500).json({
+//             status: false,
+//             message: "Internal Server Error"
+//         });
+//     }
+// };
+
 export const hsnSummaryReport = async (req, res) => {
     try {
         const { database, financeYear, filterType } = req.params;
@@ -1815,19 +2061,15 @@ export const hsnSummaryReport = async (req, res) => {
             case "monthly":
                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
                 break;
-
             case "quarterly":
                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 2, 1);
                 break;
-
             case "halfyearly":
                 fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 5, 1);
                 break;
-
             case "yearly":
                 fromDate = new Date(toDate.getFullYear(), 0, 1);
                 break;
-
             default:
                 fromDate = null;
         }
@@ -1852,193 +2094,173 @@ export const hsnSummaryReport = async (req, res) => {
             hsn_summery.find({ database, financeYear })
         ]);
 
-
-        const productByMongoId = {};
+        // =========================
+        // PRODUCT MAP
+        // =========================
+        const productById = {};
         const productByCustomId = {};
 
-        products.forEach((p) => {
-
-            productByMongoId[p._id.toString()] = p;
+        products.forEach(p => {
+            productById[p._id.toString()] = p;
 
             if (p.id) {
                 productByCustomId[p.id.toString().trim()] = p;
             }
         });
 
-        const reportMap = {};
+        // =========================
+        // GROUP MAP
+        // =========================
+        const map = {};
 
-        const getKey = (desc) => (desc || "").trim().toLowerCase();
+        const ensureHSN = (hsn, rate) => {
+            if (!map[hsn]) {
+                map[hsn] = {
+                    HSN_Code: hsn,
+                    taxRate: rate,
 
-        const createRow = (product) => ({
-            productId: product._id.toString(),
-            productName: product.Product_Title,
-            description: product.Product_Desc,
-            hsn: product.HSN_Code,
-            gstRate: Number(product.GSTRate || 0),
-            UQC: product.primaryUnit,
+                    inwardReport: {},
+                    outwardReport: {},
+                    closingReport: {}
+                };
+            }
+            return map[hsn];
+        };
 
-            openingInputQty: 0,
-            openingOutputQty: 0,
+        const addProduct = (bucket, product) => {
+            const id = product._id.toString();
 
-            purchaseQty: 0,
-            salesQty: 0,
+            if (!bucket[id]) {
+                bucket[id] = {
+                    Product_Title: product.Product_Title,
+                    primaryUnit: product.primaryUnit,
+                    secondaryUnit: product.secondaryUnit,
+                    taxRate: product.GSTRate,
 
-            openingTaxable: 0,
-            purchaseTaxable: 0,
-            salesTaxable: 0,
+                    taxableAmount: 0,
+                    cgst: 0,
+                    sgst: 0,
+                    igst: 0,
+                    grandTotal: 0
+                };
+            }
 
-            cgst: 0,
-            sgst: 0,
-            igst: 0,
+            return bucket[id];
+        };
 
-            grandTotal: 0
-        });
-
-
-
+        // =========================
+        // OPENING STOCK (inward)
+        // =========================
         for (const row of openingHSN) {
 
-            const key = (row.Description || "").toString().trim();
+            const product = productByCustomId[(row.Description || "").trim()];
+            if (!product) continue;
 
-            const product = productByCustomId[key];
+            const hsn = product.HSN_Code;
+            const group = ensureHSN(hsn, product.GSTRate);
 
-            if (!product) {
-                console.log("Product not found :", key);
-                continue;
-            }
+            const bucket = group.inwardReport;
+            const child = addProduct(bucket, product);
 
-            if (!reportMap[product._id]) {
-                reportMap[product._id] = createRow(product);
-            }
+            const value = Number(row.grandTotal || 0);
 
-            const report = reportMap[product._id];
-
-            if ((row.type || "").toLowerCase() === "input") {
-                report.openingInputQty += Number(row.qty || 0);
-                report.openingTaxable += Number(row.taxableAmount || 0);
-            } else if ((row.type || "").toLowerCase() === "output") {
-                report.openingOutputQty += Number(row.qty || 0);
-            }
-
-            report.cgst += Number(row.cgstAmount || 0);
-            report.sgst += Number(row.sgstAmount || 0);
-            report.igst += Number(row.igstAmount || 0);
-            report.grandTotal += Number(row.grandTotal || 0);
+            child.taxableAmount += value;
+            child.grandTotal += value;
         }
 
-
+        // =========================
+        // PURCHASE (inward)
+        // =========================
         for (const po of purchaseOrders) {
             for (const item of po.orderItems) {
 
-                const product = productByMongoId[item.productId?.toString()];
+                const product = productById[item.productId?.toString()];
                 if (!product) continue;
 
-                const key = product._id.toString();
+                const hsn = product.HSN_Code;
+                const group = ensureHSN(hsn, product.GSTRate);
 
-                if (!reportMap[key]) {
-                    reportMap[key] = createRow(product);
-                }
+                const bucket = group.inwardReport;
+                const child = addProduct(bucket, product);
 
+                const amount = Number(item.qty || 0) * Number(item.price || 0);
 
-                const qty = Number(item.qty || 0);
-                const rate = Number(item.price || 0);
-                const amount = qty * rate;
+                const cgst = amount * (product.GSTRate / 2) / 100;
+                const sgst = amount * (product.GSTRate / 2) / 100;
 
-                const gst = Number(product.GSTRate || 0);
-                const cgst = amount * (gst / 2) / 100;
-                const sgst = amount * (gst / 2) / 100;
-
-                const report = reportMap[key];
-
-                report.purchaseQty += qty;
-                report.purchaseTaxable += amount;
-
-                report.cgst += cgst;
-                report.sgst += sgst;
-                report.grandTotal += amount + cgst + sgst;
+                child.taxableAmount += amount;
+                child.cgst += cgst;
+                child.sgst += sgst;
+                child.grandTotal += amount + cgst + sgst;
             }
         }
 
-
+        // =========================
+        // SALES (outward)
+        // =========================
         for (const so of salesOrders) {
             for (const item of so.orderItems) {
 
-                const product = productByMongoId[item.productId?.toString()];
-                 if (!product) continue;
+                const product = productById[item.productId?.toString()];
+                if (!product) continue;
 
-                const key = product._id.toString();
+                const hsn = product.HSN_Code;
+                const group = ensureHSN(hsn, product.GSTRate);
 
-                if (!reportMap[key]) {
-                    reportMap[key] = createRow(product);
-                }
+                const bucket = group.outwardReport;
+                const child = addProduct(bucket, product);
 
+                const amount = Number(item.qty || 0) * Number(item.price || 0);
 
-                const qty = Number(item.qty || 0);
-                const rate = Number(item.price || 0);
-                const amount = qty * rate;
+                const cgst = amount * (product.GSTRate / 2) / 100;
+                const sgst = amount * (product.GSTRate / 2) / 100;
 
-                const gst = Number(product.GSTRate || 0);
-                const cgst = amount * (gst / 2) / 100;
-                const sgst = amount * (gst / 2) / 100;
-
-                const report = reportMap[key];
-
-                report.salesQty += qty;
-                report.salesTaxable += amount;
-
-                report.cgst += cgst;
-                report.sgst += sgst;
-                report.grandTotal += amount + cgst + sgst;
+                child.taxableAmount += amount;
+                child.cgst += cgst;
+                child.sgst += sgst;
+                child.grandTotal += amount + cgst + sgst;
             }
         }
 
+        // =========================
+        // BUILD FINAL RESPONSE
+        // =========================
+        const result = [];
 
-        const finalReport = [];
+        for (const hsnKey in map) {
 
-        for (const key in reportMap) {
+            const hsn = map[hsnKey];
 
-            const row = reportMap[key];
+            const inward = Object.values(hsn.inwardReport);
+            const outward = Object.values(hsn.outwardReport);
 
-            const openingQty =
-                (row.openingInputQty || 0) -
-                (row.openingOutputQty || 0);
+            const inwardTotal = inward.reduce((a, b) => a + (b.taxableAmount || 0), 0);
+            const outwardTotal = outward.reduce((a, b) => a + (b.taxableAmount || 0), 0);
 
-            const closingQty =
-                openingQty +
-                (row.purchaseQty || 0) -
-                (row.salesQty || 0);
+            result.push({
+                HSN_Code: hsn.HSN_Code,
+                taxRate: hsn.taxRate,
 
-            finalReport.push({
-                productId: row.productId,
-                productName: row.productName,
-                description: row.description,
-                hsn: row.hsn,
-                gstRate: row.gstRate,
-                UQC: row.UQC,
+                inwardReport: inward,
+                outwardReport: outward,
 
-                openingQty,
-                purchaseQty: row.purchaseQty,
-                salesQty: row.salesQty,
-                closingQty,
-
-                taxablePurchase: row.purchaseTaxable,
-                taxableSales: row.salesTaxable,
-
-                cgst: row.cgst,
-                sgst: row.sgst,
-                igst: row.igst,
-
-                grandTotal: row.grandTotal
+                closingReport: [
+                    {
+                        HSN_Code: hsn.HSN_Code,
+                        taxableAmount: inwardTotal - outwardTotal,
+                        closingQty: inwardTotal - outwardTotal
+                    }
+                ]
             });
         }
 
         return res.status(200).json({
             status: true,
-            message: "Product-wise HSN Summary Report Generated Successfully",
-            filterType,
-            fromDate,
-            toDate,
-            report: finalReport
+            message: "HSN Wise Report Generated Successfully",
+
+            inwardReport: result.flatMap(r => r.inwardReport),
+            outwardReport: result.flatMap(r => r.outwardReport),
+            closingReport: result.flatMap(r => r.closingReport)
         });
 
     } catch (error) {
@@ -2049,8 +2271,6 @@ export const hsnSummaryReport = async (req, res) => {
         });
     }
 };
-
-
 export const financeYearWiseReport = async (req, res) => {
     try {
         const { database } = req.params;
