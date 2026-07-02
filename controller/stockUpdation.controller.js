@@ -2074,9 +2074,7 @@ export const hsnSummaryReport = async (req, res) => {
                 fromDate = null;
         }
 
-        // =========================
-        // FILTERS
-        // =========================
+
         const purchaseFilter = { database, status: "completed" };
         const salesFilter = { database, status: "completed" };
 
@@ -2094,9 +2092,6 @@ export const hsnSummaryReport = async (req, res) => {
             hsnSummaryFilter.date = { $gte: fromDate, $lte: toDate };
         }
 
-        // =========================
-        // DATA FETCH
-        // =========================
         const [
             products,
             purchaseOrders,
