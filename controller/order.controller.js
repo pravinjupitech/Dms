@@ -350,8 +350,6 @@ export const bulkHsnUpload = async (req, res) => {
     try {
         const { database, financeYear, type } = req.params;
 
-      
-
         if (!req.file) {
             return res.status(400).json({
                 status: false,
@@ -359,9 +357,7 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
-        // =========================
-        // EXCEL DATE PARSER (FIX BOTH FORMATS)
-        // =========================
+     
         const parseExcelDate = (value) => {
             if (!value) return null;
 
@@ -371,7 +367,6 @@ export const bulkHsnUpload = async (req, res) => {
                 return new Date(excelEpoch.getTime() + value * 86400000);
             }
 
-            // CASE 2: String format (Apr-21)
             if (typeof value === "string") {
                 const parts = value.trim().split("-");
                 if (parts.length !== 2) return null;
@@ -402,9 +397,6 @@ export const bulkHsnUpload = async (req, res) => {
             return null;
         };
 
-        // =========================
-        // READ EXCEL FILE
-        // =========================
         const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
 
@@ -417,10 +409,9 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
-        // =========================
-        // TRANSFORM DATA
-        // =========================
         const data = rows.map((row) => {
+            console.log("row",row);
+            
             return {
                 database,
                 financeYear,
@@ -442,16 +433,12 @@ export const bulkHsnUpload = async (req, res) => {
                 gstin: row.gstin || "",
                 roundOff: Number(row.roundOff) || 0,
 
-                // ✅ FIXED DATE (supports both formats)
                 date: parseExcelDate(row.date),
 
                 UQC: row.UQC || ""
             };
         });
 
-        // =========================
-        // INSERT INTO DB
-        // =========================
         const result = await hsn_summery.insertMany(data);
 
         return res.status(201).json({
