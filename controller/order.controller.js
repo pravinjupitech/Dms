@@ -349,8 +349,6 @@ export const bulkHsnUpload = async (req, res) => {
     try {
         const { database, financeYear, type } = req.params;
 
-        console.log("req body:", req.body);
-        console.log("file:", req.file);
 
         if (!req.file) {
             return res.status(400).json({
@@ -359,9 +357,6 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
-        // =========================
-        // DATE PARSER (MMM-YY → Date)
-        // =========================
         const parseExcelDate = (value) => {
             if (!value) return null;
 
@@ -391,9 +386,6 @@ export const bulkHsnUpload = async (req, res) => {
             return new Date(year, month, 1);
         };
 
-        // =========================
-        // READ EXCEL FILE
-        // =========================
         const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
 
@@ -406,10 +398,10 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
-        // =========================
-        // TRANSFORM DATA
-        // =========================
         const data = rows.map((row) => {
+            console.log("row",row.date);
+            console.log("row",parseExcelDate(row.date));
+            
             return {
                 database,
                 financeYear,
@@ -430,17 +422,13 @@ export const bulkHsnUpload = async (req, res) => {
                 Description: row.Description || "",
                 gstin: row.gstin || "",
                 roundOff: Number(row.roundOff) || 0,
-
-                // ✅ FIXED DATE
                 date: parseExcelDate(row.date),
 
                 UQC: row.UQC || ""
             };
         });
 
-        // =========================
-        // BULK INSERT
-        // =========================
+
         const result = await hsn_summery.insertMany(data);
 
         return res.status(201).json({
