@@ -2074,6 +2074,9 @@ export const hsnSummaryReport = async (req, res) => {
                 fromDate = null;
         }
 
+        // =========================
+        // FILTERS
+        // =========================
         const purchaseFilter = { database, status: "completed" };
         const salesFilter = { database, status: "completed" };
 
@@ -2082,34 +2085,41 @@ export const hsnSummaryReport = async (req, res) => {
             salesFilter.date = { $gte: fromDate, $lte: toDate };
         }
 
+        const hsnSummaryFilter = {
+            database,
+            financeYear
+        };
+
+        if (fromDate) {
+            hsnSummaryFilter.date = { $gte: fromDate, $lte: toDate };
+        }
+
+        // =========================
+        // DATA FETCH
+        // =========================
         const [
             products,
             purchaseOrders,
             salesOrders,
-            openingHSN
+            hsnSummary
         ] = await Promise.all([
             Product.find({ database, status: "Active" }),
             PurchaseOrder.find(purchaseFilter),
             CreateOrder.find(salesFilter),
-            hsn_summery.find({ database, financeYear })
+            hsn_summery.find(hsnSummaryFilter)
         ]);
 
         // =========================
         // PRODUCT MAP
         // =========================
         const productById = {};
-        const productByCustomId = {};
 
         products.forEach(p => {
             productById[p._id.toString()] = p;
-
-            if (p.id) {
-                productByCustomId[p.id.toString().trim()] = p;
-            }
         });
 
         // =========================
-        // HSN GROUP MAP
+        // HSN MAP
         // =========================
         const map = {};
 
@@ -2136,6 +2146,7 @@ export const hsnSummaryReport = async (req, res) => {
                     secondaryUnit: product.secondaryUnit,
                     taxRate: product.GSTRate,
 
+                    qty: 0,
                     taxableAmount: 0,
                     cgst: 0,
                     sgst: 0,
@@ -2148,26 +2159,6 @@ export const hsnSummaryReport = async (req, res) => {
         };
 
         // =========================
-        // OPENING STOCK (INWARD)
-        // =========================
-        for (const row of openingHSN) {
-
-            const product = productByCustomId[(row.Description || "").trim()];
-            if (!product) continue;
-
-            const hsn = product.HSN_Code;
-            const group = ensureHSN(hsn, product.GSTRate);
-
-            const bucket = group.inwardReport;
-            const child = addProduct(bucket, product);
-
-            const value = Number(row.grandTotal || 0);
-
-            child.taxableAmount += value;
-            child.grandTotal += value;
-        }
-
-        // =========================
         // PURCHASE (INWARD)
         // =========================
         for (const po of purchaseOrders) {
@@ -2176,17 +2167,15 @@ export const hsnSummaryReport = async (req, res) => {
                 const product = productById[item.productId?.toString()];
                 if (!product) continue;
 
-                const hsn = product.HSN_Code;
-                const group = ensureHSN(hsn, product.GSTRate);
+                const group = ensureHSN(product.HSN_Code, product.GSTRate);
 
-                const bucket = group.inwardReport;
-                const child = addProduct(bucket, product);
+                const child = addProduct(group.inwardReport, product);
 
                 const amount = Number(item.qty || 0) * Number(item.price || 0);
-
                 const cgst = amount * (product.GSTRate / 2) / 100;
                 const sgst = amount * (product.GSTRate / 2) / 100;
 
+                child.qty += Number(item.qty || 0);
                 child.taxableAmount += amount;
                 child.cgst += cgst;
                 child.sgst += sgst;
@@ -2203,17 +2192,15 @@ export const hsnSummaryReport = async (req, res) => {
                 const product = productById[item.productId?.toString()];
                 if (!product) continue;
 
-                const hsn = product.HSN_Code;
-                const group = ensureHSN(hsn, product.GSTRate);
+                const group = ensureHSN(product.HSN_Code, product.GSTRate);
 
-                const bucket = group.outwardReport;
-                const child = addProduct(bucket, product);
+                const child = addProduct(group.outwardReport, product);
 
                 const amount = Number(item.qty || 0) * Number(item.price || 0);
-
                 const cgst = amount * (product.GSTRate / 2) / 100;
                 const sgst = amount * (product.GSTRate / 2) / 100;
 
+                child.qty += Number(item.qty || 0);
                 child.taxableAmount += amount;
                 child.cgst += cgst;
                 child.sgst += sgst;
@@ -2222,7 +2209,51 @@ export const hsnSummaryReport = async (req, res) => {
         }
 
         // =========================
-        // FINAL RESPONSE BUILD
+        // HSN SUMMARY (INPUT / OUTPUT)
+        // =========================
+        for (const row of hsnSummary) {
+
+            const hsn = row.hsn;
+            if (!hsn) continue;
+
+            const group = ensureHSN(hsn, Number(row.gstRate || 0));
+
+            const bucket =
+                row.type === "input"
+                    ? group.inwardReport
+                    : group.outwardReport;
+
+            const key = `${row.Description}_${row.UQC}_${hsn}`;
+
+            if (!bucket[key]) {
+                bucket[key] = {
+                    Product_Title: row.Description,
+                    HSN_Code: row.hsn,
+                    primaryUnit: row.UQC,
+                    secondaryUnit: "",
+                    taxRate: Number(row.gstRate || 0),
+
+                    qty: 0,
+                    taxableAmount: 0,
+                    cgst: 0,
+                    sgst: 0,
+                    igst: 0,
+                    grandTotal: 0
+                };
+            }
+
+            const child = bucket[key];
+
+            child.qty += Number(row.qty || 0);
+            child.taxableAmount += Number(row.taxableAmount || 0);
+            child.cgst += Number(row.cgstAmount || 0);
+            child.sgst += Number(row.sgstAmount || 0);
+            child.igst += Number(row.igstAmount || 0);
+            child.grandTotal += Number(row.grandTotal || 0);
+        }
+
+        // =========================
+        // FINAL RESPONSE
         // =========================
         const result = [];
 
@@ -2230,29 +2261,26 @@ export const hsnSummaryReport = async (req, res) => {
 
             const hsn = map[hsnKey];
 
-            const inward = Object.values(hsn.inwardReport);
-            const outward = Object.values(hsn.outwardReport);
-
             const inwardMap = hsn.inwardReport;
             const outwardMap = hsn.outwardReport;
 
-            const allProductIds = new Set([
+            const allKeys = new Set([
                 ...Object.keys(inwardMap),
                 ...Object.keys(outwardMap)
             ]);
 
             const closingReport = [];
 
-            for (const productId of allProductIds) {
+            for (const key of allKeys) {
 
-                const inItem = inwardMap[productId] || {};
-                const outItem = outwardMap[productId] || {};
+                const inItem = inwardMap[key] || {};
+                const outItem = outwardMap[key] || {};
 
-                const inwardValue = inItem.taxableAmount || 0;
-                const outwardValue = outItem.taxableAmount || 0;
+                const closingValue =
+                    (inItem.taxableAmount || 0) - (outItem.taxableAmount || 0);
 
-                const closingValue = inwardValue - outwardValue;
-                const closingQty = (inItem.taxableAmount || 0) - (outItem.taxableAmount || 0);
+                const closingQty =
+                    (inItem.qty || 0) - (outItem.qty || 0);
 
                 const avgRate =
                     closingQty !== 0 ? closingValue / closingQty : 0;
@@ -2269,9 +2297,8 @@ export const hsnSummaryReport = async (req, res) => {
             result.push({
                 HSN_Code: hsn.HSN_Code,
                 taxRate: hsn.taxRate,
-
-                inwardReport: inward,
-                outwardReport: outward,
+                inwardReport: Object.values(inwardMap),
+                outwardReport: Object.values(outwardMap),
                 closingReport
             });
         }
@@ -2279,7 +2306,6 @@ export const hsnSummaryReport = async (req, res) => {
         return res.status(200).json({
             status: true,
             message: "HSN Wise Report Generated Successfully",
-
             inwardReport: result.flatMap(r => r.inwardReport),
             outwardReport: result.flatMap(r => r.outwardReport),
             closingReport: result.flatMap(r => r.closingReport)

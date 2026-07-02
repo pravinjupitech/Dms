@@ -344,12 +344,13 @@ export const createOrderWithInvoice = async (req, res, next) => {
 };
 
 
+
 export const bulkHsnUpload = async (req, res) => {
     try {
-
         const { database, financeYear, type } = req.params;
-console.log("req",req.body);
-console.log("reqfile",req.file);
+
+        console.log("req body:", req.body);
+        console.log("file:", req.file);
 
         if (!req.file) {
             return res.status(400).json({
@@ -358,41 +359,88 @@ console.log("reqfile",req.file);
             });
         }
 
-        const workbook = XLSX.readFile(req.file.path);
+        // =========================
+        // DATE PARSER (MMM-YY → Date)
+        // =========================
+        const parseExcelDate = (value) => {
+            if (!value) return null;
 
+            const parts = value.toString().trim().split("-");
+            if (parts.length !== 2) return null;
+
+            const monthMap = {
+                Jan: 0,
+                Feb: 1,
+                Mar: 2,
+                Apr: 3,
+                May: 4,
+                Jun: 5,
+                Jul: 6,
+                Aug: 7,
+                Sep: 8,
+                Oct: 9,
+                Nov: 10,
+                Dec: 11
+            };
+
+            const month = monthMap[parts[0]];
+            const year = 2000 + Number(parts[1]);
+
+            if (month === undefined || isNaN(year)) return null;
+
+            return new Date(year, month, 1);
+        };
+
+        // =========================
+        // READ EXCEL FILE
+        // =========================
+        const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
 
-        const rows = XLSX.utils.sheet_to_json(
-            workbook.Sheets[sheetName]
-        );
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-       const data = rows.map((row) => {
-console.log("row",row);
+        if (!rows || rows.length === 0) {
+            return res.status(400).json({
+                status: false,
+                message: "No data found in Excel file"
+            });
+        }
 
-    return {
-        database,
-        financeYear,
-        type,
-        taxAmount: Number(row.taxAmount) || 0,
-        sgstAmount: Number(row.sgstAmount) || 0,
-        cgstAmount: Number(row.cgstAmount) || 0,
-        igstAmount: Number(row.igstAmount) || 0,
+        // =========================
+        // TRANSFORM DATA
+        // =========================
+        const data = rows.map((row) => {
+            return {
+                database,
+                financeYear,
+                type,
 
-        hsn: row.hsn?.toString(),
-        gstRate: row.gstRate?.toString(),
+                taxAmount: Number(row.taxAmount) || 0,
+                sgstAmount: Number(row.sgstAmount) || 0,
+                cgstAmount: Number(row.cgstAmount) || 0,
+                igstAmount: Number(row.igstAmount) || 0,
 
-        taxableAmount: Number(row.taxableAmount) || 0,
-        grandTotal: Number(row.grandTotal) || 0,
+                hsn: row.hsn?.toString() || "",
+                gstRate: row.gstRate?.toString() || "",
 
-        qty: Number(row.qty) || 0,
-        Description: row.Description || "",
-        gstin: row.gstin || "",
-        roundOff: row.roundOff || 0,
-        date: row.date || "",
-        UQC: row.UQC || "",
-    };
-});
+                taxableAmount: Number(row.taxableAmount) || 0,
+                grandTotal: Number(row.grandTotal) || 0,
 
+                qty: Number(row.qty) || 0,
+                Description: row.Description || "",
+                gstin: row.gstin || "",
+                roundOff: Number(row.roundOff) || 0,
+
+                // ✅ FIXED DATE
+                date: parseExcelDate(row.date),
+
+                UQC: row.UQC || ""
+            };
+        });
+
+        // =========================
+        // BULK INSERT
+        // =========================
         const result = await hsn_summery.insertMany(data);
 
         return res.status(201).json({
@@ -402,16 +450,14 @@ console.log("row",row);
         });
 
     } catch (error) {
-
         console.error(error);
 
         return res.status(500).json({
             status: false,
-            message: error.message
+            message: error.message || "Internal Server Error"
         });
     }
 };
-
 export const createOrderHistoryByUserId = async (req, res, next) => {
     try {
         const userId = req.params.id;
