@@ -430,9 +430,7 @@ export const bulkHsnUpload = async (req, res) => {
                 Description: row.Description || "",
                 gstin: row.gstin || "",
                 roundOff: Number(row.roundOff) || 0,
-
                 date:(row.date),
-
                 UQC: row.UQC || ""
             };
         });
