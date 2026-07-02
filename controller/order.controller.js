@@ -365,6 +365,7 @@ export const bulkHsnUpload = async (req, res) => {
         );
 
        const data = rows.map((row) => {
+console.log("row",row);
 
     return {
         database,
