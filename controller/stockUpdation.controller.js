@@ -2052,7 +2052,7 @@ export const stockReport = async (req, res, next) => {
 
 export const hsnSummaryReport = async (req, res) => {
     try {
-        const { database, financeYear } = req.params;
+        const { database } = req.params;
 
         // const toDate = new Date();
         // let fromDate = null;
@@ -2084,8 +2084,7 @@ export const hsnSummaryReport = async (req, res) => {
         // }
 
         const hsnSummaryFilter = {
-            database,
-            financeYear
+            database
         };
 
         // if (fromDate) {
