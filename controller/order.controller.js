@@ -348,6 +348,8 @@ export const bulkHsnUpload = async (req, res) => {
     try {
 
         const { database, financeYear, type } = req.params;
+console.log("req",req.body);
+console.log("reqfile",req.file);
 
         if (!req.file) {
             return res.status(400).json({
