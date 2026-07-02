@@ -345,10 +345,12 @@ export const createOrderWithInvoice = async (req, res, next) => {
 
 
 
+
 export const bulkHsnUpload = async (req, res) => {
     try {
         const { database, financeYear, type } = req.params;
 
+      
 
         if (!req.file) {
             return res.status(400).json({
@@ -357,35 +359,52 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
+        // =========================
+        // EXCEL DATE PARSER (FIX BOTH FORMATS)
+        // =========================
         const parseExcelDate = (value) => {
             if (!value) return null;
 
-            const parts = value.toString().trim().split("-");
-            if (parts.length !== 2) return null;
+            // CASE 1: Excel serial number (e.g. 44287)
+            if (typeof value === "number") {
+                const excelEpoch = new Date(1899, 11, 30);
+                return new Date(excelEpoch.getTime() + value * 86400000);
+            }
 
-            const monthMap = {
-                Jan: 0,
-                Feb: 1,
-                Mar: 2,
-                Apr: 3,
-                May: 4,
-                Jun: 5,
-                Jul: 6,
-                Aug: 7,
-                Sep: 8,
-                Oct: 9,
-                Nov: 10,
-                Dec: 11
-            };
+            // CASE 2: String format (Apr-21)
+            if (typeof value === "string") {
+                const parts = value.trim().split("-");
+                if (parts.length !== 2) return null;
 
-            const month = monthMap[parts[0]];
-            const year = 2000 + Number(parts[1]);
+                const monthMap = {
+                    Jan: 0,
+                    Feb: 1,
+                    Mar: 2,
+                    Apr: 3,
+                    May: 4,
+                    Jun: 5,
+                    Jul: 6,
+                    Aug: 7,
+                    Sep: 8,
+                    Oct: 9,
+                    Nov: 10,
+                    Dec: 11
+                };
 
-            if (month === undefined || isNaN(year)) return null;
+                const month = monthMap[parts[0]];
+                const year = 2000 + Number(parts[1]);
 
-            return new Date(year, month, 1);
+                if (month === undefined || isNaN(year)) return null;
+
+                return new Date(year, month, 1);
+            }
+
+            return null;
         };
 
+        // =========================
+        // READ EXCEL FILE
+        // =========================
         const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
 
@@ -398,10 +417,10 @@ export const bulkHsnUpload = async (req, res) => {
             });
         }
 
+        // =========================
+        // TRANSFORM DATA
+        // =========================
         const data = rows.map((row) => {
-            console.log("row",row.date);
-            console.log("row",parseExcelDate(row.date));
-            
             return {
                 database,
                 financeYear,
@@ -422,13 +441,17 @@ export const bulkHsnUpload = async (req, res) => {
                 Description: row.Description || "",
                 gstin: row.gstin || "",
                 roundOff: Number(row.roundOff) || 0,
+
+                // ✅ FIXED DATE (supports both formats)
                 date: parseExcelDate(row.date),
 
                 UQC: row.UQC || ""
             };
         });
 
-
+        // =========================
+        // INSERT INTO DB
+        // =========================
         const result = await hsn_summery.insertMany(data);
 
         return res.status(201).json({
