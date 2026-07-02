@@ -358,44 +358,43 @@ export const bulkHsnUpload = async (req, res) => {
         }
 
      
-        const parseExcelDate = (value) => {
-            if (!value) return null;
+        // const parseExcelDate = (value) => {
+        //     if (!value) return null;
 
-            // CASE 1: Excel serial number (e.g. 44287)
-            if (typeof value === "number") {
-                const excelEpoch = new Date(1899, 11, 30);
-                return new Date(excelEpoch.getTime() + value * 86400000);
-            }
+        //     if (typeof value === "number") {
+        //         const excelEpoch = new Date(1899, 11, 30);
+        //         return new Date(excelEpoch.getTime() + value * 86400000);
+        //     }
 
-            if (typeof value === "string") {
-                const parts = value.trim().split("-");
-                if (parts.length !== 2) return null;
+        //     if (typeof value === "string") {
+        //         const parts = value.trim().split("-");
+        //         if (parts.length !== 2) return null;
 
-                const monthMap = {
-                    Jan: 0,
-                    Feb: 1,
-                    Mar: 2,
-                    Apr: 3,
-                    May: 4,
-                    Jun: 5,
-                    Jul: 6,
-                    Aug: 7,
-                    Sep: 8,
-                    Oct: 9,
-                    Nov: 10,
-                    Dec: 11
-                };
+        //         const monthMap = {
+        //             Jan: 0,
+        //             Feb: 1,
+        //             Mar: 2,
+        //             Apr: 3,
+        //             May: 4,
+        //             Jun: 5,
+        //             Jul: 6,
+        //             Aug: 7,
+        //             Sep: 8,
+        //             Oct: 9,
+        //             Nov: 10,
+        //             Dec: 11
+        //         };
 
-                const month = monthMap[parts[0]];
-                const year = 2000 + Number(parts[1]);
+        //         const month = monthMap[parts[0]];
+        //         const year = 2000 + Number(parts[1]);
 
-                if (month === undefined || isNaN(year)) return null;
+        //         if (month === undefined || isNaN(year)) return null;
 
-                return new Date(year, month, 1);
-            }
+        //         return new Date(year, month, 1);
+        //     }
 
-            return null;
-        };
+        //     return null;
+        // };
 
         const workbook = XLSX.readFile(req.file.path);
         const sheetName = workbook.SheetNames[0];
@@ -410,7 +409,6 @@ export const bulkHsnUpload = async (req, res) => {
         }
 
         const data = rows.map((row) => {
-            console.log("row",row);
             
             return {
                 database,
@@ -433,7 +431,7 @@ export const bulkHsnUpload = async (req, res) => {
                 gstin: row.gstin || "",
                 roundOff: Number(row.roundOff) || 0,
 
-                date: parseExcelDate(row.date),
+                date:(row.date),
 
                 UQC: row.UQC || ""
             };

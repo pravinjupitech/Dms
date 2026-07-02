@@ -2052,45 +2052,45 @@ export const stockReport = async (req, res, next) => {
 
 export const hsnSummaryReport = async (req, res) => {
     try {
-        const { database, financeYear, filterType } = req.params;
+        const { database, financeYear } = req.params;
 
-        const toDate = new Date();
-        let fromDate = null;
+        // const toDate = new Date();
+        // let fromDate = null;
 
-        switch ((filterType || "").toLowerCase()) {
-            case "monthly":
-                fromDate = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
-                break;
-            case "quarterly":
-                fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 2, 1);
-                break;
-            case "halfyearly":
-                fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 5, 1);
-                break;
-            case "yearly":
-                fromDate = new Date(toDate.getFullYear(), 0, 1);
-                break;
-            default:
-                fromDate = null;
-        }
+        // switch ((filterType || "").toLowerCase()) {
+        //     case "monthly":
+        //         fromDate = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+        //         break;
+        //     case "quarterly":
+        //         fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 2, 1);
+        //         break;
+        //     case "halfyearly":
+        //         fromDate = new Date(toDate.getFullYear(), toDate.getMonth() - 5, 1);
+        //         break;
+        //     case "yearly":
+        //         fromDate = new Date(toDate.getFullYear(), 0, 1);
+        //         break;
+        //     default:
+        //         fromDate = null;
+        // }
 
 
         const purchaseFilter = { database, status: "completed" };
         const salesFilter = { database, status: "completed" };
 
-        if (fromDate) {
-            purchaseFilter.date = { $gte: fromDate, $lte: toDate };
-            salesFilter.date = { $gte: fromDate, $lte: toDate };
-        }
+        // if (fromDate) {
+        //     purchaseFilter.date = { $gte: fromDate, $lte: toDate };
+        //     salesFilter.date = { $gte: fromDate, $lte: toDate };
+        // }
 
         const hsnSummaryFilter = {
             database,
             financeYear
         };
 
-        if (fromDate) {
-            hsnSummaryFilter.date = { $gte: fromDate, $lte: toDate };
-        }
+        // if (fromDate) {
+        //     hsnSummaryFilter.date = { $gte: fromDate, $lte: toDate };
+        // }
 
         const [
             products,
