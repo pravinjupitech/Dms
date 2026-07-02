@@ -41,6 +41,7 @@ const hsnSummerySchema = new mongoose.Schema({
     taxableAmount: {
         type: Number
     },
+    date:{type:Date},
     grandTotal: {
         type: Number
     },
