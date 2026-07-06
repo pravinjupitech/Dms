@@ -1,0 +1,120 @@
+[
+  {
+    "_id": "67ac6beaf6c5835434380c69",
+    "database": "201",
+    "title": "Cash Discount",
+    "percentage": 2,
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-02-12T09:37:46.717Z",
+    "updatedAt": "2025-02-12T09:37:46.717Z",
+    "__v": 0
+  },
+  {
+    "_id": "67ac6bfef6c5835434380c6c",
+    "database": "201",
+    "title": "Qty Discount",
+    "percentage": 4,
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-02-12T09:38:06.903Z",
+    "updatedAt": "2025-02-12T09:38:06.903Z",
+    "__v": 0
+  },
+  {
+    "_id": "68d2abddbe34eccc437510f6",
+    "database": "2405",
+    "title": "COOLIE",
+    "amount": 20,
+    "discounttype": "Amount",
+    "status": "Active",
+    "type": "Charges",
+    "createdAt": "2025-09-23T14:17:01.741Z",
+    "updatedAt": "2025-09-23T14:17:01.741Z",
+    "__v": 0
+  },
+  {
+    "_id": "68d2abe9be34eccc437510f9",
+    "database": "2405",
+    "title": "COOLIE AND CARTAGE",
+    "amount": 50,
+    "discounttype": "Amount",
+    "status": "Active",
+    "type": "Charges",
+    "createdAt": "2025-09-23T14:17:13.451Z",
+    "updatedAt": "2025-09-23T14:17:13.451Z",
+    "__v": 0
+  },
+  {
+    "_id": "68d2abf2be34eccc437510fc",
+    "database": "2405",
+    "title": "CASH",
+    "percentage": 2,
+    "discounttype": "Percentage",
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-09-23T14:17:22.303Z",
+    "updatedAt": "2025-09-23T14:17:22.303Z",
+    "__v": 0
+  },
+  {
+    "_id": "68d2abf8be34eccc437510ff",
+    "database": "2405",
+    "title": "TURNOVER",
+    "percentage": 2,
+    "discounttype": "Percentage",
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-09-23T14:17:28.463Z",
+    "updatedAt": "2025-09-23T14:17:28.463Z",
+    "__v": 0
+  },
+  {
+    "_id": "686f62e0cbf02e68c4766d3f",
+    "database": "PARTIENT",
+    "title": "discount percentage",
+    "percentage": 10,
+    "discounttype": "Percentage",
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-07-10T06:51:12.985Z",
+    "updatedAt": "2025-07-10T06:51:12.985Z",
+    "__v": 0
+  },
+  {
+    "_id": "686f73f3cbf02e68c47695d1",
+    "database": "PARTIENT",
+    "title": "Delivery Charges",
+    "amount": 1000,
+    "discounttype": "Amount",
+    "status": "Active",
+    "type": "Charges",
+    "createdAt": "2025-07-10T08:04:03.476Z",
+    "updatedAt": "2025-09-25T16:24:16.658Z",
+    "__v": 0
+  },
+  {
+    "_id": "686f7436cbf02e68c47695d9",
+    "database": "PARTIENT",
+    "title": "percentage charges",
+    "percentage": 25,
+    "discounttype": "Percentage",
+    "status": "Active",
+    "type": "Charges",
+    "createdAt": "2025-07-10T08:05:10.314Z",
+    "updatedAt": "2025-07-10T08:05:10.314Z",
+    "__v": 0
+  },
+  {
+    "_id": "68749143ecdaf92da33b0ef3",
+    "database": "PARTIENT",
+    "title": "discount amount",
+    "amount": 50,
+    "discounttype": "Amount",
+    "status": "Active",
+    "type": "Discount",
+    "createdAt": "2025-07-14T05:10:27.102Z",
+    "updatedAt": "2025-07-14T05:10:27.102Z",
+    "__v": 0
+  }
+]
