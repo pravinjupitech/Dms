@@ -2059,59 +2059,7 @@ export const hsnSummaryReport = async (req, res) => {
         const to = toDate ? new Date(toDate) : null;
 
         // =========================
-        // UNIVERSAL DATE NORMALIZER
-        // =========================
-        const normalizeToDate = (value) => {
-            if (value === null || value === undefined) return null;
-
-            // Date object
-            if (value instanceof Date) return value;
-
-            // Excel serial (number or numeric string)
-            if (!isNaN(value)) {
-                const serial = Number(value);
-                const utc_days = serial - 25569;
-                const utc_value = utc_days * 86400;
-                return new Date(utc_value * 1000);
-            }
-
-            if (typeof value === "string") {
-
-                // numeric string again
-                if (!isNaN(value)) {
-                    const serial = Number(value);
-                    const utc_days = serial - 25569;
-                    const utc_value = utc_days * 86400;
-                    return new Date(utc_value * 1000);
-                }
-
-                // "ARP-21" format
-                const monthMap = {
-                    JAN: 0, FEB: 1, MAR: 2, APR: 3,
-                    MAY: 4, JUN: 5, JUL: 6, AUG: 7,
-                    SEP: 8, OCT: 9, NOV: 10, DEC: 11
-                };
-
-                const parts = value.split("-");
-                if (parts.length === 2) {
-                    const mon = parts[0].substring(0, 3).toUpperCase();
-                    const yr = Number(parts[1]);
-
-                    if (!isNaN(yr) && monthMap[mon] !== undefined) {
-                        return new Date(2000 + yr, monthMap[mon], 1);
-                    }
-                }
-
-                // ISO fallback
-                const d = new Date(value);
-                if (!isNaN(d.getTime())) return d;
-            }
-
-            return null;
-        };
-
-        // =========================
-        // FILTERS
+        // FILTERS (PURCHASE + SALES)
         // =========================
         const purchaseFilter = { database, status: "completed" };
         const salesFilter = { database, status: "completed" };
@@ -2122,8 +2070,28 @@ export const hsnSummaryReport = async (req, res) => {
         }
 
         // =========================
-        // FETCH DATA
+        // HSN STRING DATE PARSER (ARP-21)
         // =========================
+        const monthMap = {
+            JAN: 0, FEB: 1, MAR: 2, APR: 3,
+            MAY: 4, JUN: 5, JUL: 6, AUG: 7,
+            SEP: 8, OCT: 9, NOV: 10, DEC: 11
+        };
+
+        const parseHsnDate = (str) => {
+            if (!str || typeof str !== "string") return null;
+
+            const parts = str.split("-");
+            if (parts.length !== 2) return null;
+
+            const mon = parts[0].substring(0, 3).toUpperCase();
+            const yr = Number(parts[1]);
+
+            if (!monthMap.hasOwnProperty(mon)) return null;
+
+            return new Date(2000 + yr, monthMap[mon], 1);
+        };
+
         const [
             products,
             purchaseOrders,
@@ -2136,17 +2104,11 @@ export const hsnSummaryReport = async (req, res) => {
             hsn_summery.find({ database })
         ]);
 
-        // =========================
-        // PRODUCT MAP
-        // =========================
         const productById = {};
         products.forEach(p => {
             productById[p._id.toString()] = p;
         });
 
-        // =========================
-        // HSN MAP
-        // =========================
         const map = {};
 
         const ensureHSN = (hsn, rate) => {
@@ -2184,9 +2146,7 @@ export const hsnSummaryReport = async (req, res) => {
             return bucket[id];
         };
 
-        // =========================
-        // PURCHASE (INWARD)
-        // =========================
+
         for (const po of purchaseOrders) {
             for (const item of po.orderItems || []) {
 
@@ -2211,9 +2171,6 @@ export const hsnSummaryReport = async (req, res) => {
             }
         }
 
-        // =========================
-        // SALES (OUTWARD)
-        // =========================
         for (const so of salesOrders) {
             for (const item of so.orderItems || []) {
 
@@ -2238,14 +2195,12 @@ export const hsnSummaryReport = async (req, res) => {
             }
         }
 
-        // =========================
-        // HSN SUMMARY FILTER (MULTI FORMAT SAFE)
-        // =========================
+   
         const filteredHSN = hsnSummary.filter(row => {
             if (!from || !to) return true;
 
-            const d = normalizeToDate(row.date);
-            if (!d) return false;
+            const d = parseHsnDate(row.date);
+            if (!d) return true;
 
             return d >= from && d <= to;
         });
@@ -2271,7 +2226,6 @@ export const hsnSummaryReport = async (req, res) => {
                     primaryUnit: row.UQC,
                     secondaryUnit: "",
                     taxRate:(row.gstRate || 0),
-
                     qty: 0,
                     taxableAmount: 0,
                     cgst: 0,
@@ -2291,9 +2245,7 @@ export const hsnSummaryReport = async (req, res) => {
             child.grandTotal += Number(row.grandTotal || 0);
         }
 
-        // =========================
-        // FINAL RESPONSE
-        // =========================
+   
         const result = [];
 
         for (const hsnKey in map) {
